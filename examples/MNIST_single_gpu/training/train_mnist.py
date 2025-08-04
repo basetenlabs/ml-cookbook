@@ -48,9 +48,11 @@ class MNISTClassifier(nn.Module): # TODO: make configurable?
 model = MNISTClassifier().to(device)
 
 # Training
-optimizer = optim.Adam(model.parameters(), lr=0.001)
+optimizer = optim.Adam(model.parameters(), lr=0.0001)
 criterion = nn.CrossEntropyLoss()
 checkpoint_dir = os.environ['BT_CHECKPOINT_DIR']
+if not os.path.exists(checkpoint_dir):
+    os.makedirs(checkpoint_dir)
 
 print("Starting MNIST training...")
 for epoch in range(5):

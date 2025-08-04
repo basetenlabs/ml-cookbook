@@ -60,17 +60,30 @@ git clone https://github.com/basetenlabs/ml-cookbook.git
 
 #### Train an MNIST digit classifier with Pytorch. 
 
+To train: 
+
 ```bash
-python train.py --config configs/llm_example.yaml
+cd examples/MNIST_single_gpu/training
+truss train push config.py
+```
+
+To run inference:
+```bash
+cd examples/MNIST_single_gpu/inference
+
 ```
 
 #### Fine-tune Llama 3 8b Instruct 
 
 - Make sure you have access to the model on [HuggingFace](https://huggingface.co/meta-llama/Meta-Llama-3-8B-Instruct) and your API token uploaded to your [secrets](https://app.baseten.co/settings/secrets).
 
-```bash
+To save checkpoints to HF ... 
 
+```bash
+cd examples/llama_finetune_multi_gpu
+truss train push config.py
 ```
+
 
 ## Recipes
 
