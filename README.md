@@ -69,7 +69,7 @@ If using a model with gated access, make sure you have access to the model on Hu
 Make sure to update `hf_access_token` in `config.py` with the same name for this access token saved in your [secrets](https://app.baseten.co/settings/secrets). 
 
 ```bash
-cd examples/llama_finetune_single_gpu/training
+cd examples/llama-finetune-8b-lora/training
 truss train push config.py
 ```
 
@@ -101,12 +101,12 @@ If using a model with gated access, make sure you have access to the model on Hu
 
 #### Training
 
-`examples/llama_finetune_single_gpu/training/train.py` contains the training code. 
+`examples/llama-finetune-8b-lora/training/train.py` contains the training code. 
 
-`examples/llama_finetune_single_gpu/training/config.py` will be the entry point to start training, where you can [define your training configuration](https://docs.baseten.co/training/getting-started#step-1%3A-define-your-training-configuration). This also includes the start commands to launch your training job. Make sure these commands also include any file permission changes to make shell scripts run. We do not change any file system permissions. 
+`examples/llama-finetune-8b-lora/training/config.py` will be the entry point to start training, where you can [define your training configuration](https://docs.baseten.co/training/getting-started#step-1%3A-define-your-training-configuration). This also includes the start commands to launch your training job. Make sure these commands also include any file permission changes to make shell scripts run. We do not change any file system permissions. 
 
 ```bash
-cd examples/llama_finetune_single_gpu/training
+cd examples/llama-finetune-8b-lora/training
 truss train push config.py
 ```
 
@@ -118,8 +118,6 @@ Upon successful submission, the CLI will output helpful information about your j
 🔍 View metrics for your job via `truss train metrics --job-id e3m512w`
 ```
 
-Keep the Job ID handy, as you’ll use it for [managing and monitoring your job](https://docs.baseten.co/training/management).
-
 In this example, since checkpointing is enabled in `config.py`, checkpoints are stored in cloud storage and can be accessed with 
 ```
 truss train get_checkpoint_urls --job-id $JOB_ID
@@ -130,12 +128,12 @@ truss train get_checkpoint_urls --job-id $JOB_ID
 
 #### Training
 
-`examples/MNIST_single_gpu/training/train_mnist.py` contains the a Pytorch example of an MNIST classifier with CNNs. 
+`examples/mnist-single-gpu/training/train_mnist.py` contains the a Pytorch example of an MNIST classifier with CNNs. 
 
-`examples/MNIST_single_gpu/training/config.py` will be the entry point to start training, where you can [define your training configuration](https://docs.baseten.co/training/getting-started#step-1%3A-define-your-training-configuration). This also includes the start commands to launch your training job. Make sure these commands also include any file permission changes to make shell scripts run. We do not change any file system permissions. 
+`examples/mnist-single-gpu/training/config.py` will be the entry point to start training, where you can [define your training configuration](https://docs.baseten.co/training/getting-started#step-1%3A-define-your-training-configuration). This also includes the start commands to launch your training job. Make sure these commands also include any file permission changes to make shell scripts run. We do not change any file system permissions. 
 
 ```bash
-cd examples/MNIST_single_gpu/training
+cd examples/mnist-single-gpu/training
 truss train push config.py
 ```
 
@@ -160,7 +158,7 @@ Once you choose a checkpoint to deploy, copy that URL over to ...
 
 To run inference:
 ```bash
-cd examples/MNIST_single_gpu/inference
+cd examples/mnist-single-gpu/inference
 truss push
 ```
 
