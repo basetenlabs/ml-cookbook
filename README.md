@@ -8,11 +8,8 @@
   
 <a href="https://docs.baseten.co/examples/deploy-your-first-model"><img src="https://github.com/user-attachments/assets/043ac2bc-60cf-485e-8d9a-467bfa69a5e0" width="154"></a>
 <a href="https://docs.baseten.co/training/overview"><img src="https://github.com/user-attachments/assets/79bee104-2a0a-45f0-ac4a-7a832a1d5a2a" width="165"></a>
-<!-- <a href="https://docs.baseten.co"><img src="https://raw.githubusercontent.com/unslothai/unsloth/refs/heads/main/images/Documentation%20Button.png" width="137"></a> -->
 
 ### From training to serving - recipes for every ML appetite!
-
-<!-- ![](https://i.ibb.co/sJ7RhGG/image-41.png) -->
 
 </div>
 
