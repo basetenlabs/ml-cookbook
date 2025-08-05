@@ -69,7 +69,7 @@ If using a model with gated access, make sure you have access to the model on Hu
 Make sure to update `hf_access_token` in `config.py` with the same name for this access token saved in your [secrets](https://app.baseten.co/settings/secrets). 
 
 ```bash
-cd examples/llama-finetune-8b-lora/training
+cd examples/oss-gpt-20b-lora/training
 truss train push config.py
 ```
 
@@ -122,6 +122,9 @@ In this example, since checkpointing is enabled in `config.py`, checkpoints are 
 ```
 truss train get_checkpoint_urls --job-id $JOB_ID
 ```
+
+
+
 
 
 ### Train and deploy an MNIST digit classifier with Pytorch
