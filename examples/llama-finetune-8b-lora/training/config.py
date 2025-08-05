@@ -21,6 +21,9 @@ training_runtime = definitions.Runtime(
         "WANDB_API_KEY" : definitions.SecretReference(name="wandb_api_key"),
         "HELLO": "WORLD"
     },
+    checkpointing_config=definitions.CheckpointingConfig( # this defines BT_CHECKPOINT_DIR
+        enabled=True,
+    ),
 )
 
 # 3. Define the Compute Resources for the Training Job
