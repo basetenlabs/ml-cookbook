@@ -60,7 +60,7 @@ def formatting_prompts_func(examples):
         texts.append(text)
     return {"text": texts}
 
-dataset = load_dataset("nvidia/OpenMathInstruct-1", split="train[:40%]") # Use a smaller split for quick training
+dataset = load_dataset("nvidia/OpenMathInstruct-1", split="train[:20%]") # Use a smaller split for quick training
 dataset = dataset.map(formatting_prompts_func, batched = True,)
 
 checkpoint_dir = os.environ.get('BT_CHECKPOINT_DIR', 'checkpoints')
@@ -89,11 +89,11 @@ trainer = SFTTrainer(
         seed = 3407,
         output_dir = checkpoint_dir,
         report_to = "none", # Use this for wandb etc
+        # push to hf
+        push_to_hub = bool(os.environ.get("HF_WRITE_LOC", "")), # Set this to your HuggingFace repo name
+        hub_model_id = os.environ.get("HF_WRITE_LOC", ""),
     ),
 )
 
 trainer_stats = trainer.train()
 print("Done training!")
-
-model.push_to_hub("your_name/lora_model", token = "...") # Online saving
-tokenizer.push_to_hub("your_name/lora_model", token = "...") # Online saving

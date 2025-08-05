@@ -11,9 +11,9 @@ training_runtime = definitions.Runtime(
         "HF_TOKEN": definitions.SecretReference(name="hf_access_token"), # The name of the HF Access Token secret in your B10 account
         "HF_HOME": "/root/.cache/user_artifacts/hf_cache"
     },
-    cache_config=definitions.CacheConfig(
-        enabled=True,
-    )
+    # cache_config=definitions.CacheConfig(
+    #     enabled=True,
+    # )
 )
 
 training_compute = definitions.Compute(
