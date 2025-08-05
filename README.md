@@ -45,6 +45,7 @@ Before getting started, ensure you have the following:
     - Add any access tokens, API keys (Example: Huggingface access token, Weights&Biases access token), passwords to securely access credentials from your models in [secrets](https://app.baseten.co/settings/secrets).
 - Python 3.8 to 3.11 installed. [Conda](https://docs.conda.io/projects/conda/en/latest/user-guide/getting-started.html) env recommended.
 - Install [Truss](https://github.com/basetenlabs/truss), Baseten's open-source model packaging tool to configure and containerize model code.
+    - ``` pip install --upgrade truss```
 
 
 ### Clone this repository:
@@ -57,19 +58,39 @@ git clone https://github.com/basetenlabs/ml-cookbook.git
 
 #### Train an MNIST digit classifier with Pytorch. 
 
-To train: 
+`examples/MNIST_single_gpu/training/train_mnist.py` contains the a Pytorch example of an MNIST classifier with CNNs. 
+
+`examples/MNIST_single_gpu/training/config.py` will be the entry point to start training, where you can [define your training configuration](https://docs.baseten.co/training/getting-started#step-1%3A-define-your-training-configuration). This also includes the start commands to launch your training job. Make sure these commands also include any file permission changes to make shell scripts run. We do not change any file system permissions. 
 
 ```bash
 cd examples/MNIST_single_gpu/training
 truss train push config.py
 ```
 
+Upon successful submission, the CLI will output helpful information about your job:
+
+```json
+✨ Training job successfully created!
+🪵 View logs for your job via `truss train logs --job-id e3m512w [--tail]`
+🔍 View metrics for your job via `truss train metrics --job-id e3m512w`
+```
+
+Keep the Job ID handy, as you’ll use it for [managing and monitoring your job](https://docs.baseten.co/training/management).
+​
+
+
+In this example, since checkpointing is enabled in `config.py`, checkpoints are stored in cloud storage and can be accessed with 
+```
+truss train get_checkpoint_urls --job-id $JOB_ID
+```
+
+Once you choose a checkpoint to deploy, copy that URL over to 
+
 To run inference:
 ```bash
 cd examples/MNIST_single_gpu/inference
 truss push
 ```
-
 
 
 #### Fine-tune Llama 3 8b Instruct 
@@ -83,13 +104,6 @@ cd examples/llama_finetune_multi_gpu
 truss train push config.py
 ```
 
-
-## Recipes
-
-- `data_preprocessing/`: Scripts for cleaning and preparing datasets.
-- `configs/`: Example configuration files for different model architectures.
-- `training/`: Training scripts and utilities.
-- `evaluation/`: Evaluation and benchmarking tools.
 
 ## Contributing
 

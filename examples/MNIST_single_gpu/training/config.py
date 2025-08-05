@@ -8,11 +8,12 @@ training_runtime = definitions.Runtime(
         "/bin/sh -c 'chmod +x ./run.sh && ./run.sh'",
     ],
     environment_variables={
+        "WANDB_API_KEY" : definitions.SecretReference(name="wandb_api_key"),
     },
-    checkpointing_config=definitions.CheckpointingConfig(
+    checkpointing_config=definitions.CheckpointingConfig( # this defines BT_CHECKPOINT_DIR
         enabled=True,
     ),
-    cache_config=definitions.CacheConfig(
+    cache_config=definitions.CacheConfig( # this defines BT_RW_CACHE_DIR
         enabled=True,
     )
 )

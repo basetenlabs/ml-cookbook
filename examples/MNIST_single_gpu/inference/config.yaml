@@ -5,3 +5,8 @@ requirements:
 resources:
   accelerator: T4
   use_gpu: true
+
+docker_server:
+  start_command: sh run.sh
+  readiness_endpoint: /health
+  liveness_endpoint: /health
