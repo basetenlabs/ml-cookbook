@@ -14,16 +14,15 @@
 </div>
 
 # ML Training & Deployment Workflows
-A collection of ready-to-use training recipes, fine-tuning examples, and deployment workflows for machine learning on Baseten. Whether you're training from scratch, fine-tuning existing models, or deploying for inference, these recipes provide practical, copy-paste solutions for your ML pipeline.
+A collection of ready-to-use training recipes for machine learning on Baseten. Whether you're training from scratch or fine-tuning existing models, these recipes provide practical, copy-paste solutions for your ML pipeline.
 
 ### What's Inside
 
 - Training recipes - End-to-end examples for training models from scratch
 - Fine-tuning workflows - Adapt pre-trained models to your specific use case
-- Deployment guides - Get your trained models serving predictions in production
 - Best practices - Optimized configurations and common patterns
 
-From data preprocessing to production deployment, these recipes cover the complete ML lifecycle on Baseten's platform.
+From data preprocessing to checkpointed and trained models, these recipes cover the complete ML lifecycle on Baseten's platform.
 
 # Table of Contents
 
@@ -87,13 +86,6 @@ In this example, since checkpointing is enabled in `config.py`, checkpoints are 
 ```
 truss train get_checkpoint_urls --job-id $JOB_ID
 ```
-
-
-#### Inference
-
-...
-
-
 
 ### Fine-tune Llama 3.1 8b Instruct with LoRa and [Unsloth](https://github.com/unslothai/unsloth/tree/main)
 
