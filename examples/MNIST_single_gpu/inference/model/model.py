@@ -37,7 +37,6 @@ class Model:
         self.model = MNISTClassifier()
         self.checkpoint_dir = os.environ.get('BT_CHECKPOINT_DIR', './checkpoints')
 
-
     def load(self):
         self.model.load_state_dict(
             torch.load(

@@ -1,3 +1,4 @@
+import os
 from unsloth import FastLanguageModel
 import torch
 from datasets import load_dataset
@@ -59,9 +60,10 @@ def formatting_prompts_func(examples):
         texts.append(text)
     return {"text": texts}
 
-
 dataset = load_dataset("nvidia/OpenMathInstruct-1", split="train[:40%]") # Use a smaller split for quick training
 dataset = dataset.map(formatting_prompts_func, batched = True,)
+
+checkpoint_dir = os.environ.get('BT_CHECKPOINT_DIR', 'checkpoints')
 
 trainer = SFTTrainer(
     model = model,
@@ -85,7 +87,7 @@ trainer = SFTTrainer(
         weight_decay = 0.01,
         lr_scheduler_type = "linear",
         seed = 3407,
-        output_dir = "outputs",
+        output_dir = checkpoint_dir,
         report_to = "none", # Use this for wandb etc
     ),
 )
@@ -93,5 +95,5 @@ trainer = SFTTrainer(
 trainer_stats = trainer.train()
 print("Done training!")
 
-# model.push_to_hub("your_name/lora_model", token = "...") # Online saving
-# tokenizer.push_to_hub("your_name/lora_model", token = "...") # Online saving
+model.push_to_hub("your_name/lora_model", token = "...") # Online saving
+tokenizer.push_to_hub("your_name/lora_model", token = "...") # Online saving

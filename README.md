@@ -48,7 +48,7 @@ Before getting started, ensure you have the following:
     - ``` pip install --upgrade truss```
 
 
-### Clone this repository:
+### Clone this repository
 
 ```bash
 git clone https://github.com/basetenlabs/ml-cookbook.git
@@ -56,7 +56,79 @@ git clone https://github.com/basetenlabs/ml-cookbook.git
 
 ## Usage
 
-#### Train an MNIST digit classifier with Pytorch. 
+### Fine-tune GPT OSS 20B with LoRa and [trl](https://github.com/huggingface/trl)
+
+If using a model with gated access, make sure you have access to the model on HuggingFace and your API token uploaded to your [secrets](https://app.baseten.co/settings/secrets).
+
+#### Training
+
+`examples/oss-gpt-20b-lora/training/train.py` contains all training code. 
+
+`examples/oss-gpt-20b-lora/training/config.py` will be the entry point to start training, where you can [define your training configuration](https://docs.baseten.co/training/getting-started#step-1%3A-define-your-training-configuration). This also includes the start commands to launch your training job. Make sure these commands also include any file permission changes to make shell scripts run. We do not change any file system permissions. 
+
+Make sure to update `hf_access_token` in `config.py` with the same name for this access token saved in your [secrets](https://app.baseten.co/settings/secrets). 
+
+```bash
+cd examples/llama_finetune_single_gpu/training
+truss train push config.py
+```
+
+Upon successful submission, the CLI will output helpful information about your job:
+
+```json
+✨ Training job successfully created!
+🪵 View logs for your job via `truss train logs --job-id e3m512w [--tail]`
+🔍 View metrics for your job via `truss train metrics --job-id e3m512w`
+```
+
+Keep the Job ID handy, as you’ll use it for [managing and monitoring your job](https://docs.baseten.co/training/management).
+
+In this example, since checkpointing is enabled in `config.py`, checkpoints are stored in cloud storage and can be accessed with 
+```
+truss train get_checkpoint_urls --job-id $JOB_ID
+```
+
+
+#### Inference
+
+...
+
+
+
+### Fine-tune Llama 3.1 8b Instruct with LoRa and [Unsloth](https://github.com/unslothai/unsloth/tree/main)
+
+If using a model with gated access, make sure you have access to the model on HuggingFace and your API token uploaded to your [secrets](https://app.baseten.co/settings/secrets).
+
+#### Training
+
+`examples/llama_finetune_single_gpu/training/train.py` contains the training code. 
+
+`examples/llama_finetune_single_gpu/training/config.py` will be the entry point to start training, where you can [define your training configuration](https://docs.baseten.co/training/getting-started#step-1%3A-define-your-training-configuration). This also includes the start commands to launch your training job. Make sure these commands also include any file permission changes to make shell scripts run. We do not change any file system permissions. 
+
+```bash
+cd examples/llama_finetune_single_gpu/training
+truss train push config.py
+```
+
+Upon successful submission, the CLI will output helpful information about your job:
+
+```json
+✨ Training job successfully created!
+🪵 View logs for your job via `truss train logs --job-id e3m512w [--tail]`
+🔍 View metrics for your job via `truss train metrics --job-id e3m512w`
+```
+
+Keep the Job ID handy, as you’ll use it for [managing and monitoring your job](https://docs.baseten.co/training/management).
+
+In this example, since checkpointing is enabled in `config.py`, checkpoints are stored in cloud storage and can be accessed with 
+```
+truss train get_checkpoint_urls --job-id $JOB_ID
+```
+
+
+### Train and deploy an MNIST digit classifier with Pytorch
+
+#### Training
 
 `examples/MNIST_single_gpu/training/train_mnist.py` contains the a Pytorch example of an MNIST classifier with CNNs. 
 
@@ -76,15 +148,15 @@ Upon successful submission, the CLI will output helpful information about your j
 ```
 
 Keep the Job ID handy, as you’ll use it for [managing and monitoring your job](https://docs.baseten.co/training/management).
-​
-
 
 In this example, since checkpointing is enabled in `config.py`, checkpoints are stored in cloud storage and can be accessed with 
 ```
 truss train get_checkpoint_urls --job-id $JOB_ID
 ```
 
-Once you choose a checkpoint to deploy, copy that URL over to 
+#### Inference
+
+Once you choose a checkpoint to deploy, copy that URL over to ...
 
 To run inference:
 ```bash
@@ -93,9 +165,9 @@ truss push
 ```
 
 
-#### Fine-tune Llama 3 8b Instruct 
+### Fine-tune Llama 3.1 8b Instruct with LoRa and [Unsloth](https://github.com/unslothai/unsloth/tree/main)
 
-- Make sure you have access to the model on [HuggingFace](https://huggingface.co/meta-llama/Meta-Llama-3-8B-Instruct) and your API token uploaded to your [secrets](https://app.baseten.co/settings/secrets).
+- If using a model with gated access, make sure you have access to the model on HuggingFace and your API token uploaded to your [secrets](https://app.baseten.co/settings/secrets).
 
 To save checkpoints to HF ... 
 
