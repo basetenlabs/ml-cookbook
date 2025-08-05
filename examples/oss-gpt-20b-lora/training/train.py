@@ -53,7 +53,6 @@ training_args = SFTConfig(
     lr_scheduler_type="cosine_with_min_lr",
     lr_scheduler_kwargs={"min_lr_rate": 0.1},
     output_dir="gpt-oss-20b-multilingual-reasoner",
-    # report_to="trackio",
     report_to="wandb",
     push_to_hub=False,
 )
