@@ -42,6 +42,7 @@ Before getting started, ensure you have the following:
 
 - A Baseten account. [Sign up here](https://baseten.co/signup) if you don't have one.
     - Add any access tokens, API keys (Example: Huggingface access token, Weights&Biases access token), passwords to securely access credentials from your models in [secrets](https://app.baseten.co/settings/secrets).
+    - This is required to access models on Huggingface that have gated access. More information on setting up Huggingface access tokens can be found [here](https://huggingface.co/docs/hub/en/security-tokens). 
 - Python 3.8 to 3.11 installed. [Conda](https://docs.conda.io/projects/conda/en/latest/user-guide/getting-started.html) env recommended.
 - Install [Truss](https://github.com/basetenlabs/truss), Baseten's open-source model packaging tool to configure and containerize model code.
     - ``` pip install --upgrade truss```
@@ -65,7 +66,7 @@ If using a model with gated access, make sure you have access to the model on Hu
 
 `examples/oss-gpt-20b-lora/training/config.py` will be the entry point to start training, where you can [define your training configuration](https://docs.baseten.co/training/getting-started#step-1%3A-define-your-training-configuration). This also includes the start commands to launch your training job. Make sure these commands also include any file permission changes to make shell scripts run. We do not change any file system permissions. 
 
-Make sure to update `hf_access_token` in `config.py` with the same name for this access token saved in your [secrets](https://app.baseten.co/settings/secrets). 
+Make sure to update `hf_access_token` in `config.py` with the same name for this access token saved in your [secrets](https://app.baseten.co/settings/secrets). In this example, we will be writing trained checkpoints directly to Huggingface, the Hub IDs for models and datasets are configured in `examples/oss-gpt-20b-lora/training/run.sh`. Update `run.sh` with a repo you have access to write to. 
 
 ```bash
 cd examples/oss-gpt-20b-lora/training
@@ -82,10 +83,10 @@ Upon successful submission, the CLI will output helpful information about your j
 
 Keep the Job ID handy, as you’ll use it for [managing and monitoring your job](https://docs.baseten.co/training/management).
 
-In this example, since checkpointing is enabled in `config.py`, checkpoints are stored in cloud storage and can be accessed with 
-```
-truss train get_checkpoint_urls --job-id $JOB_ID
-```
+Alternatively, you can view all your training jobs at (https://app.baseten.co/training/)[https://app.baseten.co/training/].
+
+- As checkpoints are generated, you can access them on Huggingface at the same location defined in `run.sh`. 
+
 
 ### Fine-tune Llama 3.1 8b Instruct with LoRa and [Unsloth](https://github.com/unslothai/unsloth/tree/main)
 
@@ -109,6 +110,8 @@ Upon successful submission, the CLI will output helpful information about your j
 🪵 View logs for your job via `truss train logs --job-id e3m512w [--tail]`
 🔍 View metrics for your job via `truss train metrics --job-id e3m512w`
 ```
+
+Alternatively, you can view all your training jobs at (https://app.baseten.co/training/)[https://app.baseten.co/training/].
 
 In this example, since checkpointing is enabled in `config.py`, checkpoints are stored in cloud storage and can be accessed with 
 ```

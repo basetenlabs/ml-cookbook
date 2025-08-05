@@ -5,6 +5,8 @@ pip install "trl>=0.20.0" "peft>=0.17.0" "transformers>=4.55.0" wandb
 
 export MODEL_ID="openai/gpt-oss-20b"
 export DATASET_ID="HuggingFaceH4/Multilingual-Thinking"
+
+### TODO: Update this with a repo you can write to.
 export HF_WRITE_LOC="baseten-admin/gpt-oss-20b-multilingual-reasoner-e2e"
 
 python3 train.py
