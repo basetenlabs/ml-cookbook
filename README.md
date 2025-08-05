@@ -58,7 +58,7 @@ git clone https://github.com/basetenlabs/ml-cookbook.git
 
 ### Fine-tune GPT OSS 20B with LoRa and [trl](https://github.com/huggingface/trl)
 
-If using a model with gated access, make sure you have access to the model on HuggingFace and your API token uploaded to your [secrets](https://app.baseten.co/settings/secrets).
+If using a model with gated access, make sure you have access to the model on HuggingFace and your API token uploaded to your [secrets](https://app.baseten.co/settings/secrets). This example requires an [HF access token](https://huggingface.co/docs/hub/en/security-tokens) and an optional [Weights&Biases access token](https://docs.wandb.ai/quickstart/). To disable W&B, comment out any lines with wandb in `examples/oss-gpt-20b-lora/training/config.py` and `examples/oss-gpt-20b-lora/training/train.py`.
 
 #### Training
 
