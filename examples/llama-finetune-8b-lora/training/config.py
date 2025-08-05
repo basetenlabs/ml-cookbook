@@ -13,7 +13,7 @@ BASE_IMAGE = "axolotlai/axolotl:main-20250324-py3.11-cu124-2.6.0"
 training_runtime = definitions.Runtime(
     start_commands=[ # Example: list of commands to run your training script
         # "pip install -r requirements.txt", # pip install requirements on top of base image
-        "/bin/sh -c './run.sh'",  
+        "/bin/sh -c 'chmod +x ./run.sh && ./run.sh'",  
     ],
     environment_variables={
         # Secrets (ensure these are configured in your Baseten workspace)
@@ -33,7 +33,7 @@ training_compute = definitions.Compute(
 
 # 4. Define the Training Job
 # This brings together the image, compute, and runtime configurations.
-my_training_job = definitions.TrainingJob(
+training_job = definitions.TrainingJob(
     image=definitions.Image(base_image=BASE_IMAGE),
     compute=training_compute,
     runtime=training_runtime
@@ -42,7 +42,7 @@ my_training_job = definitions.TrainingJob(
 
 # This config will be pushed using the Truss CLI.
 # The association of the job to the project happens at the time of push.
-first_project_with_job = definitions.TrainingProject(
-    name=project_name,
-    job=my_training_job
+training_project = definitions.TrainingProject(
+    name="LoRA Training Job - llama-8b",
+    job=training_job
 )
