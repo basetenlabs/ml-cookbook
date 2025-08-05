@@ -147,27 +147,6 @@ In this example, since checkpointing is enabled in `config.py`, checkpoints are 
 truss train get_checkpoint_urls --job-id $JOB_ID
 ```
 
-#### Inference
-
-Once you choose a checkpoint to deploy, copy that URL over to ...
-
-To run inference:
-```bash
-cd examples/mnist-single-gpu/inference
-truss push
-```
-
-
-### Fine-tune Llama 3.1 8b Instruct with LoRa and [Unsloth](https://github.com/unslothai/unsloth/tree/main)
-
-- If using a model with gated access, make sure you have access to the model on HuggingFace and your API token uploaded to your [secrets](https://app.baseten.co/settings/secrets).
-
-To save checkpoints to HF ... 
-
-```bash
-cd examples/llama_finetune_multi_gpu
-truss train push config.py
-```
 
 
 ## Contributing
