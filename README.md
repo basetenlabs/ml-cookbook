@@ -1,14 +1,14 @@
 <div align="center">
 
   <a href="https://www.baseten.co/"><picture>
-    <source media="(prefers-color-scheme: dark)" srcset="">
-    <source media="(prefers-color-scheme: light)" srcset="">
+    <source media="(prefers-color-scheme: dark)" srcset="https://github.com/user-attachments/assets/618081de-e4ff-425f-aac7-14e7ca29c03b">
+    <source media="(prefers-color-scheme: light)" srcset="https://github.com/user-attachments/assets/618081de-e4ff-425f-aac7-14e7ca29c03b">
     <img alt="baseten logo" src="" height="110" style="max-width: 100%;">
   </picture></a>
   
-<!-- <a href="https://colab.research.google.com/github/unslothai/notebooks/blob/main/nb/Llama3.1_(8B)-Alpaca.ipynb"><img src="https://raw.githubusercontent.com/unslothai/unsloth/main/images/start free finetune button.png" width="154"></a> -->
-<a href="https://docs.baseten.co/training/overview"><img src="" width="165"></a>
-<a href="https://docs.baseten.co"><img src="https://raw.githubusercontent.com/unslothai/unsloth/refs/heads/main/images/Documentation%20Button.png" width="137"></a>
+<a href="https://docs.baseten.co/examples/deploy-your-first-model"><img src="https://github.com/user-attachments/assets/043ac2bc-60cf-485e-8d9a-467bfa69a5e0" width="154"></a>
+<a href="https://docs.baseten.co/training/overview"><img src="https://github.com/user-attachments/assets/79bee104-2a0a-45f0-ac4a-7a832a1d5a2a" width="165"></a>
+<!-- <a href="https://docs.baseten.co"><img src="https://raw.githubusercontent.com/unslothai/unsloth/refs/heads/main/images/Documentation%20Button.png" width="137"></a> -->
 
 ### From training to serving - recipes for every ML appetite!
 
@@ -70,8 +70,10 @@ truss train push config.py
 To run inference:
 ```bash
 cd examples/MNIST_single_gpu/inference
-
+truss push
 ```
+
+
 
 #### Fine-tune Llama 3 8b Instruct 
 
