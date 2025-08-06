@@ -31,6 +31,6 @@ training_job = definitions.TrainingJob(
 )
 
 training_project = definitions.TrainingProject(
-    name="LoRA Training Job - gpt-oss-20b",
+    name="Full Finetune - gpt-oss-20b",
     job=training_job
 )
