@@ -1,7 +1,7 @@
 from truss_train import definitions
 from truss.base import truss_config
 
-BASE_IMAGE = "baseten/trl-oss-gpt:latest"
+BASE_IMAGE = "baseten/trl-oss-gpt:devel-0"
 
 training_runtime = definitions.Runtime(
     start_commands = [
@@ -20,7 +20,7 @@ training_runtime = definitions.Runtime(
 training_compute = definitions.Compute(
     accelerator=truss_config.AcceleratorSpec(
         accelerator=truss_config.Accelerator.H200,  
-        count=1,
+        count=8,
     ),
 )
 
