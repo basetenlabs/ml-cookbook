@@ -19,7 +19,7 @@ warmup_ratio: 0.03
 lr_scheduler_type: cosine_with_min_lr
 lr_scheduler_kwargs:
   min_lr_rate: 0.1
-output_dir: gpt-oss-20b-multilingual-reasoner
+output_dir: /tmp/training_checkpoints
 report_to:
 - trackio
 seed: 42
