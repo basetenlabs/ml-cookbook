@@ -1,7 +1,7 @@
 <div align="center">
 
   <a href="https://www.baseten.co/">
-    <img alt="Baseten" src="./images/header.png">
+    <img alt="Baseten" src="https://github.com/user-attachments/assets/1e342a9e-56a5-4919-b776-228a5fc1288e">
   </a>
   
 <p align="center">
