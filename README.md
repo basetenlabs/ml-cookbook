@@ -6,7 +6,7 @@
   <strong><a href="https://docs.baseten.co/examples/deploy-your-first-model">Inference docs</a> | <a href="https://docs.baseten.co/training/overview">Training docs</a></strong>
 </p>
 
-From training to serving - recipes for every ML appetite! A collection of ready-to-use training recipes for machine learning on Baseten. Whether you're training from scratch or fine-tuning existing models, these recipes provide practical, copy-paste solutions for your ML pipeline.
+A curated collection of ready-to-use training recipes for machine learning on Baseten. Whether you’re starting from scratch or fine-tuning an existing model, these recipes provide practical, copy-paste solutions for every stage of your ML pipeline.
 
 ### What's inside
 
