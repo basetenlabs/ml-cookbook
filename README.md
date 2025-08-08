@@ -1,19 +1,19 @@
 <div align="center">
 
-  <a href="https://www.baseten.co/"><picture>
-    <source media="(prefers-color-scheme: dark)" srcset="https://github.com/user-attachments/assets/618081de-e4ff-425f-aac7-14e7ca29c03b">
-    <source media="(prefers-color-scheme: light)" srcset="https://github.com/user-attachments/assets/618081de-e4ff-425f-aac7-14e7ca29c03b">
-    <img alt="baseten logo" src="" height="110" style="max-width: 100%;">
-  </picture></a>
+  <a href="https://www.baseten.co/">
+    <img alt="Baseten" src="./images/header.png">
+  </a>
   
-<a href="https://docs.baseten.co/examples/deploy-your-first-model"><img src="https://github.com/user-attachments/assets/043ac2bc-60cf-485e-8d9a-467bfa69a5e0" width="154"></a>
-<a href="https://docs.baseten.co/training/overview"><img src="https://github.com/user-attachments/assets/79bee104-2a0a-45f0-ac4a-7a832a1d5a2a" width="165"></a>
+<p align="center">
+  <strong><a href="https://docs.baseten.co/examples/deploy-your-first-model">Inference docs</a> | <a href="https://docs.baseten.co/training/overview">Training docs</a></strong>
+</p>
 
 ### From training to serving - recipes for every ML appetite!
 
 </div>
 
 # ML Training & Deployment Workflows
+
 A collection of ready-to-use training recipes for machine learning on Baseten. Whether you're training from scratch or fine-tuning existing models, these recipes provide practical, copy-paste solutions for your ML pipeline.
 
 ### What's Inside
@@ -33,7 +33,6 @@ From data preprocessing to checkpointed and trained models, these recipes cover 
 - [Contributing](#contributing)
 - [License](#license)
 
-
 ## Getting Started
 
 ### Prerequisites
@@ -41,12 +40,11 @@ From data preprocessing to checkpointed and trained models, these recipes cover 
 Before getting started, ensure you have the following:
 
 - A Baseten account. [Sign up here](https://baseten.co/signup) if you don't have one.
-    - Add any access tokens, API keys (Example: Huggingface access token, Weights&Biases access token), passwords to securely access credentials from your models in [secrets](https://app.baseten.co/settings/secrets).
-    - This is required to access models on Huggingface that have gated access. More information on setting up Huggingface access tokens can be found [here](https://huggingface.co/docs/hub/en/security-tokens). 
+  - Add any access tokens, API keys (Example: Huggingface access token, Weights&Biases access token), passwords to securely access credentials from your models in [secrets](https://app.baseten.co/settings/secrets).
+  - This is required to access models on Huggingface that have gated access. More information on setting up Huggingface access tokens can be found [here](https://huggingface.co/docs/hub/en/security-tokens).
 - Python 3.8 to 3.11 installed. [Conda](https://docs.conda.io/projects/conda/en/latest/user-guide/getting-started.html) env recommended.
 - Install [Truss](https://github.com/basetenlabs/truss), Baseten's open-source model packaging tool to configure and containerize model code.
-    - ``` pip install --upgrade truss```
-
+  - ` pip install --upgrade truss`
 
 ### Clone this repository
 
@@ -62,11 +60,11 @@ If using a model with gated access, make sure you have access to the model on Hu
 
 #### Training
 
-`examples/oss-gpt-20b-lora/training/train.py` contains all training code. 
+`examples/oss-gpt-20b-lora/training/train.py` contains all training code.
 
-`examples/oss-gpt-20b-lora/training/config.py` will be the entry point to start training, where you can [define your training configuration](https://docs.baseten.co/training/getting-started#step-1%3A-define-your-training-configuration). This also includes the start commands to launch your training job. Make sure these commands also include any file permission changes to make shell scripts run. We do not change any file system permissions. 
+`examples/oss-gpt-20b-lora/training/config.py` will be the entry point to start training, where you can [define your training configuration](https://docs.baseten.co/training/getting-started#step-1%3A-define-your-training-configuration). This also includes the start commands to launch your training job. Make sure these commands also include any file permission changes to make shell scripts run. We do not change any file system permissions.
 
-Make sure to update `hf_access_token` in `config.py` with the same name for this access token saved in your [secrets](https://app.baseten.co/settings/secrets). In this example, we will be writing trained checkpoints directly to Huggingface, the Hub IDs for models and datasets are configured in `examples/oss-gpt-20b-lora/training/run.sh`. Update `run.sh` with a repo you have access to write to. 
+Make sure to update `hf_access_token` in `config.py` with the same name for this access token saved in your [secrets](https://app.baseten.co/settings/secrets). In this example, we will be writing trained checkpoints directly to Huggingface, the Hub IDs for models and datasets are configured in `examples/oss-gpt-20b-lora/training/run.sh`. Update `run.sh` with a repo you have access to write to.
 
 ```bash
 cd examples/oss-gpt-20b-lora/training
@@ -85,8 +83,7 @@ Keep the Job ID handy, as you’ll use it for [managing and monitoring your job]
 
 Alternatively, you can view all your training jobs at (https://app.baseten.co/training/)[https://app.baseten.co/training/].
 
-- As checkpoints are generated, you can access them on Huggingface at the same location defined in `run.sh`. 
-
+- As checkpoints are generated, you can access them on Huggingface at the same location defined in `run.sh`.
 
 ### Fine-tune Llama 3.1 8b Instruct with LoRa and [Unsloth](https://github.com/unslothai/unsloth/tree/main)
 
@@ -94,9 +91,9 @@ If using a model with gated access, make sure you have access to the model on Hu
 
 #### Training
 
-`examples/llama-finetune-8b-lora/training/train.py` contains the training code. 
+`examples/llama-finetune-8b-lora/training/train.py` contains the training code.
 
-`examples/llama-finetune-8b-lora/training/config.py` will be the entry point to start training, where you can [define your training configuration](https://docs.baseten.co/training/getting-started#step-1%3A-define-your-training-configuration). This also includes the start commands to launch your training job. Make sure these commands also include any file permission changes to make shell scripts run. We do not change any file system permissions. 
+`examples/llama-finetune-8b-lora/training/config.py` will be the entry point to start training, where you can [define your training configuration](https://docs.baseten.co/training/getting-started#step-1%3A-define-your-training-configuration). This also includes the start commands to launch your training job. Make sure these commands also include any file permission changes to make shell scripts run. We do not change any file system permissions.
 
 ```bash
 cd examples/llama-finetune-8b-lora/training
@@ -113,22 +110,19 @@ Upon successful submission, the CLI will output helpful information about your j
 
 Alternatively, you can view all your training jobs at (https://app.baseten.co/training/)[https://app.baseten.co/training/].
 
-In this example, since checkpointing is enabled in `config.py`, checkpoints are stored in cloud storage and can be accessed with 
+In this example, since checkpointing is enabled in `config.py`, checkpoints are stored in cloud storage and can be accessed with
+
 ```
 truss train get_checkpoint_urls --job-id $JOB_ID
 ```
-
-
-
-
 
 ### Train and deploy an MNIST digit classifier with Pytorch
 
 #### Training
 
-`examples/mnist-single-gpu/training/train_mnist.py` contains the a Pytorch example of an MNIST classifier with CNNs. 
+`examples/mnist-single-gpu/training/train_mnist.py` contains the a Pytorch example of an MNIST classifier with CNNs.
 
-`examples/mnist-single-gpu/training/config.py` will be the entry point to start training, where you can [define your training configuration](https://docs.baseten.co/training/getting-started#step-1%3A-define-your-training-configuration). This also includes the start commands to launch your training job. Make sure these commands also include any file permission changes to make shell scripts run. We do not change any file system permissions. 
+`examples/mnist-single-gpu/training/config.py` will be the entry point to start training, where you can [define your training configuration](https://docs.baseten.co/training/getting-started#step-1%3A-define-your-training-configuration). This also includes the start commands to launch your training job. Make sure these commands also include any file permission changes to make shell scripts run. We do not change any file system permissions.
 
 ```bash
 cd examples/mnist-single-gpu/training
@@ -145,12 +139,11 @@ Upon successful submission, the CLI will output helpful information about your j
 
 Keep the Job ID handy, as you’ll use it for [managing and monitoring your job](https://docs.baseten.co/training/management).
 
-In this example, since checkpointing is enabled in `config.py`, checkpoints are stored in cloud storage and can be accessed with 
+In this example, since checkpointing is enabled in `config.py`, checkpoints are stored in cloud storage and can be accessed with
+
 ```
 truss train get_checkpoint_urls --job-id $JOB_ID
 ```
-
-
 
 ## Contributing
 
