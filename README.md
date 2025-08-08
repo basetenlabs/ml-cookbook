@@ -6,13 +6,9 @@
   <strong><a href="https://docs.baseten.co/examples/deploy-your-first-model">Inference docs</a> | <a href="https://docs.baseten.co/training/overview">Training docs</a></strong>
 </p>
 
-### From training to serving - recipes for every ML appetite!
+From training to serving - recipes for every ML appetite! A collection of ready-to-use training recipes for machine learning on Baseten. Whether you're training from scratch or fine-tuning existing models, these recipes provide practical, copy-paste solutions for your ML pipeline.
 
-# ML Training & Deployment Workflows
-
-A collection of ready-to-use training recipes for machine learning on Baseten. Whether you're training from scratch or fine-tuning existing models, these recipes provide practical, copy-paste solutions for your ML pipeline.
-
-### What's Inside
+### What's inside
 
 - Training recipes - End-to-end examples for training models from scratch
 - Fine-tuning workflows - Adapt pre-trained models to your specific use case
@@ -20,16 +16,17 @@ A collection of ready-to-use training recipes for machine learning on Baseten. W
 
 From data preprocessing to checkpointed and trained models, these recipes cover the complete ML lifecycle on Baseten's platform.
 
-# Table of Contents
+### Table of contents
 
-- [Getting Started](#getting-started)
-- [Requirements](#requirements)
 - [Usage](#usage)
-- [Recipes](#recipes)
+  - [Fine-tune GPT OSS 20B with LoRa and trl](#fine-tune-gpt-oss-20b-with-lora-and-trl)
+    - [Training](#training)
+  - [Fine-tune Llama 3.1 8b Instruct with LoRa and Unsloth](#fine-tune-llama-31-8b-instruct-with-lora-and-unsloth)
+    - [Training](#training-1)
+  - [Train and deploy an MNIST digit classifier with Pytorch](#train-and-deploy-an-mnist-digit-classifier-with-pytorch)
+    - [Training](#training-2)
 - [Contributing](#contributing)
 - [License](#license)
-
-## Getting Started
 
 ### Prerequisites
 
