@@ -3,7 +3,7 @@ from truss_train import definitions
 from truss.base import truss_config
 from truss_train.definitions import CheckpointingConfig
 
-project_name = "Axolotl Training Job - gpt-oss-20b"
+project_name = "Axolotl Training Job - gpt-oss-120b"
 
 # 1. Define a base image for your training job
 # must use torch 2.7.0 for vllm
@@ -30,12 +30,15 @@ training_runtime = definitions.Runtime(
     },
     cache_config=definitions.CacheConfig(
         enabled=True,
-    )
+    ),
+    checkpointing_config=definitions.CheckpointingConfig(
+        enabled=True,
+    ),
 )
 
 # 3. Define the Compute Resources for the Training Job
 training_compute = definitions.Compute(
-    node_count=1,
+    node_count=2,
     accelerator=truss_config.AcceleratorSpec(
         accelerator=truss_config.Accelerator.H100,
         count=8,
