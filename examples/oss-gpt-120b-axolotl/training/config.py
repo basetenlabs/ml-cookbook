@@ -6,7 +6,7 @@ from truss_train.definitions import CheckpointingConfig
 project_name = "axolotl-120b multi-node"
 
 # 1. Define a base image for your training job
-BASE_IMAGE = "axolotlai/axolotl:main-py3.11-cu126-2.7.1"
+BASE_IMAGE = "axolotlai/axolotl:main-20250811-py3.11-cu126-2.7.1"
 
 # 2. Define the Runtime Environment for the Training Job
 # This includes start commands and environment variables.a
