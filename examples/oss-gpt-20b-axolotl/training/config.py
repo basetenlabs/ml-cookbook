@@ -3,10 +3,9 @@ from truss_train import definitions
 from truss.base import truss_config
 from truss_train.definitions import CheckpointingConfig
 
-project_name = "Axolotl20B 1 node"
+project_name = "Axolotl20B 1node"
 
 # 1. Define a base image for your training job
-# must use torch 2.7.0 for vllm
 BASE_IMAGE = "axolotlai/axolotl:main-py3.11-cu126-2.7.1"
 
 # 2. Define the Runtime Environment for the Training Job
@@ -14,13 +13,8 @@ BASE_IMAGE = "axolotlai/axolotl:main-py3.11-cu126-2.7.1"
 # Secrets from the baseten workspace like API keys are referenced using
 # `SecretReference`.
 
-# checkpoint_mount_dir = "/workspace/checkpoints"
-# checkpointing = CheckpointingConfig(enabled=True, checkpoint_path=checkpoint_mount_dir)
-
 training_runtime = definitions.Runtime(
     start_commands=[ # Example: list of commands to run your training script
-        "pip install -U accelerate",
-        # "git fetch && git checkout accelerate-cp",
         "/bin/sh -c 'chmod +x ./run.sh && ./run.sh'"
     ],
     environment_variables={
@@ -28,7 +22,6 @@ training_runtime = definitions.Runtime(
         "HF_TOKEN": definitions.SecretReference(name="hf_access_token"),
         "WANDB_API_KEY" : definitions.SecretReference(name="wandb_api_key"),
         # Include other environment variables as needed
-        # "HELLO": "WORLD"
     },
     cache_config=definitions.CacheConfig(
         enabled=True,

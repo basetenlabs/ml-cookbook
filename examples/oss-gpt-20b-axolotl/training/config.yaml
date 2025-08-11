@@ -1,7 +1,6 @@
 base_model: openai/gpt-oss-20b
 
-# hub_model_id: winglian/multilingual-sft-gpt-oss-20b-test001
-hub_model_id: baseten-admin/multilingual-sft-gpt-oss-20b-t1
+hub_model_id: baseten-admin/multilingual-sft-gpt-oss-20b-longcontext
 hub_strategy: end  # only push the final model, don't push intermediate checkpoints
 
 use_kernels: false
@@ -21,17 +20,12 @@ datasets:
     template_thinking_key: thinking
 
 dataset_prepared_path: last_run_prepared
-val_set_size: 0
+val_set_size: 0.1
+eval_steps: 10
 output_dir: ./outputs/gpt-oss-out/
 
 sequence_len: 4096
 sample_packing: true
-
-wandb_project:
-wandb_entity:
-wandb_watch:
-wandb_name:
-wandb_log_model:
 
 gradient_accumulation_steps: 2
 micro_batch_size: 1
@@ -54,6 +48,7 @@ logging_steps: 1
 saves_per_epoch: 1
 
 warmup_ratio: 0.03
+max_grad_norm: 1.0
 
 special_tokens:
 eot_tokens:
@@ -69,5 +64,5 @@ fsdp_config:
   reshard_after_forward: true
 
 use_wandb: true
-wandb_project: Axolotl GPT OSS 20b 1node
+wandb_project: Axolotl GPT OSS 20b 1node longcontext
 wandb_entity: philipkiely-baseten

@@ -1,11 +1,7 @@
 base_model: axolotl-ai-co/gpt-oss-120b-dequantized
 
-# hub_model_id: winglian/multilingual-sft-gpt-oss-20b-test001
-hub_model_id: baseten-admin/multilingual-sft-gpt-oss-120b-t1
+hub_model_id: baseten-admin/multilingual-sft-gpt-oss-120b-longcontext
 hub_strategy: end  # only push the final model, don't push intermediate checkpoints
-
-#hub_model_id: winglian/multilingual-sft-gpt-oss-20b-test001
-#hub_strategy: end  # only push the final model, don't push intermediate checkpoints
 
 use_kernels: false
 
@@ -31,12 +27,6 @@ save_only_model: true  # triggers a lot of sync operations on baseten
 sequence_len: 4096
 sample_packing: true
 pad_to_sequence_len: true
-
-wandb_project:
-wandb_entity:
-wandb_watch:
-wandb_name:
-wandb_log_model:
 
 gradient_accumulation_steps: 1
 micro_batch_size: 1
@@ -77,5 +67,5 @@ fsdp_config:
   cpu_ram_efficient_loading: true
 
 use_wandb: true
-wandb_project: Axolotl GPT OSS 120b 1node
+wandb_project: Axolotl GPT OSS 120b 2node longcontext
 wandb_entity: philipkiely-baseten

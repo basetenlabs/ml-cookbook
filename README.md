@@ -75,7 +75,7 @@ truss train push config.py
 
 Upon successful submission, the CLI will output helpful information about your job:
 
-```json
+```
 ✨ Training job successfully created!
 🪵 View logs for your job via `truss train logs --job-id e3m512w [--tail]`
 🔍 View metrics for your job via `truss train metrics --job-id e3m512w`
@@ -105,7 +105,7 @@ truss train push config.py
 
 Upon successful submission, the CLI will output helpful information about your job:
 
-```json
+```
 ✨ Training job successfully created!
 🪵 View logs for your job via `truss train logs --job-id e3m512w [--tail]`
 🔍 View metrics for your job via `truss train metrics --job-id e3m512w`
@@ -137,7 +137,7 @@ truss train push config.py
 
 Upon successful submission, the CLI will output helpful information about your job:
 
-```json
+```
 ✨ Training job successfully created!
 🪵 View logs for your job via `truss train logs --job-id e3m512w [--tail]`
 🔍 View metrics for your job via `truss train metrics --job-id e3m512w`

@@ -3,10 +3,9 @@ from truss_train import definitions
 from truss.base import truss_config
 from truss_train.definitions import CheckpointingConfig
 
-project_name = "axolotl-120b 2node"
+project_name = "axolotl-120b multi-node"
 
 # 1. Define a base image for your training job
-# must use torch 2.7.0 for vllm
 BASE_IMAGE = "axolotlai/axolotl:main-py3.11-cu126-2.7.1"
 
 # 2. Define the Runtime Environment for the Training Job
