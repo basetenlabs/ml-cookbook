@@ -17,8 +17,8 @@ from typing import Any, Dict, List, Union
 
 def load_and_process_dataset(args):
     common_voice = DatasetDict()
-    common_voice["train"] = load_dataset(args.dataset_name, args.language_id, split="train[:10%]+validation[:10%]", trust_remote_code=True)
-    common_voice["test"] = load_dataset(args.dataset_name, args.language_id, split="test[:10%]", trust_remote_code=True)
+    common_voice["train"] = load_dataset(args.dataset_name, args.language_id, split="train+validation", trust_remote_code=True)
+    common_voice["test"] = load_dataset(args.dataset_name, args.language_id, split="test", trust_remote_code=True)
     common_voice = common_voice.remove_columns(["accent", "age", "client_id", "down_votes", "gender", "locale", "path", "segment", "up_votes"])
 
     feature_extractor = WhisperFeatureExtractor.from_pretrained(args.model_name)
