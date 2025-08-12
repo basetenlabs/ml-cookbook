@@ -1,6 +1,7 @@
 import argparse
 import os
 from datasets import load_dataset, DatasetDict, Audio
+from datasets import disable_progress_bars, enable_progress_bars
 from transformers import AutoTokenizer, AutoModelForCausalLM
 import torch
 import evaluate
@@ -15,16 +16,22 @@ from transformers import (
 from dataclasses import dataclass
 from typing import Any, Dict, List, Union
 
+enable_progress_bars()
+
 def load_and_process_dataset(args):
+    print("Loading and processing dataset...")
     common_voice = DatasetDict()
     common_voice["train"] = load_dataset(args.dataset_name, args.language_id, split="train+validation", trust_remote_code=True)
     common_voice["test"] = load_dataset(args.dataset_name, args.language_id, split="test", trust_remote_code=True)
     common_voice = common_voice.remove_columns(["accent", "age", "client_id", "down_votes", "gender", "locale", "path", "segment", "up_votes"])
+    print("Dataset loaded successfully.")
 
     feature_extractor = WhisperFeatureExtractor.from_pretrained(args.model_name)
     tokenizer = WhisperTokenizer.from_pretrained(args.model_name, language=args.language, task=args.task) 
 
     common_voice = common_voice.cast_column("audio", Audio(sampling_rate=16000))
+
+    print("Processing dataset...")
 
     def prepare_dataset(batch):
         # load and resample audio data from 48 to 16kHz
@@ -70,7 +77,7 @@ def compute_metrics(pred):
 
 def parse_args():
     parser = argparse.ArgumentParser(description="Train a Whisper model for transcription.")
-    parser.add_argument("--output_dir", type=str, default="./whisper-small-hi", help="Directory to save the model.")
+    parser.add_argument("--output_dir", type=str, default="./whisper-op", help="Directory to save the model.")
     parser.add_argument("--model_name", type=str, default="openai/whisper-small", help="Name of the pre-trained Whisper model.")
     parser.add_argument("--dataset_name", type=str, default="mozilla-foundation/common_voice_11_0", help="Name of the dataset to use for training.")
     parser.add_argument("--language", type=str, default="Hindi", help="Language for the Whisper model.")
@@ -100,11 +107,14 @@ def parse_args():
 
 def main(args):
 
+    print(f"Loading {args.model_name} model...")
     # load model
     model = WhisperForConditionalGeneration.from_pretrained(args.model_name)
     model.generation_config.language = args.language
     model.generation_config.task = args.task
     model.generation_config.forced_decoder_ids = None
+
+    print("Model loaded successfully.")
 
     # To freeze decoder - TODO: verify 
     # for param in model.decoder.parameters():
@@ -113,7 +123,9 @@ def main(args):
     metric = evaluate.load("wer")
     processor = WhisperProcessor.from_pretrained(args.model_name, language=args.language, task=args.task)
 
+    print("Loading dataset...")
     common_voice = load_and_process_dataset(args)
+    print("Dataset loaded successfully.")
 
     data_collator = DataCollatorSpeechSeq2SeqWithPadding(
         processor=processor,
@@ -145,7 +157,7 @@ def main(args):
         hub_strategy=args.hub_strategy,
         dataloader_pin_memory=args.dataloader_pin_memory if hasattr(args, 'dataloader_pin_memory') else False,
     )
-
+    print("Training arguments:", training_args)
     trainer = Seq2SeqTrainer(
         args=training_args,
         model=model,
@@ -155,7 +167,7 @@ def main(args):
         compute_metrics=compute_metrics,
         tokenizer=processor.tokenizer,
     )
-
+    print("Starting training...")
     trainer.train()
 
 if __name__ == "__main__":
