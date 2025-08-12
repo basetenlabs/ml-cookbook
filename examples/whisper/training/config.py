@@ -1,8 +1,7 @@
 from truss_train import definitions
 from truss.base import truss_config
 
-# BASE_IMAGE = "pytorch/pytorch:2.7.0-cuda12.8-cudnn9-runtime"
-BASE_IMAGE = "axolotlai/axolotl:latest-py3.11-cu126-2.7.1"
+BASE_IMAGE = "pytorch/pytorch:2.7.0-cuda12.8-cudnn9-runtime"
 
 training_runtime = definitions.Runtime(
     start_commands = [
@@ -32,6 +31,6 @@ training_job = definitions.TrainingJob(
 )
 
 training_project = definitions.TrainingProject(
-    name="LoRA Training Job - gpt-oss-20b",
+    name="Whisper train",
     job=training_job
 )
