@@ -120,7 +120,7 @@ def parse_args():
     parser.add_argument("--batch_size", type=int, default=8, help="Batch size for training.")
     parser.add_argument("--learning_rate", type=float, default=4e-6, help="Learning rate for training.")
     parser.add_argument("--gradient_accumulation_steps", type=int, default=2, help="Number of gradient accumulation steps.")
-    parser.add_argument("--fp16", action="store_true", help="Use mixed precision training.")
+    parser.add_argument("--mixed_precision_fp16", action="store_true", help="Use mixed precision training.")
     parser.add_argument("--eval_strategy", type=str, default="steps", help="Evaluation strategy to use during training.")
     parser.add_argument("--save_steps", type=int, default=1000, help="Number of steps between model saves.")
     parser.add_argument("--eval_steps", type=int, default=50, help="Number of steps between evaluations.")
@@ -132,7 +132,7 @@ def parse_args():
     parser.add_argument("--per_device_eval_batch_size", type=int, default=8, help="Batch size per device for evaluation.")
     parser.add_argument("--generation_max_length", type=int, default=225, help="Maximum length for generation.")
     parser.add_argument("--push_to_hub", action="store_true", help="Whether to push the model to the Hugging Face Hub.")
-    parser.add_argument("--hub_model_id", type=str, default="baseten-admin/whisper_test1_hi", help="Hugging Face Hub model ID to push the trained model.")
+    parser.add_argument("--hub_model_id", type=str, default=None, help="Hugging Face Hub model ID to push the trained model.")
     parser.add_argument("--hub_strategy", type=str, default="end", help="Strategy for saving to the Hugging Face Hub.")
     parser.add_argument("--report_to", type=str, default=None, help="Reporting tool to use (e.g., 'wandb', 'tensorboard').")
     parser.add_argument("--early_stopping_patience", type=int, default=3, help="Number of evaluations with no improvement to stop training.")
@@ -177,7 +177,7 @@ def main(args):
         warmup_steps=args.warmup_steps,
         max_steps=args.max_steps,
         gradient_checkpointing=False,
-        fp16=args.fp16,
+        fp16=args.mixed_precision_fp16,
         eval_strategy=args.eval_strategy,
         per_device_eval_batch_size=args.per_device_eval_batch_size,
         predict_with_generate=True,
