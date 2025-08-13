@@ -2,10 +2,13 @@ import argparse
 import os
 from datasets import load_dataset, DatasetDict, Audio
 from datasets import disable_progress_bars, enable_progress_bars
-from transformers import AutoTokenizer, AutoModelForCausalLM
+# from transformers import AutoTokenizer, AutoModelForCausalLM, EarlyStoppingCallback
 import torch
 import evaluate
 from transformers import (
+    AutoTokenizer,
+    AutoModelForCausalLM,
+    EarlyStoppingCallback,
     WhisperFeatureExtractor, 
     WhisperTokenizer, 
     WhisperProcessor, 
@@ -46,6 +49,7 @@ def load_and_process_common_accent_dataset(args):
 
 
 def load_and_process_dataset(args):
+    # Used for dataset: mozilla-foundation/common_voice_11_0
     print("Loading and processing dataset...")
     common_voice = DatasetDict()
     common_voice["train"] = load_dataset(args.dataset_name, args.language_id, split="train+validation", trust_remote_code=True)
@@ -114,8 +118,8 @@ def parse_args():
     parser.add_argument("--task", type=str, default="transcribe", help="Task for the Whisper model.")
     parser.add_argument("--num_steps", type=int, default=5000, help="Number of training steps.")
     parser.add_argument("--batch_size", type=int, default=8, help="Batch size for training.")
-    parser.add_argument("--learning_rate", type=float, default=1e-5, help="Learning rate for training.")
-    parser.add_argument("--gradient_accumulation_steps", type=int, default=1, help="Number of gradient accumulation steps.")
+    parser.add_argument("--learning_rate", type=float, default=4e-6, help="Learning rate for training.")
+    parser.add_argument("--gradient_accumulation_steps", type=int, default=2, help="Number of gradient accumulation steps.")
     parser.add_argument("--fp16", action="store_true", help="Use mixed precision training.")
     parser.add_argument("--eval_strategy", type=str, default="steps", help="Evaluation strategy to use during training.")
     parser.add_argument("--save_steps", type=int, default=1000, help="Number of steps between model saves.")
@@ -131,6 +135,8 @@ def parse_args():
     parser.add_argument("--hub_model_id", type=str, default="baseten-admin/whisper_test1_hi", help="Hugging Face Hub model ID to push the trained model.")
     parser.add_argument("--hub_strategy", type=str, default="end", help="Strategy for saving to the Hugging Face Hub.")
     parser.add_argument("--report_to", type=str, default=None, help="Reporting tool to use (e.g., 'wandb', 'tensorboard').")
+    parser.add_argument("--early_stopping_patience", type=int, default=3, help="Number of evaluations with no improvement to stop training.")
+    parser.add_argument("--early_stopping_threshold", type=float, default=0.001, help="Minimum change to be considered an improvement for early stopping.")
     return parser.parse_args()
 
 def main(args):
@@ -189,6 +195,12 @@ def main(args):
         dataloader_pin_memory=args.dataloader_pin_memory if hasattr(args, 'dataloader_pin_memory') else False,
     )
     print("Training arguments:", training_args)
+
+    early_stopping_callback = EarlyStoppingCallback(
+        early_stopping_patience=args.early_stopping_patience,  # Stop if no improvement for n consecutive evaluations
+        early_stopping_threshold=args.early_stopping_threshold, # Minimum change to be considered an improvement
+    )
+
     trainer = Seq2SeqTrainer(
         args=training_args,
         model=model,
@@ -197,6 +209,7 @@ def main(args):
         data_collator=data_collator,
         compute_metrics=prepared_compute_metrics,
         tokenizer=processor.tokenizer,
+        callbacks=[early_stopping_callback],
     )
     print("Starting training...")
     trainer.train()
