@@ -12,7 +12,7 @@ export MODEL_ID="openai/whisper-large-v3-turbo"
 python3 train.py \
     --model_id=$MODEL_ID \
     --dataset_name=DTU54DL/common-accent \
-    --fp16 \
+    --mixed_precision_fp16 \
     --report_to=wandb \
     --push_to_hub \
     --hub_model_id=baseten-admin/whisper-larger-v3-turbo 
