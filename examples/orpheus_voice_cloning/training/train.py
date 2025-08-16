@@ -1,3 +1,4 @@
+import argparse
 import wandb
 
 from unsloth import FastLanguageModel
@@ -10,7 +11,7 @@ import torchaudio.transforms as T
 import os
 from snac import SNAC
 
-from transformers import TrainingArguments,Trainer,DataCollatorForSeq2Seq
+from transformers import TrainingArguments,Trainer,DataCollatorWithPadding
 from unsloth import is_bfloat16_supported
 
 from audio_utils.utils import (
@@ -37,7 +38,7 @@ def parse_args():
     parser.add_argument("--encoding_format", type=str, default="UTF-8", help="Encoding format for audio files.")
     parser.add_argument("--random_state", type=int, default=3407, help="Random seed for reproducibility.")
     parser.add_argument("--batch_size", type=int, default=8, help="Batch size for training.")
-    parser.add_argument("--max_seq_length", type=str, default="en", help="Max Sequence length for FastLanguageModel.")
+    parser.add_argument("--max_seq_length", type=int, default=2048, help="Max Sequence length for FastLanguageModel.")
     parser.add_argument("--learning_rate", type=float, default=2e-4, help="Learning rate for training.")
     parser.add_argument("--optim", type=str, default="adamw_8bit", help="Optimizer to use for training.")
     parser.add_argument("--weight_decay", type=float, default=0.01, help="Weight decay for optimizer.")
@@ -67,6 +68,8 @@ def main(args):
         load_in_4bit = False, # Select True for 4bit which reduces memory usage,
     )
     # model = model.to("cuda")
+    if tokenizer.pad_token is None:
+        tokenizer.pad_token = tokenizer.eos_token
 
     # -- Get PEFT model --
     model = FastLanguageModel.get_peft_model(
@@ -103,16 +106,29 @@ def main(args):
 
     # Convert dataset to format needed by the Trainer
     print("Converting dataset to inputs_ids, labels, and attention_mask...")
-    dataset = dataset.map(create_input_ids, remove_columns=["text", "codes_list"])
+    # dataset = dataset.map(create_input_ids, remove_columns=["text", "codes_list"])
+    dataset = dataset.map(
+        lambda x: create_input_ids(x, tokenizer),
+        remove_columns=["text", CODES_LIST_NAME],
+        # num_proc=8, # Use multiple processes for faster mapping
+    )
     columns_to_keep = ["input_ids", "labels", "attention_mask"]
     columns_to_remove = [col for col in dataset.column_names if col not in columns_to_keep]
     dataset = dataset.remove_columns(columns_to_remove)
+
+    data_collator = DataCollatorWithPadding(
+        tokenizer=tokenizer,
+        padding=True,
+        max_length=args.max_seq_length,
+        # return_tensors="pt",
+    )
 
     # Initialize Trainer
     print("Initializing trainer...")
     trainer = Trainer(
         model = model,
         train_dataset = dataset,
+        data_collator = data_collator,  #
         args = TrainingArguments(
             per_device_train_batch_size = args.per_device_train_batch_size,
             gradient_accumulation_steps = args.gradient_accumulation_steps,
