@@ -35,7 +35,7 @@ def load_snac_model(model_name="hubertsiuzdak/snac_24khz"):
     """
 
     snac_model = SNAC.from_pretrained(model_name)
-    # snac_model = snac_model.to("cuda")
+    snac_model = snac_model.to("cuda")
     return snac_model
 
 # Tokenization functions
@@ -50,8 +50,7 @@ def tokenise_audio(
     resample_transform = T.Resample(orig_freq=orig_freq, new_freq=new_freq)
     waveform = resample_transform(waveform)
 
-    # waveform = waveform.unsqueeze(0).to("cuda")
-    waveform = waveform.unsqueeze(0)
+    waveform = waveform.unsqueeze(0).to("cuda")
 
     #generate the codes from snac
     if snac_model is None:
@@ -137,5 +136,4 @@ def create_input_ids(example, tokenizer):
     example["input_ids"] = input_ids
     example["labels"] = input_ids
     example["attention_mask"] = [1] * len(input_ids)
-
     return example

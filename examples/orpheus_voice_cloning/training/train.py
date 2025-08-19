@@ -11,7 +11,7 @@ import torchaudio.transforms as T
 import os
 from snac import SNAC
 
-from transformers import TrainingArguments,Trainer,DataCollatorWithPadding
+from transformers import TrainingArguments, Trainer, DataCollatorForSeq2Seq
 from unsloth import is_bfloat16_supported
 
 from audio_utils.utils import (
@@ -67,7 +67,7 @@ def main(args):
         dtype = None, # Select None for auto detection
         load_in_4bit = False, # Select True for 4bit which reduces memory usage,
     )
-    # model = model.to("cuda")
+    model = model.to("cuda")
     if tokenizer.pad_token is None:
         tokenizer.pad_token = tokenizer.eos_token
 
@@ -89,7 +89,7 @@ def main(args):
     # Multi-Scale Neural Audio Codec (SNAC) compresses audio into discrete codes at a low bitrate.
     snac_model = load_snac_model("hubertsiuzdak/snac_24khz")
 
-    dataset = load_dataset(args.dataset_name, split = "train")
+    dataset = load_dataset(args.dataset_name, split = "train[:50%]")
 
     locale.getpreferredencoding = lambda: args.encoding_format
     ds_sample_rate = dataset[0]["audio"]["sampling_rate"] # original freq
@@ -116,11 +116,10 @@ def main(args):
     columns_to_remove = [col for col in dataset.column_names if col not in columns_to_keep]
     dataset = dataset.remove_columns(columns_to_remove)
 
-    data_collator = DataCollatorWithPadding(
+    data_collator = DataCollatorForSeq2Seq(
         tokenizer=tokenizer,
         padding=True,
         max_length=args.max_seq_length,
-        # return_tensors="pt",
     )
 
     # Initialize Trainer
@@ -128,7 +127,7 @@ def main(args):
     trainer = Trainer(
         model = model,
         train_dataset = dataset,
-        data_collator = data_collator,  #
+        data_collator = data_collator,
         args = TrainingArguments(
             per_device_train_batch_size = args.per_device_train_batch_size,
             gradient_accumulation_steps = args.gradient_accumulation_steps,
