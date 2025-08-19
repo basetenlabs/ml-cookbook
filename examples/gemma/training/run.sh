@@ -21,7 +21,7 @@ export NCCL_SOCKET_IFNAME="^docker0,lo"
 export NCCL_IB_DISABLE=0
 export NCCL_TIMEOUT=1800000
 
-huggingface-cli login --token=$HF_TOKEN
+huggingface-cli login --token=$HF_TOKEN # hf auth login?
 
 axolotl preprocess config.yaml
 

@@ -1,5 +1,5 @@
 # Base Model Configuration
-# base_model: google/gemma-3-27b-it #HF Repo of base model, CHANGE TO 14B
+# base_model: google/gemma-3-27b-it 
 base_model: google/medgemma-27b-text-it
 model_type: AutoModelForCausalLM
 tokenizer_type: AutoTokenizer
@@ -25,8 +25,7 @@ pad_to_sequence_len: true
 
 chat_template: gemma3
 datasets:
-  # - path: omi-health/medical-dialogue-to-soap-summary
-  - path: baseten-admin/retool_dataset_hydrated
+  - path: omi-health/medical-dialogue-to-soap-summary
     split: train
     type: chat_template
     field_messages: messages
@@ -39,8 +38,8 @@ eot_tokens:
 # More information about below parameters can be found here: https://docs.axolotl.ai/docs/config.html
 logging_steps: 1 #How often to show loss, gradient, etc.
 num_epochs: 20
-micro_batch_size: 1 # Can tune to desired batch size, but will limit max sequence length due to memory constraints
-gradient_accumulation_steps: 2
+micro_batch_size: 4 # Can tune to desired batch size, but will limit max sequence length due to memory constraints
+gradient_accumulation_steps: 1
 evals_per_epoch: 1
 max_grad_norm: 1.0
 
@@ -76,9 +75,9 @@ fsdp_config:
 
 gradient_checkpointing: offload
 
-# save_strategy: epoch
-# hub_model_id: baseten-admin/Gemma-27B-Finetuned-Full-Context #Where to store the model, need to make one in your account first if your API key has finegrained permissions
-# hub_strategy: all_checkpoints #How often to store to HF
+save_strategy: epoch
+hub_model_id: baseten-admin/Gemma-27B-Finetuned-Full-Context #Where to store the model, need to make one in your account first if your API key has finegrained permissions
+hub_strategy: all_checkpoints #How often to store to HF
 
 use_wandb: true
 wandb_project: Med Gemma 27B text FT 
@@ -88,5 +87,4 @@ save_safetensors: false
 
 flash_attention: true
 eval_sample_packing: false
-# sequence_parallel_degree: 8
 sequence_parallel_degree: 16
