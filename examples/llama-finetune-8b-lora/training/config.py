@@ -4,7 +4,7 @@ from truss.base import truss_config
 
 # 1. Define a base image for your training job. You can also use
 # private images via AWS IAM or GCP Service Account authentication.
-BASE_IMAGE = "axolotlai/axolotl:main-py3.11-cu128-2.7.1"
+BASE_IMAGE = "axolotlai/axolotl:0.11.0.post1-py3.11-cu128-2.7.1"
 
 # 2. Define the Runtime Environment for the Training Job
 # This includes start commands and environment variables.

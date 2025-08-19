@@ -1,0 +1,10 @@
+accelerate==1.10.0
+# torch==2.8.0
+torchaudio==2.8.0
+transformers==4.55.2
+unsloth==2025.8.7
+unsloth_zoo==2025.8.6
+snac==1.2.1
+wandb==0.21.1
+librosa==0.11.0
+soundfile==0.13.1
