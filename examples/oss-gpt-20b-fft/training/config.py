@@ -9,7 +9,6 @@ training_runtime = definitions.Runtime(
     ],
     environment_variables={
         "HF_TOKEN": definitions.SecretReference(name="hf_access_token"), # The name of the HF Access Token secret in your B10 account
-        "HF_HOME": "/root/.cache/user_artifacts/hf_cache",
         "WANDB_API_KEY": definitions.SecretReference(name="wandb_api_key"), # comment this out if you don't want to use wandb
     },
     cache_config=definitions.CacheConfig(
