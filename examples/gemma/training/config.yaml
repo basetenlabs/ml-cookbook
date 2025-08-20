@@ -1,5 +1,4 @@
 # Base Model Configuration
-# base_model: google/gemma-3-27b-it 
 base_model: google/medgemma-27b-text-it
 model_type: AutoModelForCausalLM
 tokenizer_type: AutoTokenizer
@@ -9,18 +8,18 @@ model_config:
 
 plugins:
   - axolotl.integrations.liger.LigerPlugin
-  - axolotl.integrations.cut_cross_entropy.CutCrossEntropyPlugin #new
+  - axolotl.integrations.cut_cross_entropy.CutCrossEntropyPlugin
 liger_rope: true
 liger_rms_norm: true
 liger_glu_activation: true
 liger_layer_norm: true
-liger_fused_linear_cross_entropy: false #used to be true
-liger_cross_entropy: false #new
+liger_fused_linear_cross_entropy: false 
+liger_cross_entropy: false
 
 val_set_size: 0.05
 
 dataset_prepared_path: ./outputs/last_run_prepared
-sample_packing: false # Chat template dataset
+sample_packing: false 
 pad_to_sequence_len: true
 
 chat_template: gemma3
