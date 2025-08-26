@@ -20,7 +20,7 @@ model_metadata:
   tags:
   - openai-compatible
 docker_server:
-  start_command: sh /app/model/do.sh
+  start_command: sh /app/model/run_vllm.sh
   readiness_endpoint: /health
   liveness_endpoint: /health
   predict_endpoint: /v1/audio/transcriptions
