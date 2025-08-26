@@ -1,15 +1,8 @@
 base_image:
-  image: pytorch/pytorch:2.7.0-cuda12.8-cudnn9-runtime
+  # image: pytorch/pytorch:2.7.0-cuda12.8-cudnn9-runtime
+  image: vllm/vllm-openai:latest
 requirements:
-  - accelerate
-  - audioread
-  - datasets
-  - jiwer
-  - hf_transfer
-  - huggingface-hub
-  - soundfile
-  - librosa
-  - vllm
+  - vllm[audio]
 model_metadata:
   repo_id: baseten-admin/whisper-larger-v3-turbo-minirun3
   example_model_input: {
