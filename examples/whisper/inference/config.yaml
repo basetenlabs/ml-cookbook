@@ -1,0 +1,37 @@
+base_image:
+  image: pytorch/pytorch:2.7.0-cuda12.8-cudnn9-runtime
+requirements:
+  - accelerate
+  - audioread
+  - datasets
+  - jiwer
+  - hf_transfer
+  - huggingface-hub
+  - soundfile
+  - librosa
+  - vllm
+model_metadata:
+  repo_id: baseten-admin/whisper-larger-v3-turbo-minirun3
+  example_model_input: {
+    "whisper_input": {
+      "file": "https://test-audios-public.s3.us-west-2.amazonaws.com/10-sec-01-podcast.m4a",
+    }
+  }
+  tags:
+  - openai-compatible
+docker_server:
+  start_command: sh /app/model/do.sh
+  readiness_endpoint: /health
+  liveness_endpoint: /health
+  predict_endpoint: /v1/audio/transcriptions
+  server_port: 8000
+environment_variables:
+  hf_access_token: hf_access_token
+resources:
+  accelerator: H100:1
+  use_gpu: true
+secrets:
+  hf_access_token: hf_access_token
+runtime:
+  predict_concurrency : 1
+model_name: Whisper Deploy minirun3
