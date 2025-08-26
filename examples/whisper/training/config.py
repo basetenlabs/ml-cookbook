@@ -13,12 +13,16 @@ training_runtime = definitions.Runtime(
     },
     cache_config=definitions.CacheConfig(
         enabled=True,
-    )
+    ),
+    checkpointing_config=definitions.CheckpointingConfig(
+        enabled=True,
+    ),
 )
 
 training_compute = definitions.Compute(
+    node_count=1,
     accelerator=truss_config.AcceleratorSpec(
-        accelerator=truss_config.Accelerator.H100,  
+        accelerator=truss_config.Accelerator.H100,
         count=8,
     ),
 )
@@ -30,6 +34,6 @@ training_job = definitions.TrainingJob(
 )
 
 training_project = definitions.TrainingProject(
-    name="WhisperV3LargeTurbo common-accent low lr",
+    name="WhisperV3LargeTurbo common-accent",
     job=training_job
 )
