@@ -208,7 +208,7 @@ def main(args):
         eval_dataset=common_voice["test"],
         data_collator=data_collator,
         compute_metrics=prepared_compute_metrics,
-        tokenizer=processor.tokenizer,
+        tokenizer=processor,
         callbacks=[early_stopping_callback],
     )
     print("Starting training...")
