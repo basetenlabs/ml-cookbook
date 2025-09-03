@@ -66,7 +66,7 @@ PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True python -m torch.distributed.run
     --attention_backend flash \
     --optimizer_cpu_offload true \
     --use_precision_aware_optimizer true \
-    --use_hf \
+    --use_hf
     # --wandb_project Qwen3-MOE-1 \
     # --wandb_exp_name LongAlign_r1 \
     # --exp_avg_dtype bf16 \
