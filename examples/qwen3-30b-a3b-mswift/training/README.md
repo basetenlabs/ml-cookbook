@@ -14,3 +14,6 @@ truss train push config.py
 ```
 
 Upon successful submission, the CLI will output helpful information about your job, including the job-id to track your run.
+
+### Accessing checkpoints
+To get the location of your checkpoints, run `truss train get_checkpoint_urls --job-id your-job-id`, this downloads a file containing information about your checkpoint storage locations.
