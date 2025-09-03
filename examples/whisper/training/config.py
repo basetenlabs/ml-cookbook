@@ -34,6 +34,6 @@ training_job = definitions.TrainingJob(
 )
 
 training_project = definitions.TrainingProject(
-    name="WhisperV3LargeTurbo common-accent",
+    name="WhisperV3LargeTurbo common-accent testrun",
     job=training_job
 )

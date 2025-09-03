@@ -15,4 +15,4 @@ python3 train.py \
     --mixed_precision_fp16 \
     --report_to=wandb \
     --push_to_hub \
-    --hub_model_id=baseten-admin/whisper-larger-v3-turbo 
+    --hub_model_id=baseten-admin/whisper-larger-v3-turbo-testrun

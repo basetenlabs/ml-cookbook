@@ -1,0 +1,35 @@
+base_image:
+  image: axolotlai/axolotl:main-20250811-py3.11-cu126-2.7.1
+docker_server:
+  liveness_endpoint: /health
+  predict_endpoint: /v1/completions
+  readiness_endpoint: /health
+  server_port: 8000
+  start_command: sh -c "HF_TOKEN=$(cat /secrets/hf_access_token)" axolotl inference
+    train.yaml
+environment_variables:
+  hf_access_token: None
+model_metadata:
+  engine_args:
+    model: axolotl-ai-co/gpt-oss-120b-dequantized
+  example_model_input:
+    max_tokens: 512
+    messages:
+    - content: You are a helpful assistant.
+      role: system
+    - content: What does Tongyi Qianwen mean?
+      role: user
+    stream: true
+    temperature: 0.6
+model_name: gptoss120b-axolotl
+python_version: py39
+resources:
+  accelerator: A10G
+  cpu: '1'
+  memory: 2Gi
+  use_gpu: true
+runtime:
+  is_websocket_endpoint: false
+  predict_concurrency: 256
+  transport:
+    kind: http
