@@ -5,20 +5,19 @@ BASE_IMAGE = "modelscope-registry.us-west-1.cr.aliyuncs.com/modelscope-repo/mode
 
 training_runtime = definitions.Runtime(
     start_commands = [
-        #"/bin/sh -c './run_1node.sh'",
-        # "./run_1node.sh"
         "/bin/sh -c 'chmod +x ./run_1node.sh && ./run_1node.sh'"
     ],
     environment_variables={
         "HF_TOKEN": definitions.SecretReference(name="hf_access_token"), # The name of the HF Access Token secret in your B10 account
         "HF_HUB_ENABLE_HF_TRANSFER": "true",
-        # "HF_HOME": "/root/.cache/user_artifacts/hf_cache",
-        # "WORLD_SIZE": "8",  # total gpus
-        # "WANDB_API_KEY": definitions.SecretReference(name="wandb_api_key"), # comment this out if you don't want to use wandb
+        "WANDB_API_KEY": definitions.SecretReference(name="wandb_api_key"), # comment this out if you don't want to use wandb
     },
     cache_config=definitions.CacheConfig(
         enabled=False,
-    )
+    ),
+    checkpointing_config=definitions.CheckpointingConfig(
+        enabled=True,
+    ),
 )
 
 training_compute = definitions.Compute(
@@ -36,6 +35,6 @@ training_job = definitions.TrainingJob(
 )
 
 training_project = definitions.TrainingProject(
-    name="MSwift Megatron - qwen3-30b-a3b-base No cache root",
+    name="MSwift Megatron - qwen3-30b-a3b-base 32k 1node",
     job=training_job
 )
