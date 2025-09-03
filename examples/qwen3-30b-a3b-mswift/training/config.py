@@ -2,6 +2,7 @@ from truss_train import definitions
 from truss.base import truss_config
 
 BASE_IMAGE = "modelscope-registry.us-west-1.cr.aliyuncs.com/modelscope-repo/modelscope:ubuntu22.04-cuda12.6.3-py311-torch2.7.1-vllm0.10.0-modelscope1.28.2-swift3.7.2"
+PROJECT_NAME = "MSwift Megatron - qwen3-30b-a3b-base 32k 1node"
 
 training_runtime = definitions.Runtime(
     start_commands = [
@@ -35,6 +36,6 @@ training_job = definitions.TrainingJob(
 )
 
 training_project = definitions.TrainingProject(
-    name="MSwift Megatron - qwen3-30b-a3b-base 32k 1node",
+    name=PROJECT_NAME,
     job=training_job
 )

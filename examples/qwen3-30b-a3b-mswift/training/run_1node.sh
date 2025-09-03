@@ -68,9 +68,7 @@ PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True python -m torch.distributed.run
     --use_precision_aware_optimizer true \
     --wandb_project Qwen3-MOE-1 \
     --wandb_exp_name LongAlign_r1 \
-    --use_hf \
-    --push_to_hub true \
-    --hub_model_id 'baseten-admin/qwen3-30b-a3b-mswift-longalign'
+    --use_hf
     # --exp_avg_dtype bf16 \
     # --exp_avg_sq_dtype bf16 \
 
