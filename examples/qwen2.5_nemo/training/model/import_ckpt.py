@@ -6,22 +6,13 @@ import torch
 
 def parse_args():
     parser = argparse.ArgumentParser(description="Convert Hugging Face checkpoint to NeMo format")
-    
-    # Model configuration
+
+    # Model ID configuration
     parser.add_argument(
-        "--model", 
+        "--model_id", 
         type=str, 
-        default="qwen2_7b",
-        choices=["qwen2_7b"],  # Add more models as needed
-        help="Model type to use"
-    )
-    
-    # Source configuration
-    parser.add_argument(
-        "--source", 
-        type=str, 
-        default="hf://Qwen/Qwen2.5-7B-Instruct",
-        help="Source path for the model (e.g., hf://model-name or local path)"
+        default="Qwen/Qwen2.5-7B-Instruct",
+        help="Source path for the model (e.g., model-name or local path)"
     )
     
     # Overwrite option
@@ -37,7 +28,7 @@ def parse_args():
         "--executor", 
         type=str, 
         default="local",
-        choices=["local", "slurm"],
+        choices=["local"],
         help="Executor type to use"
     )
     
@@ -54,7 +45,7 @@ def parse_args():
 def get_model_config(model_name):
     """Get model configuration based on model name"""
     model_configs = {
-        "qwen2_7b": llm.qwen2_7b.model(),
+        "Qwen/Qwen2.5-7B-Instruct": llm.qwen2_7b.model(),
     }
     
     if model_name not in model_configs:
@@ -64,11 +55,11 @@ def get_model_config(model_name):
 
 def configure_checkpoint_conversion(args):
     """Configure checkpoint conversion with command line arguments"""
-    model_config = get_model_config(args.model)
+    model_config = get_model_config(args.model_id)
     
     conversion_config = {
         "model": model_config,
-        "source": args.source,
+        "source": f"hf://{args.model_id}",
         "overwrite": args.overwrite,
     }
     
@@ -82,8 +73,6 @@ def get_executor(executor_type):
     """Get executor based on type"""
     if executor_type == "local":
         return run.LocalExecutor()
-    elif executor_type == "slurm":
-        return run.SlurmExecutor()
     else:
         raise ValueError(f"Unsupported executor type: {executor_type}")
 
@@ -94,8 +83,7 @@ def main():
     # Print CUDA information
     print(f"CUDA available: {torch.cuda.is_available()}")
     print(f"Number of GPUs: {torch.cuda.device_count()}")
-    print(f"Using model: {args.model}")
-    print(f"Source: {args.source}")
+    print(f"Model/Source: {args.model_id}")
     print(f"Overwrite: {args.overwrite}")
     print(f"Executor: {args.executor}")
     

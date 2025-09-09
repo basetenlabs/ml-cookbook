@@ -1,4 +1,5 @@
 import argparse
+import os
 import nemo_run as run
 import lightning.pytorch as pl
 from nemo.collections import llm
@@ -84,11 +85,11 @@ def qwen() -> run.Config[pl.LightningModule]:
     return run.Config(llm.Qwen2Model, config=run.Config(llm.Qwen2Config7B))
 
 # Configure the resume
-def resume(checkpoint_path: str = "nemo://Qwen/Qwen2.5-7B-Instruct") -> run.Config[nl.AutoResume]:
+def resume(model_id: str = "Qwen/Qwen2.5-7B-Instruct") -> run.Config[nl.AutoResume]:
     return run.Config(
         nl.AutoResume,
         restore_config=run.Config(nl.RestoreConfig,
-            path=checkpoint_path
+            path=f"nemo://{model_id}"
         ),
         resume_if_exists=True,
     )
@@ -120,7 +121,7 @@ def configure_finetuning_recipe(args):
             adam_beta2=args.adam_beta2,
             clip_grad=args.clip_grad
         ),
-        resume=resume(args.checkpoint_path),
+        resume=resume(args.model_id),
     )
 
 def local_executor_torchrun(nodes: int = 1, devices: int = 4) -> run.LocalExecutor:
@@ -162,7 +163,7 @@ def parse_args():
     parser.add_argument("--log_dir", type=str, default=output_dir, help="Logging directory")
     parser.add_argument("--checkpoint_every_n_steps", type=int, default=100, help="Save checkpoint every N steps")
     parser.add_argument("--save_top_k", type=int, default=1, help="Save top K checkpoints")
-    parser.add_argument("--checkpoint_path", type=str, default="nemo://Qwen/Qwen2.5-7B-Instruct", help="Initial checkpoint path")
+    parser.add_argument("--model_id", type=str, default="Qwen/Qwen2.5-7B-Instruct", help="Initial checkpoint path")
     
     # Executor parameters
     parser.add_argument("--nodes", type=int, default=1, help="Number of nodes")
