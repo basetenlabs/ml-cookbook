@@ -6,7 +6,7 @@ This guide walks you through training, deploying, and serving your fine-tuned Wh
 
 ## 📦 Serving
 
-To serve your fine-tuned Whisper model or any of it's checkpoint:
+To serve your fine-tuned Whisper model or any of it's checkpoints:
 
 ```bash
 truss train deploy_checkpoints
