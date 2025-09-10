@@ -1,10 +1,4 @@
-# Serving Your Fine-Tuned Whisper Model
-
-This guide walks you through training, deploying, and serving your fine-tuned Whisper model using **Truss**.
-
----
-
-## 📦 Serving
+# Serving Your Model
 
 To serve your fine-tuned Whisper model or any of it's checkpoints:
 
