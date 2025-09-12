@@ -1,0 +1,8 @@
+torch==2.7.1
+transformers==4.55.4
+flash_attn==2.7.4.post1
+ms-swift==3.7.2
+hf_transfer==0.1.9
+packaging==25.0
+git+https://github.com/NVIDIA/TransformerEngine.git@stable
+numpy<2.0
