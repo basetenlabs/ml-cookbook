@@ -6,7 +6,7 @@ GPU_COUNT = 1
 BASE_IMAGE = "pytorch/pytorch:2.8.0-cuda12.9-cudnn9-runtime"
 
 runtime = definitions.Runtime(
-    # enable the cache to skip model downloads on subsequent runs 
+    # enable the cache to skip model downloads on subsequent runs
     # enable_cache=True,
     start_commands=[
         "apt-get update && apt-get install -y build-essential",
@@ -37,6 +37,5 @@ training_job = definitions.TrainingJob(
 )
 
 training_project = definitions.TrainingProject(
-    name="orpheus-tts training", 
-    job=training_job
+    name="orpheus-tts training", job=training_job
 )

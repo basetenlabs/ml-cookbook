@@ -11,7 +11,9 @@ export RDZV_PORT="29400"
 apt-get update
 apt-get install --no-install-recommends -y netcat-openbsd
 
-axolotl preprocess config.yaml
+export AXOLOTL_CONFIG_FILE=config.yaml
+
+axolotl preprocess $AXOLOTL_CONFIG_FILE
 
 # Followers wait for leader to open the rendezvous port
 if [[ "${BT_NODE_RANK}" != "0" ]]; then
@@ -22,7 +24,16 @@ if [[ "${BT_NODE_RANK}" != "0" ]]; then
   }
 fi
 
-axolotl train config.yaml \
+if grep -q "^[[:space:]]*output_dir:" $AXOLOTL_CONFIG_FILE; then
+    echo "Replacing output_dir"
+    sed -i -e "s|^[[:space:]]*output_dir:.*|output_dir: $BT_CHECKPOINT_DIR|" $AXOLOTL_CONFIG_FILE
+else
+    # If no output_dir exists, append it
+    echo "Adding output dir"
+    echo "output_dir: $BT_CHECKPOINT_DIR" >> $AXOLOTL_CONFIG_FILE
+fi
+
+axolotl train $AXOLOTL_CONFIG_FILE \
     --launcher torchrun -- --nnodes=$BT_GROUP_SIZE --nproc-per-node=$BT_NUM_GPUS --node-rank=$BT_NODE_RANK \
     --rdzv-backend=c10d --rdzv-id=axolotl-${BT_TRAINING_JOB_ID} --rdzv-endpoint=${BT_LEADER_ADDR}:${RDZV_PORT} \
     --rdzv-conf="join_timeout=${RDZV_TIMEOUT}"
