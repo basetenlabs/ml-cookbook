@@ -22,7 +22,7 @@ datasets:
 dataset_prepared_path: last_run_prepared
 val_set_size: 0.1
 eval_steps: 10
-output_dir: ./outputs/gpt-oss-out/
+output_dir: temp_dirs/x/y
 
 sequence_len: 4096
 sample_packing: true
