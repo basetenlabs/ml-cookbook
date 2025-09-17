@@ -14,7 +14,15 @@ cd /root/
 export DATASET="zai-org/LongAlign-10k"
 export MODEL_ID="Qwen/Qwen3-30B-A3B"
 
-PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True NPROC_PER_NODE=8 NNODES=2 NODE_RANK=1 megatron sft \
+# Set output directory to BT_CHECKPOINT_DIR if it exists, otherwise use "outputs"
+if [ -n "$BT_CHECKPOINT_DIR" ] && [ -d "$BT_CHECKPOINT_DIR" ]; then
+    OUTPUT_DIR="$BT_CHECKPOINT_DIR"
+else
+    OUTPUT_DIR="outputs"
+fi
+
+PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True NPROC_PER_NODE=$BT_NUM_GPUS NNODES=$BT_GROUP_SIZE NODE_RANK=$BT_NODE_RANK MASTER_ADDR=127.0.0.1\
+    megatron sft \
     --model $MODEL_ID \
     --dataset $DATASET \
     --no_initialization false \
@@ -31,7 +39,7 @@ PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True NPROC_PER_NODE=8 NNODES=2 NODE_
     --packing true \
     --recompute_granularity full \
     --recompute_method uniform \
-    --recompute_num_layers 4 \
+    --recompute_num_layers 8 \
     --train_iters 200 \
     --eval_iters 50 \
     --finetune true \
@@ -39,10 +47,10 @@ PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True NPROC_PER_NODE=8 NNODES=2 NODE_
     --lr 1e-5 \
     --lr_warmup_fraction 0.05 \
     --min_lr 1e-6 \
-    --save $BT_CHECKPOINT_DIR \
+    --save $OUTPUT_DIR \
     --eval_interval 40 \
     --save_interval 40 \
-    --max_length 32000 \
+    --max_length 34000 \
     --num_workers 8 \
     --dataset_num_proc 8 \
     --no_save_optim true \
