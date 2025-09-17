@@ -1,8 +1,20 @@
-# single node
+#!/bin/bash
+set -eux
+
+# cloning megatron-LM separately because in swift, while a subprocess 
+# is cloning the repo, another starts trying to install it. This ensures 
+# when the repo exists when installation is being attempted.
+mkdir -p /root/.cache/modelscope/hub/_github
+cd /root/.cache/modelscope/hub/_github
+git clone https://github.com/NVIDIA/Megatron-LM.git Megatron-LM --branch core_r0.13.0
+
+pip list
+
+cd /root/
 export DATASET="zai-org/LongAlign-10k"
 export MODEL_ID="Qwen/Qwen3-30B-A3B"
 
-PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True NPROC_PER_NODE=8 NNODES=1 NODE_RANK=0 megatron sft \
+PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True NPROC_PER_NODE=8 NNODES=2 NODE_RANK=1 megatron sft \
     --model $MODEL_ID \
     --dataset $DATASET \
     --no_initialization false \
@@ -15,7 +27,7 @@ PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True NPROC_PER_NODE=8 NNODES=1 NODE_
     --moe_shared_expert_overlap true \
     --moe_aux_loss_coeff 1e-3 \
     --micro_batch_size 1 \
-    --global_batch_size 4 \
+    --global_batch_size 8 \
     --packing true \
     --recompute_granularity full \
     --recompute_method uniform \

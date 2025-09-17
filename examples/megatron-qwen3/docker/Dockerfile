@@ -33,6 +33,10 @@ WORKDIR /app
 RUN uv venv
 ENV PATH="/app/.venv/bin:$PATH"
 
+# install pip for megatron run
+RUN curl https://bootstrap.pypa.io/get-pip.py -o get-pip.py
+RUN /app/.venv/bin/python3 get-pip.py
+
 # Install torch first (needed for flash-attn build)
 RUN uv pip install torch==2.7.1
 
@@ -55,7 +59,7 @@ RUN uv pip install --no-build-isolation transformer-engine[pytorch]
 WORKDIR /tmp
 RUN git clone https://github.com/NVIDIA/apex
 WORKDIR /tmp/apex
-RUN NVCC_APPEND_FLAGS="--threads 2" APEX_PARALLEL_BUILD=2 APEX_CPP_EXT=1 APEX_CUDA_EXT=1 APEX_FAST_MULTIHEAD_ATTN=1 APEX_FUSED_CONV_BIAS_RELU=1 MAX_JOBS=2 uv pip install -v --no-build-isolation .
+RUN NVCC_APPEND_FLAGS="--threads 4" APEX_PARALLEL_BUILD=4 APEX_CPP_EXT=1 APEX_CUDA_EXT=1 APEX_FAST_MULTIHEAD_ATTN=1 APEX_FUSED_CONV_BIAS_RELU=1 MAX_JOBS=4 uv pip install -v --no-build-isolation .
 
 # Clean up build artifacts and temporary files
 # RUN rm -rf /tmp/apex && \

@@ -1,8 +1,8 @@
 from truss_train import definitions
 from truss.base import truss_config
 
-BASE_IMAGE = "modelscope-registry.us-west-1.cr.aliyuncs.com/modelscope-repo/modelscope:ubuntu22.04-cuda12.6.3-py311-torch2.7.1-vllm0.10.0-modelscope1.28.2-swift3.7.2"
-PROJECT_NAME = "Megatron - qwen3-30b-a3b-base 32k 1node"
+BASE_IMAGE = "baseten/megatron:0.0.1"
+PROJECT_NAME = "Megatron-qwen3-30b-a3b-base new 2nodes"
 
 training_runtime = definitions.Runtime(
     start_commands=["/bin/sh -c 'chmod +x ./run.sh && ./run.sh'"],
@@ -26,7 +26,7 @@ training_compute = definitions.Compute(
         accelerator=truss_config.Accelerator.H100,
         count=8,
     ),
-    node_count=1,
+    node_count=2,
 )
 
 training_job = definitions.TrainingJob(
