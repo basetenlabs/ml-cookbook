@@ -1,6 +1,8 @@
 #!/bin/bash
 set -eux
 
+pip install -U wandb
+
 # cloning megatron-LM separately because in swift, while a subprocess 
 # is cloning the repo, another starts trying to install it. This ensures 
 # when the repo exists when installation is being attempted.
@@ -22,7 +24,7 @@ swift export \
 
 echo "Done converting ckpt"
 
-PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True NPROC_PER_NODE=8 NNODES=$BT_GROUP_SIZE NODE_RANK=$BT_NODE_RANK MASTER_ADDR=$BT_LEADER_ADDR megatron sft \
+PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True NPROC_PER_NODE=$BT_NUM_GPUS NNODES=$BT_GROUP_SIZE NODE_RANK=$BT_NODE_RANK MASTER_ADDR=$BT_LEADER_ADDR megatron sft \
     --load $MCORE_MODEL_DIR \
     --dataset $DATASET \
     --no_initialization false \
