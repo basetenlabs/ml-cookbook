@@ -62,5 +62,5 @@ PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True NPROC_PER_NODE=$BT_NUM_GPUS NNO
     --optimizer_cpu_offload true \
     --use_precision_aware_optimizer true \
     --use_hf 1 \
-    # --wandb_project qwen3_moe_megatron \
-    # --wandb_exp_name all_training_b10 \
+    --wandb_project qwen3_moe_megatron \
+    --wandb_exp_name all_training_b10f \

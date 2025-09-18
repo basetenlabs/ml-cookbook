@@ -2,7 +2,7 @@ from truss_train import definitions
 from truss.base import truss_config
 
 BASE_IMAGE = "baseten/megatron:0.0.1"
-PROJECT_NAME = "Megatron-qwen3-30b-a3b-base new 2nodes"
+PROJECT_NAME = "Megatron-qwen3-30b-a3b 2nodes"
 
 training_runtime = definitions.Runtime(
     start_commands=["/bin/sh -c 'chmod +x ./run.sh && ./run.sh'"],
