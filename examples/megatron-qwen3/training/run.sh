@@ -16,10 +16,6 @@ export MODEL_ID="Qwen/Qwen3-30B-A3B-Instruct-2507"
 export CKPT_DIR=${BT_RW_CACHE_DIR}/${BT_TRAINING_JOB_ID}
 mkdir -p $CKPT_DIR
 # Set up rsync in the background to sync checkpoints to the checkpointing directory
-if [[ "${BT_NODE_RANK}" == "0" ]]; then
-    echo "Setting up rsync from shared file system to checkpointing directory"
-    rsync -avz $CKPT_DIR/ $BT_CHECKPOINT_DIR/ &
-fi
 
 export MCORE_MODEL_DIR="Converted/Qwen3-30B-A3B-Instruct-2507-mcore"
 swift export \
@@ -49,16 +45,16 @@ PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True NPROC_PER_NODE=$BT_NUM_GPUS NNO
     --recompute_granularity full \
     --recompute_method uniform \
     --recompute_num_layers 4 \
-    --train_iters 200 \
-    --eval_iters 40 \
+    --train_iters 40 \
+    --eval_iters 10 \
     --finetune true \
     --cross_entropy_loss_fusion true \
     --lr 1e-5 \
     --lr_warmup_fraction 0.05 \
     --min_lr 1e-6 \
     --save $CKPT_DIR \
-    --eval_interval 40 \
-    --save_interval 40 \
+    --eval_interval 10 \
+    --save_interval 10 \
     --max_length 32000 \
     --num_workers 8 \
     --dataset_num_proc 8 \
@@ -71,3 +67,11 @@ PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True NPROC_PER_NODE=$BT_NUM_GPUS NNO
     --use_hf 1 \
     --wandb_project qwen3_moe_megatron \
     --wandb_exp_name rcano-nnodes-${BT_GROUP_SIZE} 
+
+if [[ "${BT_NODE_RANK}" == "0" ]]; then
+    echo "Copying checkpoints to checkpointing directory"
+    cp -r $CKPT_DIR/ $BT_CHECKPOINT_DIR/
+else
+    echo "Waiting for leader to copy checkpoints"
+    sleep infinity
+fi

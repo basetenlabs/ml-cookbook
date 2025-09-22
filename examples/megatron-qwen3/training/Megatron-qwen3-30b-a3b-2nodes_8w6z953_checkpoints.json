@@ -1,0 +1,232 @@
+{
+  "timestamp": "2025-09-22T19:38:32.020688+00:00",
+  "job": {
+    "id": "8w6z953",
+    "created_at": "2025-09-22T18:32:05.344Z",
+    "current_status": "TRAINING_JOB_RUNNING",
+    "error_message": null,
+    "instance_type": {
+      "id": "H100:2x8x176x968",
+      "name": "H100:2x8x176x968 - 2 Nodes of 8 H100 GPUs, 640 GiB VRAM, 176 vCPUs, 968 GiB RAM",
+      "memory_limit_mib": 967512,
+      "millicpu_limit": 176000,
+      "gpu_count": 8,
+      "gpu_type": "H100",
+      "gpu_memory_limit_mib": 655360
+    },
+    "updated_at": "2025-09-22T18:32:06.741Z",
+    "training_project_id": "owpylwj",
+    "training_project": {
+      "id": "owpylwj",
+      "name": "Megatron-qwen3-30b-a3b 2nodes"
+    },
+    "name": "two-node-ckpt-to-cache-more-steps-sleep"
+  },
+  "checkpoint_artifacts": [
+    {
+      "url": "https://bt-training-b5w5olp-8de8b19b-6cba-465a-a5fe-d6e16b627cc5.s3.amazonaws.com/training_projects/owpylwj/jobs/8w6z953/rank-0/8w6z953/v0-20250922-183910/iter_0000010/__0_0.distcp?AWSAccessKeyId=AKIA4FWSEGGQU5RCDCKX&Signature=LXZaUotEiR6c%2BOz9c3UDJT%2Bt690%3D&Expires=1759174711",
+      "relative_file_name": "8w6z953/v0-20250922-183910/iter_0000010/__0_0.distcp",
+      "node_rank": 0
+    },
+    {
+      "url": "https://bt-training-b5w5olp-8de8b19b-6cba-465a-a5fe-d6e16b627cc5.s3.amazonaws.com/training_projects/owpylwj/jobs/8w6z953/rank-0/8w6z953/v0-20250922-183910/iter_0000010/__0_1.distcp?AWSAccessKeyId=AKIA4FWSEGGQU5RCDCKX&Signature=dNdEoDHoSxSLj7QkZ2KB1FetANY%3D&Expires=1759174711",
+      "relative_file_name": "8w6z953/v0-20250922-183910/iter_0000010/__0_1.distcp",
+      "node_rank": 0
+    },
+    {
+      "url": "https://bt-training-b5w5olp-8de8b19b-6cba-465a-a5fe-d6e16b627cc5.s3.amazonaws.com/training_projects/owpylwj/jobs/8w6z953/rank-0/8w6z953/v0-20250922-183910/iter_0000010/__10_1.distcp?AWSAccessKeyId=AKIA4FWSEGGQU5RCDCKX&Signature=x2JXh0%2BkIgW%2B%2BH8Ortk493A0jCs%3D&Expires=1759174711",
+      "relative_file_name": "8w6z953/v0-20250922-183910/iter_0000010/__10_1.distcp",
+      "node_rank": 0
+    },
+    {
+      "url": "https://bt-training-b5w5olp-8de8b19b-6cba-465a-a5fe-d6e16b627cc5.s3.amazonaws.com/training_projects/owpylwj/jobs/8w6z953/rank-0/8w6z953/v0-20250922-183910/iter_0000010/__11_1.distcp?AWSAccessKeyId=AKIA4FWSEGGQU5RCDCKX&Signature=PqejRgq6iJdi9wyw5IoUBKkHKiI%3D&Expires=1759174711",
+      "relative_file_name": "8w6z953/v0-20250922-183910/iter_0000010/__11_1.distcp",
+      "node_rank": 0
+    },
+    {
+      "url": "https://bt-training-b5w5olp-8de8b19b-6cba-465a-a5fe-d6e16b627cc5.s3.amazonaws.com/training_projects/owpylwj/jobs/8w6z953/rank-0/8w6z953/v0-20250922-183910/iter_0000010/__12_1.distcp?AWSAccessKeyId=AKIA4FWSEGGQU5RCDCKX&Signature=CsLT4LopniKy94JFyAxov%2Fw2OZQ%3D&Expires=1759174711",
+      "relative_file_name": "8w6z953/v0-20250922-183910/iter_0000010/__12_1.distcp",
+      "node_rank": 0
+    },
+    {
+      "url": "https://bt-training-b5w5olp-8de8b19b-6cba-465a-a5fe-d6e16b627cc5.s3.amazonaws.com/training_projects/owpylwj/jobs/8w6z953/rank-0/8w6z953/v0-20250922-183910/iter_0000010/__13_0.distcp?AWSAccessKeyId=AKIA4FWSEGGQU5RCDCKX&Signature=SOXJElKfW3Xxr%2B5jC%2FjXBVsmNC8%3D&Expires=1759174711",
+      "relative_file_name": "8w6z953/v0-20250922-183910/iter_0000010/__13_0.distcp",
+      "node_rank": 0
+    },
+    {
+      "url": "https://bt-training-b5w5olp-8de8b19b-6cba-465a-a5fe-d6e16b627cc5.s3.amazonaws.com/training_projects/owpylwj/jobs/8w6z953/rank-0/8w6z953/v0-20250922-183910/iter_0000010/__13_1.distcp?AWSAccessKeyId=AKIA4FWSEGGQU5RCDCKX&Signature=DkyipOC%2FWZVAPjgUdlfmkJY7J6E%3D&Expires=1759174711",
+      "relative_file_name": "8w6z953/v0-20250922-183910/iter_0000010/__13_1.distcp",
+      "node_rank": 0
+    },
+    {
+      "url": "https://bt-training-b5w5olp-8de8b19b-6cba-465a-a5fe-d6e16b627cc5.s3.amazonaws.com/training_projects/owpylwj/jobs/8w6z953/rank-0/8w6z953/v0-20250922-183910/iter_0000010/__14_1.distcp?AWSAccessKeyId=AKIA4FWSEGGQU5RCDCKX&Signature=HshHU%2FSjLOeltAMu62zYeLYrOwQ%3D&Expires=1759174711",
+      "relative_file_name": "8w6z953/v0-20250922-183910/iter_0000010/__14_1.distcp",
+      "node_rank": 0
+    },
+    {
+      "url": "https://bt-training-b5w5olp-8de8b19b-6cba-465a-a5fe-d6e16b627cc5.s3.amazonaws.com/training_projects/owpylwj/jobs/8w6z953/rank-0/8w6z953/v0-20250922-183910/iter_0000010/__15_0.distcp?AWSAccessKeyId=AKIA4FWSEGGQU5RCDCKX&Signature=kNzdiDJbOgKNCbojGInDY9%2Bwjrc%3D&Expires=1759174711",
+      "relative_file_name": "8w6z953/v0-20250922-183910/iter_0000010/__15_0.distcp",
+      "node_rank": 0
+    },
+    {
+      "url": "https://bt-training-b5w5olp-8de8b19b-6cba-465a-a5fe-d6e16b627cc5.s3.amazonaws.com/training_projects/owpylwj/jobs/8w6z953/rank-0/8w6z953/v0-20250922-183910/iter_0000010/__1_0.distcp?AWSAccessKeyId=AKIA4FWSEGGQU5RCDCKX&Signature=2bJG97EvxxXH6HL9lcftbaXAofI%3D&Expires=1759174711",
+      "relative_file_name": "8w6z953/v0-20250922-183910/iter_0000010/__1_0.distcp",
+      "node_rank": 0
+    },
+    {
+      "url": "https://bt-training-b5w5olp-8de8b19b-6cba-465a-a5fe-d6e16b627cc5.s3.amazonaws.com/training_projects/owpylwj/jobs/8w6z953/rank-0/8w6z953/v0-20250922-183910/iter_0000010/__1_1.distcp?AWSAccessKeyId=AKIA4FWSEGGQU5RCDCKX&Signature=o54hNxeT0EVmXNUBhD%2FaHQLcxTw%3D&Expires=1759174711",
+      "relative_file_name": "8w6z953/v0-20250922-183910/iter_0000010/__1_1.distcp",
+      "node_rank": 0
+    },
+    {
+      "url": "https://bt-training-b5w5olp-8de8b19b-6cba-465a-a5fe-d6e16b627cc5.s3.amazonaws.com/training_projects/owpylwj/jobs/8w6z953/rank-0/8w6z953/v0-20250922-183910/iter_0000010/__2_0.distcp?AWSAccessKeyId=AKIA4FWSEGGQU5RCDCKX&Signature=4CnAHOqi%2FXxCHZLM2XFIHu%2F%2BPdA%3D&Expires=1759174711",
+      "relative_file_name": "8w6z953/v0-20250922-183910/iter_0000010/__2_0.distcp",
+      "node_rank": 0
+    },
+    {
+      "url": "https://bt-training-b5w5olp-8de8b19b-6cba-465a-a5fe-d6e16b627cc5.s3.amazonaws.com/training_projects/owpylwj/jobs/8w6z953/rank-0/8w6z953/v0-20250922-183910/iter_0000010/__2_1.distcp?AWSAccessKeyId=AKIA4FWSEGGQU5RCDCKX&Signature=WXysuXeDIkDZ3AjtWiZkeXv9JaI%3D&Expires=1759174711",
+      "relative_file_name": "8w6z953/v0-20250922-183910/iter_0000010/__2_1.distcp",
+      "node_rank": 0
+    },
+    {
+      "url": "https://bt-training-b5w5olp-8de8b19b-6cba-465a-a5fe-d6e16b627cc5.s3.amazonaws.com/training_projects/owpylwj/jobs/8w6z953/rank-0/8w6z953/v0-20250922-183910/iter_0000010/__3_0.distcp?AWSAccessKeyId=AKIA4FWSEGGQU5RCDCKX&Signature=MC%2BWJExu%2BCQE7bGfkYB61%2FDKpPQ%3D&Expires=1759174711",
+      "relative_file_name": "8w6z953/v0-20250922-183910/iter_0000010/__3_0.distcp",
+      "node_rank": 0
+    },
+    {
+      "url": "https://bt-training-b5w5olp-8de8b19b-6cba-465a-a5fe-d6e16b627cc5.s3.amazonaws.com/training_projects/owpylwj/jobs/8w6z953/rank-0/8w6z953/v0-20250922-183910/iter_0000010/__3_1.distcp?AWSAccessKeyId=AKIA4FWSEGGQU5RCDCKX&Signature=Q8LWKDE3rHy3mIdx4KmsgrFITcA%3D&Expires=1759174711",
+      "relative_file_name": "8w6z953/v0-20250922-183910/iter_0000010/__3_1.distcp",
+      "node_rank": 0
+    },
+    {
+      "url": "https://bt-training-b5w5olp-8de8b19b-6cba-465a-a5fe-d6e16b627cc5.s3.amazonaws.com/training_projects/owpylwj/jobs/8w6z953/rank-0/8w6z953/v0-20250922-183910/iter_0000010/__4_0.distcp?AWSAccessKeyId=AKIA4FWSEGGQU5RCDCKX&Signature=UD0mfRt7B%2BKwLVleoLJ3%2Bov3qaU%3D&Expires=1759174711",
+      "relative_file_name": "8w6z953/v0-20250922-183910/iter_0000010/__4_0.distcp",
+      "node_rank": 0
+    },
+    {
+      "url": "https://bt-training-b5w5olp-8de8b19b-6cba-465a-a5fe-d6e16b627cc5.s3.amazonaws.com/training_projects/owpylwj/jobs/8w6z953/rank-0/8w6z953/v0-20250922-183910/iter_0000010/__4_1.distcp?AWSAccessKeyId=AKIA4FWSEGGQU5RCDCKX&Signature=MxxW28%2FRN0MDvdLm%2F9JHImH%2BSY4%3D&Expires=1759174711",
+      "relative_file_name": "8w6z953/v0-20250922-183910/iter_0000010/__4_1.distcp",
+      "node_rank": 0
+    },
+    {
+      "url": "https://bt-training-b5w5olp-8de8b19b-6cba-465a-a5fe-d6e16b627cc5.s3.amazonaws.com/training_projects/owpylwj/jobs/8w6z953/rank-0/8w6z953/v0-20250922-183910/iter_0000010/__5_0.distcp?AWSAccessKeyId=AKIA4FWSEGGQU5RCDCKX&Signature=mx6gjR29maPx0yRhu6PlDhJ2b14%3D&Expires=1759174711",
+      "relative_file_name": "8w6z953/v0-20250922-183910/iter_0000010/__5_0.distcp",
+      "node_rank": 0
+    },
+    {
+      "url": "https://bt-training-b5w5olp-8de8b19b-6cba-465a-a5fe-d6e16b627cc5.s3.amazonaws.com/training_projects/owpylwj/jobs/8w6z953/rank-0/8w6z953/v0-20250922-183910/iter_0000010/__5_1.distcp?AWSAccessKeyId=AKIA4FWSEGGQU5RCDCKX&Signature=5a%2F2lI7edyV7fAeQ5UPeBK3shxM%3D&Expires=1759174711",
+      "relative_file_name": "8w6z953/v0-20250922-183910/iter_0000010/__5_1.distcp",
+      "node_rank": 0
+    },
+    {
+      "url": "https://bt-training-b5w5olp-8de8b19b-6cba-465a-a5fe-d6e16b627cc5.s3.amazonaws.com/training_projects/owpylwj/jobs/8w6z953/rank-0/8w6z953/v0-20250922-183910/iter_0000010/__6_0.distcp?AWSAccessKeyId=AKIA4FWSEGGQU5RCDCKX&Signature=JkuB%2BqKrT6f4Mz6Hqs12dvyvMhw%3D&Expires=1759174711",
+      "relative_file_name": "8w6z953/v0-20250922-183910/iter_0000010/__6_0.distcp",
+      "node_rank": 0
+    },
+    {
+      "url": "https://bt-training-b5w5olp-8de8b19b-6cba-465a-a5fe-d6e16b627cc5.s3.amazonaws.com/training_projects/owpylwj/jobs/8w6z953/rank-0/8w6z953/v0-20250922-183910/iter_0000010/common.pt?AWSAccessKeyId=AKIA4FWSEGGQU5RCDCKX&Signature=O4iqQCVLNvfLAb0rUDxmj9cHrX8%3D&Expires=1759174711",
+      "relative_file_name": "8w6z953/v0-20250922-183910/iter_0000010/common.pt",
+      "node_rank": 0
+    },
+    {
+      "url": "https://bt-training-b5w5olp-8de8b19b-6cba-465a-a5fe-d6e16b627cc5.s3.amazonaws.com/training_projects/owpylwj/jobs/8w6z953/rank-0/8w6z953/v0-20250922-183910/iter_0000010/metadata.json?AWSAccessKeyId=AKIA4FWSEGGQU5RCDCKX&Signature=Zvb5WdGMjXDVqzOgLDimCN%2FbHCc%3D&Expires=1759174711",
+      "relative_file_name": "8w6z953/v0-20250922-183910/iter_0000010/metadata.json",
+      "node_rank": 0
+    },
+    {
+      "url": "https://bt-training-b5w5olp-8de8b19b-6cba-465a-a5fe-d6e16b627cc5.s3.amazonaws.com/training_projects/owpylwj/jobs/8w6z953/rank-0/8w6z953/v0-20250922-183910/runs/events.out.tfevents.1758566482.baseten-training-job-8w6z953-multinode-0-1.5431.0?AWSAccessKeyId=AKIA4FWSEGGQU5RCDCKX&Signature=7pe0NYUd1hbVwnE%2Ft8jAc018pDY%3D&Expires=1759174711",
+      "relative_file_name": "8w6z953/v0-20250922-183910/runs/events.out.tfevents.1758566482.baseten-training-job-8w6z953-multinode-0-1.5431.0",
+      "node_rank": 0
+    },
+    {
+      "url": "https://bt-training-b5w5olp-8de8b19b-6cba-465a-a5fe-d6e16b627cc5.s3.amazonaws.com/training_projects/owpylwj/jobs/8w6z953/rank-0/8w6z953/v0-20250922-183910/wandb/wandb/debug-internal.log?AWSAccessKeyId=AKIA4FWSEGGQU5RCDCKX&Signature=wGDolfxa9OpBpfNY9Syxvq8zSog%3D&Expires=1759174711",
+      "relative_file_name": "8w6z953/v0-20250922-183910/wandb/wandb/debug-internal.log",
+      "node_rank": 0
+    },
+    {
+      "url": "https://bt-training-b5w5olp-8de8b19b-6cba-465a-a5fe-d6e16b627cc5.s3.amazonaws.com/training_projects/owpylwj/jobs/8w6z953/rank-0/8w6z953/v0-20250922-183910/wandb/wandb/debug.log?AWSAccessKeyId=AKIA4FWSEGGQU5RCDCKX&Signature=6mpgH4Hiyhqi6zPxBiEXmTw3MMM%3D&Expires=1759174711",
+      "relative_file_name": "8w6z953/v0-20250922-183910/wandb/wandb/debug.log",
+      "node_rank": 0
+    },
+    {
+      "url": "https://bt-training-b5w5olp-8de8b19b-6cba-465a-a5fe-d6e16b627cc5.s3.amazonaws.com/training_projects/owpylwj/jobs/8w6z953/rank-0/8w6z953/v0-20250922-183910/wandb/wandb/latest-run/files/config.yaml?AWSAccessKeyId=AKIA4FWSEGGQU5RCDCKX&Signature=ZFY%2FGOsWZp7lJsSWWNaRMnOPhUM%3D&Expires=1759174711",
+      "relative_file_name": "8w6z953/v0-20250922-183910/wandb/wandb/latest-run/files/config.yaml",
+      "node_rank": 0
+    },
+    {
+      "url": "https://bt-training-b5w5olp-8de8b19b-6cba-465a-a5fe-d6e16b627cc5.s3.amazonaws.com/training_projects/owpylwj/jobs/8w6z953/rank-0/8w6z953/v0-20250922-183910/wandb/wandb/latest-run/files/output.log?AWSAccessKeyId=AKIA4FWSEGGQU5RCDCKX&Signature=1foVkZ%2FKrInE5NdNCX5MoPk0mGA%3D&Expires=1759174711",
+      "relative_file_name": "8w6z953/v0-20250922-183910/wandb/wandb/latest-run/files/output.log",
+      "node_rank": 0
+    },
+    {
+      "url": "https://bt-training-b5w5olp-8de8b19b-6cba-465a-a5fe-d6e16b627cc5.s3.amazonaws.com/training_projects/owpylwj/jobs/8w6z953/rank-0/8w6z953/v0-20250922-183910/wandb/wandb/latest-run/files/requirements.txt?AWSAccessKeyId=AKIA4FWSEGGQU5RCDCKX&Signature=P%2BPc4giPuwrgYPdfy4dpU%2FteJeU%3D&Expires=1759174711",
+      "relative_file_name": "8w6z953/v0-20250922-183910/wandb/wandb/latest-run/files/requirements.txt",
+      "node_rank": 0
+    },
+    {
+      "url": "https://bt-training-b5w5olp-8de8b19b-6cba-465a-a5fe-d6e16b627cc5.s3.amazonaws.com/training_projects/owpylwj/jobs/8w6z953/rank-0/8w6z953/v0-20250922-183910/wandb/wandb/latest-run/files/wandb-metadata.json?AWSAccessKeyId=AKIA4FWSEGGQU5RCDCKX&Signature=mco43Uz2pXncKq3HR6kQYmmBGGI%3D&Expires=1759174711",
+      "relative_file_name": "8w6z953/v0-20250922-183910/wandb/wandb/latest-run/files/wandb-metadata.json",
+      "node_rank": 0
+    },
+    {
+      "url": "https://bt-training-b5w5olp-8de8b19b-6cba-465a-a5fe-d6e16b627cc5.s3.amazonaws.com/training_projects/owpylwj/jobs/8w6z953/rank-0/8w6z953/v0-20250922-183910/wandb/wandb/latest-run/files/wandb-summary.json?AWSAccessKeyId=AKIA4FWSEGGQU5RCDCKX&Signature=kuKA5ekwRe7SDbgTHNjjm0tMPKg%3D&Expires=1759174711",
+      "relative_file_name": "8w6z953/v0-20250922-183910/wandb/wandb/latest-run/files/wandb-summary.json",
+      "node_rank": 0
+    },
+    {
+      "url": "https://bt-training-b5w5olp-8de8b19b-6cba-465a-a5fe-d6e16b627cc5.s3.amazonaws.com/training_projects/owpylwj/jobs/8w6z953/rank-0/8w6z953/v0-20250922-183910/wandb/wandb/latest-run/logs/debug-internal.log?AWSAccessKeyId=AKIA4FWSEGGQU5RCDCKX&Signature=juRW%2B35TDr5h3n6nTKX9PPk%2BaMI%3D&Expires=1759174711",
+      "relative_file_name": "8w6z953/v0-20250922-183910/wandb/wandb/latest-run/logs/debug-internal.log",
+      "node_rank": 0
+    },
+    {
+      "url": "https://bt-training-b5w5olp-8de8b19b-6cba-465a-a5fe-d6e16b627cc5.s3.amazonaws.com/training_projects/owpylwj/jobs/8w6z953/rank-0/8w6z953/v0-20250922-183910/wandb/wandb/latest-run/logs/debug.log?AWSAccessKeyId=AKIA4FWSEGGQU5RCDCKX&Signature=IPidkF8CpeBOFJWrS56CSpaGObw%3D&Expires=1759174711",
+      "relative_file_name": "8w6z953/v0-20250922-183910/wandb/wandb/latest-run/logs/debug.log",
+      "node_rank": 0
+    },
+    {
+      "url": "https://bt-training-b5w5olp-8de8b19b-6cba-465a-a5fe-d6e16b627cc5.s3.amazonaws.com/training_projects/owpylwj/jobs/8w6z953/rank-0/8w6z953/v0-20250922-183910/wandb/wandb/latest-run/run-svffny7r.wandb?AWSAccessKeyId=AKIA4FWSEGGQU5RCDCKX&Signature=TW3SNQEcejMiQZ3%2B5m%2BQK2HD82A%3D&Expires=1759174711",
+      "relative_file_name": "8w6z953/v0-20250922-183910/wandb/wandb/latest-run/run-svffny7r.wandb",
+      "node_rank": 0
+    },
+    {
+      "url": "https://bt-training-b5w5olp-8de8b19b-6cba-465a-a5fe-d6e16b627cc5.s3.amazonaws.com/training_projects/owpylwj/jobs/8w6z953/rank-0/8w6z953/v0-20250922-183910/wandb/wandb/run-20250922_184122-svffny7r/files/config.yaml?AWSAccessKeyId=AKIA4FWSEGGQU5RCDCKX&Signature=JPWtgDo87W3muj2S%2BKj%2F%2BEwYJK8%3D&Expires=1759174711",
+      "relative_file_name": "8w6z953/v0-20250922-183910/wandb/wandb/run-20250922_184122-svffny7r/files/config.yaml",
+      "node_rank": 0
+    },
+    {
+      "url": "https://bt-training-b5w5olp-8de8b19b-6cba-465a-a5fe-d6e16b627cc5.s3.amazonaws.com/training_projects/owpylwj/jobs/8w6z953/rank-0/8w6z953/v0-20250922-183910/wandb/wandb/run-20250922_184122-svffny7r/files/output.log?AWSAccessKeyId=AKIA4FWSEGGQU5RCDCKX&Signature=OIPn9DA8zyLUw8%2Fzz0NU%2FjDPCUw%3D&Expires=1759174711",
+      "relative_file_name": "8w6z953/v0-20250922-183910/wandb/wandb/run-20250922_184122-svffny7r/files/output.log",
+      "node_rank": 0
+    },
+    {
+      "url": "https://bt-training-b5w5olp-8de8b19b-6cba-465a-a5fe-d6e16b627cc5.s3.amazonaws.com/training_projects/owpylwj/jobs/8w6z953/rank-0/8w6z953/v0-20250922-183910/wandb/wandb/run-20250922_184122-svffny7r/files/requirements.txt?AWSAccessKeyId=AKIA4FWSEGGQU5RCDCKX&Signature=K75%2BTwDLk4EgKF8uEGymolmltIA%3D&Expires=1759174711",
+      "relative_file_name": "8w6z953/v0-20250922-183910/wandb/wandb/run-20250922_184122-svffny7r/files/requirements.txt",
+      "node_rank": 0
+    },
+    {
+      "url": "https://bt-training-b5w5olp-8de8b19b-6cba-465a-a5fe-d6e16b627cc5.s3.amazonaws.com/training_projects/owpylwj/jobs/8w6z953/rank-0/8w6z953/v0-20250922-183910/wandb/wandb/run-20250922_184122-svffny7r/files/wandb-metadata.json?AWSAccessKeyId=AKIA4FWSEGGQU5RCDCKX&Signature=v7FBKOBvgl6%2BOZhJAlziNR4qR9w%3D&Expires=1759174711",
+      "relative_file_name": "8w6z953/v0-20250922-183910/wandb/wandb/run-20250922_184122-svffny7r/files/wandb-metadata.json",
+      "node_rank": 0
+    },
+    {
+      "url": "https://bt-training-b5w5olp-8de8b19b-6cba-465a-a5fe-d6e16b627cc5.s3.amazonaws.com/training_projects/owpylwj/jobs/8w6z953/rank-0/8w6z953/v0-20250922-183910/wandb/wandb/run-20250922_184122-svffny7r/files/wandb-summary.json?AWSAccessKeyId=AKIA4FWSEGGQU5RCDCKX&Signature=FL%2BYtQOlICikrrdIMbxviHX0ZbI%3D&Expires=1759174711",
+      "relative_file_name": "8w6z953/v0-20250922-183910/wandb/wandb/run-20250922_184122-svffny7r/files/wandb-summary.json",
+      "node_rank": 0
+    },
+    {
+      "url": "https://bt-training-b5w5olp-8de8b19b-6cba-465a-a5fe-d6e16b627cc5.s3.amazonaws.com/training_projects/owpylwj/jobs/8w6z953/rank-0/8w6z953/v0-20250922-183910/wandb/wandb/run-20250922_184122-svffny7r/logs/debug-internal.log?AWSAccessKeyId=AKIA4FWSEGGQU5RCDCKX&Signature=7jT8HP673Gw9DnAsPC0N7IwCBIw%3D&Expires=1759174711",
+      "relative_file_name": "8w6z953/v0-20250922-183910/wandb/wandb/run-20250922_184122-svffny7r/logs/debug-internal.log",
+      "node_rank": 0
+    },
+    {
+      "url": "https://bt-training-b5w5olp-8de8b19b-6cba-465a-a5fe-d6e16b627cc5.s3.amazonaws.com/training_projects/owpylwj/jobs/8w6z953/rank-0/8w6z953/v0-20250922-183910/wandb/wandb/run-20250922_184122-svffny7r/logs/debug.log?AWSAccessKeyId=AKIA4FWSEGGQU5RCDCKX&Signature=nTiVg4%2Fg3Axgfty1gn6XbS4OELU%3D&Expires=1759174711",
+      "relative_file_name": "8w6z953/v0-20250922-183910/wandb/wandb/run-20250922_184122-svffny7r/logs/debug.log",
+      "node_rank": 0
+    },
+    {
+      "url": "https://bt-training-b5w5olp-8de8b19b-6cba-465a-a5fe-d6e16b627cc5.s3.amazonaws.com/training_projects/owpylwj/jobs/8w6z953/rank-0/8w6z953/v0-20250922-183910/wandb/wandb/run-20250922_184122-svffny7r/run-svffny7r.wandb?AWSAccessKeyId=AKIA4FWSEGGQU5RCDCKX&Signature=SBehqvM60VQuy%2FxDKVzSEv%2Fm8xg%3D&Expires=1759174711",
+      "relative_file_name": "8w6z953/v0-20250922-183910/wandb/wandb/run-20250922_184122-svffny7r/run-svffny7r.wandb",
+      "node_rank": 0
+    }
+  ]
+}
