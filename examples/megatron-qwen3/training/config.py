@@ -3,6 +3,9 @@ from truss.base import truss_config
 
 BASE_IMAGE = "baseten/megatron:0.0.1"
 PROJECT_NAME = "Megatron-qwen3-30b-a3b 2nodes"
+NODE_COUNT = 2
+MICRO_BATCH_SIZE = 1
+NUM_GPUS = 8
 
 training_runtime = definitions.Runtime(
     start_commands=["/bin/sh -c 'chmod +x ./run.sh && ./run.sh'"],
@@ -14,9 +17,11 @@ training_runtime = definitions.Runtime(
         "WANDB_API_KEY": definitions.SecretReference(
             name="wandb_api_key"
         ),  # comment this out if you don't want to use wandb
+        "GLOBAL_BATCH_SIZE": str(MICRO_BATCH_SIZE * NUM_GPUS * NODE_COUNT),
+        "MICRO_BATCH_SIZE": str(MICRO_BATCH_SIZE),
     },
     cache_config=definitions.CacheConfig(
-        enabled=False,
+        enabled=True,
     ),
     checkpointing_config=definitions.CheckpointingConfig(
         enabled=True,
@@ -28,7 +33,7 @@ training_compute = definitions.Compute(
         accelerator=truss_config.Accelerator.H100,
         count=8,
     ),
-    node_count=2,
+    node_count=NODE_COUNT,
 )
 
 training_job = definitions.TrainingJob(
