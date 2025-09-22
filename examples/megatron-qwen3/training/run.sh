@@ -50,15 +50,15 @@ PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True NPROC_PER_NODE=$BT_NUM_GPUS NNO
     --recompute_method uniform \
     --recompute_num_layers 4 \
     --train_iters 200 \
-    --eval_iters 10 \
+    --eval_iters 40 \
     --finetune true \
     --cross_entropy_loss_fusion true \
     --lr 1e-5 \
     --lr_warmup_fraction 0.05 \
     --min_lr 1e-6 \
     --save $CKPT_DIR \
-    --eval_interval 10 \
-    --save_interval 10 \
+    --eval_interval 40 \
+    --save_interval 40 \
     --max_length 32000 \
     --num_workers 8 \
     --dataset_num_proc 8 \
