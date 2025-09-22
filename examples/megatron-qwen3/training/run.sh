@@ -16,6 +16,18 @@ export MODEL_ID="Qwen/Qwen3-30B-A3B-Instruct-2507"
 export CKPT_DIR=${BT_RW_CACHE_DIR}/${BT_TRAINING_JOB_ID}
 mkdir -p $CKPT_DIR
 # Set up rsync in the background to sync checkpoints to the checkpointing directory
+if [[ "${BT_NODE_RANK}" == "0" ]]; then
+    echo "Setting up continuous rsync from shared file system to checkpointing directory"
+    # Start a background loop that continuously syncs
+    (
+        while true; do
+            rsync -avz --delete $CKPT_DIR/ $BT_CHECKPOINT_DIR/
+            sleep 30  # Sync every 30 seconds
+        done
+    ) &
+    RSYNC_PID=$!
+    echo "Continuous rsync started with PID: $RSYNC_PID"
+fi
 
 export MCORE_MODEL_DIR="Converted/Qwen3-30B-A3B-Instruct-2507-mcore"
 swift export \
@@ -45,7 +57,7 @@ PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True NPROC_PER_NODE=$BT_NUM_GPUS NNO
     --recompute_granularity full \
     --recompute_method uniform \
     --recompute_num_layers 4 \
-    --train_iters 40 \
+    --train_iters 30 \
     --eval_iters 10 \
     --finetune true \
     --cross_entropy_loss_fusion true \
@@ -69,9 +81,22 @@ PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True NPROC_PER_NODE=$BT_NUM_GPUS NNO
     --wandb_exp_name rcano-nnodes-${BT_GROUP_SIZE} 
 
 if [[ "${BT_NODE_RANK}" == "0" ]]; then
-    echo "Copying checkpoints to checkpointing directory"
-    cp -r $CKPT_DIR/ $BT_CHECKPOINT_DIR/
+    echo "Stopping continuous rsync and performing final synchronization..."
+    
+    # Kill the continuous rsync process
+    if [[ -n "$RSYNC_PID" ]]; then
+        echo "Killing continuous rsync process (PID: $RSYNC_PID)"
+        kill $RSYNC_PID 2>/dev/null || true
+        # Wait a moment for the process to terminate
+        sleep 2
+    fi
+    
+    # Perform final synchronization to ensure everything is synced
+    echo "Performing final rsync..."
+    rsync -avz --delete $CKPT_DIR/ $BT_CHECKPOINT_DIR/
+    
+    echo "Final synchronization complete!"
 else
-    echo "Waiting for leader to copy checkpoints"
+    echo "Worker waiting for leader to finish rsync..."
     sleep infinity
 fi
