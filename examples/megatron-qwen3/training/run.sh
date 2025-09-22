@@ -13,6 +13,27 @@ git clone https://github.com/NVIDIA/Megatron-LM.git Megatron-LM --branch core_r0
 cd /root/
 export DATASET="zai-org/LongAlign-10k"
 export MODEL_ID="Qwen/Qwen3-30B-A3B-Instruct-2507"
+export CKPT_DIR=${BT_RW_CACHE_DIR}/${BT_TRAINING_JOB_ID}
+mkdir -p $CKPT_DIR
+
+if ! command -v rsync &> /dev/null; then
+    echo "Installing rsync..."
+    apt-get update && apt-get install -y rsync
+fi
+
+# Set up rsync in the background to sync checkpoints to the checkpointing directory
+if [[ "${BT_NODE_RANK}" == "0" ]]; then
+    echo "Setting up continuous rsync from shared file system to checkpointing directory"
+    # Start a background loop that continuously syncs
+    (
+        while true; do
+            rsync -avz --delete $CKPT_DIR/ $BT_CHECKPOINT_DIR/
+            sleep 30  # Sync every 30 seconds
+        done
+    ) &
+    RSYNC_PID=$!
+    echo "Continuous rsync started with PID: $RSYNC_PID"
+fi
 
 export MCORE_MODEL_DIR="Converted/Qwen3-30B-A3B-Instruct-2507-mcore"
 swift export \
@@ -36,22 +57,22 @@ PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True NPROC_PER_NODE=$BT_NUM_GPUS NNO
     --moe_grouped_gemm true \
     --moe_shared_expert_overlap true \
     --moe_aux_loss_coeff 1e-3 \
-    --micro_batch_size 1 \
-    --global_batch_size 8 \
+    --micro_batch_size $MICRO_BATCH_SIZE \
+    --global_batch_size $GLOBAL_BATCH_SIZE \
     --packing true \
     --recompute_granularity full \
     --recompute_method uniform \
     --recompute_num_layers 4 \
-    --train_iters 200 \
-    --eval_iters 40 \
+    --train_iters 30 \
+    --eval_iters 10 \
     --finetune true \
     --cross_entropy_loss_fusion true \
     --lr 1e-5 \
     --lr_warmup_fraction 0.05 \
     --min_lr 1e-6 \
-    --save $BT_CHECKPOINT_DIR \
-    --eval_interval 40 \
-    --save_interval 40 \
+    --save $CKPT_DIR \
+    --eval_interval 10 \
+    --save_interval 10 \
     --max_length 32000 \
     --num_workers 8 \
     --dataset_num_proc 8 \
@@ -63,4 +84,25 @@ PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True NPROC_PER_NODE=$BT_NUM_GPUS NNO
     --use_precision_aware_optimizer true \
     --use_hf 1 \
     --wandb_project qwen3_moe_megatron \
-    --wandb_exp_name all_training_b10f 
+    --wandb_exp_name rcano-nnodes-${BT_GROUP_SIZE} 
+
+if [[ "${BT_NODE_RANK}" == "0" ]]; then
+    echo "Stopping continuous rsync and performing final synchronization..."
+    
+    # Kill the continuous rsync process
+    if [[ -n "$RSYNC_PID" ]]; then
+        echo "Killing continuous rsync process (PID: $RSYNC_PID)"
+        kill $RSYNC_PID 2>/dev/null || true
+        # Wait a moment for the process to terminate
+        sleep 2
+    fi
+    
+    # Perform final synchronization to ensure everything is synced
+    echo "Performing final rsync..."
+    rsync -avz --delete $CKPT_DIR/ $BT_CHECKPOINT_DIR/
+    
+    echo "Final synchronization complete!"
+else
+    echo "Worker waiting for leader to finish rsync..."
+    sleep infinity
+fi
