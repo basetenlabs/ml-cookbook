@@ -3,7 +3,7 @@ from truss_train import definitions
 from truss.base import truss_config
 from truss_train.definitions import CheckpointingConfig
 
-project_name = "axolotl-120b multi-node"
+project_name = "axolotl-20b Multi-Node"
 
 # 1. Define a base image for your training job
 BASE_IMAGE = "axolotlai/axolotl:main-20250811-py3.11-cu126-2.7.1"
@@ -27,6 +27,7 @@ training_runtime = definitions.Runtime(
     ),
     checkpointing_config=definitions.CheckpointingConfig(
         enabled=True,
+        checkpoint_path="/tmp/training_checkpoints",
     ),
 )
 
