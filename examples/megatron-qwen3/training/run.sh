@@ -15,6 +15,12 @@ export DATASET="zai-org/LongAlign-10k"
 export MODEL_ID="Qwen/Qwen3-30B-A3B-Instruct-2507"
 export CKPT_DIR=${BT_RW_CACHE_DIR}/${BT_TRAINING_JOB_ID}
 mkdir -p $CKPT_DIR
+
+if ! command -v rsync &> /dev/null; then
+    echo "Installing rsync..."
+    apt-get update && apt-get install -y rsync
+fi
+
 # Set up rsync in the background to sync checkpoints to the checkpointing directory
 if [[ "${BT_NODE_RANK}" == "0" ]]; then
     echo "Setting up continuous rsync from shared file system to checkpointing directory"
