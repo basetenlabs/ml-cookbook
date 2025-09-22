@@ -1,7 +1,6 @@
 # Import necessary classes from the Baseten Training SDK
 from truss_train import definitions
 from truss.base import truss_config
-from truss_train.definitions import CheckpointingConfig
 
 project_name = "axolotl-120b multi-node"
 
@@ -14,13 +13,13 @@ BASE_IMAGE = "axolotlai/axolotl:main-20250811-py3.11-cu126-2.7.1"
 # `SecretReference`.
 
 training_runtime = definitions.Runtime(
-    start_commands=[ # Example: list of commands to run your training script
+    start_commands=[  # Example: list of commands to run your training script
         "/bin/sh -c 'chmod +x ./run.sh && ./run.sh'"
     ],
     environment_variables={
         # Secrets (ensure these are configured in your Baseten workspace)
         "HF_TOKEN": definitions.SecretReference(name="hf_access_token"),
-        "WANDB_API_KEY" : definitions.SecretReference(name="wandb_api_key"),
+        "WANDB_API_KEY": definitions.SecretReference(name="wandb_api_key"),
     },
     cache_config=definitions.CacheConfig(
         enabled=True,
@@ -44,13 +43,12 @@ training_compute = definitions.Compute(
 my_training_job = definitions.TrainingJob(
     image=definitions.Image(base_image=BASE_IMAGE),
     compute=training_compute,
-    runtime=training_runtime
+    runtime=training_runtime,
 )
 
 
 # This config will be pushed using the Truss CLI.
 # The association of the job to the project happens at the time of push.
 first_project_with_job = definitions.TrainingProject(
-    name=project_name,
-    job=my_training_job
+    name=project_name, job=my_training_job
 )

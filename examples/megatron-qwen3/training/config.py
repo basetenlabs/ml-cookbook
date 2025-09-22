@@ -1,24 +1,24 @@
 from truss_train import definitions
 from truss.base import truss_config
 
-BASE_IMAGE = "axolotlai/axolotl:main-py3.11-cu128-2.7.1"
+BASE_IMAGE = "baseten/megatron:0.0.1"
+PROJECT_NAME = "Megatron-qwen3-30b-a3b 2nodes"
 
 training_runtime = definitions.Runtime(
-    start_commands=[
-        "/bin/sh -c 'chmod +x ./run.sh && ./run.sh'",
-    ],
+    start_commands=["/bin/sh -c 'chmod +x ./run.sh && ./run.sh'"],
     environment_variables={
         "HF_TOKEN": definitions.SecretReference(
             name="hf_access_token"
         ),  # The name of the HF Access Token secret in your B10 account
+        "HF_HUB_ENABLE_HF_TRANSFER": "true",
         "WANDB_API_KEY": definitions.SecretReference(
             name="wandb_api_key"
-        ),  # The name of the WandB API Key secret in your B10 account
+        ),  # comment this out if you don't want to use wandb
     },
-    checkpointing_config=definitions.CheckpointingConfig(  # this defines BT_CHECKPOINT_DIR
+    cache_config=definitions.CacheConfig(
         enabled=False,
     ),
-    cache_config=definitions.CacheConfig(  # this defines BT_RW_CACHE_DIR
+    checkpointing_config=definitions.CheckpointingConfig(
         enabled=True,
     ),
 )
@@ -37,6 +37,4 @@ training_job = definitions.TrainingJob(
     runtime=training_runtime,
 )
 
-training_project = definitions.TrainingProject(
-    name="Finetune Gemma 3 27B - SP", job=training_job
-)
+training_project = definitions.TrainingProject(name=PROJECT_NAME, job=training_job)

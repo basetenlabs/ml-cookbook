@@ -16,16 +16,27 @@ print(f"Using device: {device}")
 transform = transforms.ToTensor()
 
 # Data directory
-data_dir = os.path.join(os.environ['BT_RW_CACHE_DIR'], 'mnist')
+data_dir = os.path.join(os.environ["BT_RW_CACHE_DIR"], "mnist")
 
 # Data
-train_loader = DataLoader(torchvision.datasets.MNIST(data_dir, train=True, download=True, transform=transform), 
-                         batch_size=512, shuffle=True)
-test_loader = DataLoader(torchvision.datasets.MNIST(data_dir, train=False, download=True, transform=transform), 
-                        batch_size=512, shuffle=False)
+train_loader = DataLoader(
+    torchvision.datasets.MNIST(
+        data_dir, train=True, download=True, transform=transform
+    ),
+    batch_size=512,
+    shuffle=True,
+)
+test_loader = DataLoader(
+    torchvision.datasets.MNIST(
+        data_dir, train=False, download=True, transform=transform
+    ),
+    batch_size=512,
+    shuffle=False,
+)
+
 
 # Model
-class MNISTClassifier(nn.Module): # TODO: make configurable?
+class MNISTClassifier(nn.Module):  # TODO: make configurable?
     def __init__(self):
         super(MNISTClassifier, self).__init__()
         self.conv1 = nn.Conv2d(1, 16, 3, 1)
@@ -35,7 +46,7 @@ class MNISTClassifier(nn.Module): # TODO: make configurable?
         self.fc1 = nn.Linear(4608, 128)
         self.fc2 = nn.Linear(128, 10)
         self.relu = nn.ReLU()
-    
+
     def forward(self, x):
         x = self.relu(self.conv1(x))
         x = self.relu(self.conv2(x))
@@ -45,12 +56,13 @@ class MNISTClassifier(nn.Module): # TODO: make configurable?
         x = self.fc2(x)
         return x
 
+
 model = MNISTClassifier().to(device)
 
 # Training
 optimizer = optim.Adam(model.parameters(), lr=0.0001)
 criterion = nn.CrossEntropyLoss()
-checkpoint_dir = os.environ['BT_CHECKPOINT_DIR']
+checkpoint_dir = os.environ["BT_CHECKPOINT_DIR"]
 if not os.path.exists(checkpoint_dir):
     os.makedirs(checkpoint_dir)
 
@@ -65,17 +77,21 @@ for epoch in range(5):
         loss.backward()
         optimizer.step()
         if batch_idx % 200 == 0:
-            print(f'Epoch: {epoch+1}, Batch: {batch_idx}, Loss: {loss.item():.4f}')
-    
+            print(f"Epoch: {epoch + 1}, Batch: {batch_idx}, Loss: {loss.item():.4f}")
+
     # Test
     model.eval()
-    correct = sum(model(data.to(device)).argmax(1).eq(target.to(device)).sum().item() 
-                 for data, target in test_loader)
-    accuracy = 100. * correct / len(test_loader.dataset)
-    print(f'Epoch {epoch+1}: Accuracy: {accuracy:.2f}%')
-    
+    correct = sum(
+        model(data.to(device)).argmax(1).eq(target.to(device)).sum().item()
+        for data, target in test_loader
+    )
+    accuracy = 100.0 * correct / len(test_loader.dataset)
+    print(f"Epoch {epoch + 1}: Accuracy: {accuracy:.2f}%")
+
     # Save checkpoint
-    torch.save(model.state_dict(), os.path.join(checkpoint_dir, f'epoch_{epoch+1}.pth'))
+    torch.save(
+        model.state_dict(), os.path.join(checkpoint_dir, f"epoch_{epoch + 1}.pth")
+    )
 
 print("Training completed!")
-torch.save(model.state_dict(), os.path.join(checkpoint_dir, 'final.pth')) 
+torch.save(model.state_dict(), os.path.join(checkpoint_dir, "final.pth"))

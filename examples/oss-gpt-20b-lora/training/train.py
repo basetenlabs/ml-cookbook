@@ -3,10 +3,13 @@ from datasets import load_dataset
 from transformers import AutoTokenizer, AutoModelForCausalLM, Mxfp4Config
 import torch
 
+from peft import LoraConfig, get_peft_model
 from trl import SFTConfig, SFTTrainer
 
 MODEL_ID = os.environ.get("MODEL_ID", "openai/gpt-oss-20b")  # The model to fine-tune
-DATASET_ID = os.environ.get("DATASET_ID", "HuggingFaceH4/Multilingual-Thinking")  # The dataset to use for fine-tuning
+DATASET_ID = os.environ.get(
+    "DATASET_ID", "HuggingFaceH4/Multilingual-Thinking"
+)  # The dataset to use for fine-tuning
 
 dataset = load_dataset(DATASET_ID, split="train")
 tokenizer = AutoTokenizer.from_pretrained(MODEL_ID)
@@ -23,7 +26,6 @@ model_kwargs = dict(
 
 model = AutoModelForCausalLM.from_pretrained(MODEL_ID, **model_kwargs)
 
-from peft import LoraConfig, get_peft_model
 
 peft_config = LoraConfig(
     r=8,
@@ -52,8 +54,8 @@ training_args = SFTConfig(
     warmup_ratio=0.03,
     lr_scheduler_type="cosine_with_min_lr",
     lr_scheduler_kwargs={"min_lr_rate": 0.1},
-    output_dir="gpt-oss-20b-multilingual-reasoner",
-    report_to="wandb", # Comment this out if you don't want to use Weights & Biases
+    output_dir=os.getenv("BT_CHECKPOINT_DIR", "gpt-oss-20b-multilingual-reasoner"),
+    report_to="wandb",  # Comment this out if you don't want to use Weights & Biases
     push_to_hub=False,
 )
 
@@ -68,5 +70,7 @@ trainer.train()
 
 trainer.save_model(training_args.output_dir)
 # Push the trained model in output_dir to a Hugging Face model repo
-hf_write_loc = os.environ.get("HF_WRITE_LOC", "baseten-admin/gpt-oss-20b-multilingual-reasoner-ee")
+hf_write_loc = os.environ.get(
+    "HF_WRITE_LOC", "baseten-admin/gpt-oss-20b-multilingual-reasoner-ee"
+)
 trainer.push_to_hub(hf_write_loc)
