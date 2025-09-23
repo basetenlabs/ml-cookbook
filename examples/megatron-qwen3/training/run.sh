@@ -63,7 +63,7 @@ PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True NPROC_PER_NODE=$BT_NUM_GPUS NNO
     --recompute_granularity full \
     --recompute_method uniform \
     --recompute_num_layers 4 \
-    --train_iters 30 \
+    --train_iters 10 \
     --eval_iters 10 \
     --finetune true \
     --cross_entropy_loss_fusion true \
@@ -102,6 +102,11 @@ if [[ "${BT_NODE_RANK}" == "0" ]]; then
     rsync -avz --delete $CKPT_DIR/ $BT_CHECKPOINT_DIR/
     
     echo "Final synchronization complete!"
+    # Optionally clear out cache. Set this in your config.py
+    if [[ "${SHOULD_CLEAR_CACHE}" == "true" ]]; then
+        echo "Clearing out cache..."
+        rm -rf $CKPT_DIR
+    fi
 else
     echo "Worker waiting for leader to finish rsync..."
     sleep infinity
