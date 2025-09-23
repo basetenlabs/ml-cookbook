@@ -16,6 +16,7 @@ export MODEL_ID="Qwen/Qwen3-30B-A3B-Instruct-2507"
 export CKPT_DIR=${BT_RW_CACHE_DIR}/${BT_TRAINING_JOB_ID}
 mkdir -p $CKPT_DIR
 
+# Begin setup of rsync
 if ! command -v rsync &> /dev/null; then
     echo "Installing rsync..."
     apt-get update && apt-get install -y rsync
@@ -45,46 +46,56 @@ swift export \
 
 echo "Done converting ckpt"
 
-PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True NPROC_PER_NODE=$BT_NUM_GPUS NNODES=$BT_GROUP_SIZE NODE_RANK=$BT_NODE_RANK MASTER_ADDR=$BT_LEADER_ADDR megatron sft \
-    --load $MCORE_MODEL_DIR \
-    --dataset $DATASET \
-    --no_initialization false \
-    --split_dataset_ratio 0.01 \
-    --tensor_model_parallel_size 2 \
-    --pipeline_model_parallel_size 2 \
-    --expert_model_parallel_size 2 \
-    --moe_permute_fusion true \
-    --moe_grouped_gemm true \
-    --moe_shared_expert_overlap true \
-    --moe_aux_loss_coeff 1e-3 \
-    --micro_batch_size $MICRO_BATCH_SIZE \
-    --global_batch_size $GLOBAL_BATCH_SIZE \
-    --packing true \
-    --recompute_granularity full \
-    --recompute_method uniform \
-    --recompute_num_layers 4 \
-    --train_iters 10 \
-    --eval_iters 10 \
-    --finetune true \
-    --cross_entropy_loss_fusion true \
-    --lr 1e-5 \
-    --lr_warmup_fraction 0.05 \
-    --min_lr 1e-6 \
-    --save $CKPT_DIR \
-    --eval_interval 10 \
-    --save_interval 10 \
-    --max_length 32000 \
-    --num_workers 8 \
-    --dataset_num_proc 8 \
-    --no_save_optim true \
-    --no_save_rng true \
-    --sequence_parallel true \
-    --attention_backend flash \
-    --optimizer_cpu_offload true \
-    --use_precision_aware_optimizer true \
-    --use_hf 1 \
-    --wandb_project qwen3_moe_megatron \
-    --wandb_exp_name rcano-nnodes-${BT_GROUP_SIZE} 
+run_megatron_training() {
+    PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True NPROC_PER_NODE=$BT_NUM_GPUS NNODES=$BT_GROUP_SIZE NODE_RANK=$BT_NODE_RANK MASTER_ADDR=$BT_LEADER_ADDR megatron sft \
+        --load $MCORE_MODEL_DIR \
+        --dataset $DATASET \
+        --no_initialization false \
+        --split_dataset_ratio 0.01 \
+        --tensor_model_parallel_size 2 \
+        --pipeline_model_parallel_size 2 \
+        --expert_model_parallel_size 2 \
+        --moe_permute_fusion true \
+        --moe_grouped_gemm true \
+        --moe_shared_expert_overlap true \
+        --moe_aux_loss_coeff 1e-3 \
+        --micro_batch_size $MICRO_BATCH_SIZE \
+        --global_batch_size $GLOBAL_BATCH_SIZE \
+        --packing true \
+        --recompute_granularity full \
+        --recompute_method uniform \
+        --recompute_num_layers 4 \
+        --train_iters 5 \
+        --eval_iters 5 \
+        --finetune true \
+        --cross_entropy_loss_fusion true \
+        --lr 1e-5 \
+        --lr_warmup_fraction 0.05 \
+        --min_lr 1e-6 \
+        --save $CKPT_DIR \
+        --eval_interval 5 \
+        --save_interval 5 \
+        --max_length 32000 \
+        --num_workers 8 \
+        --dataset_num_proc 8 \
+        --no_save_optim true \
+        --no_save_rng true \
+        --sequence_parallel true \
+        --attention_backend flash \
+        --optimizer_cpu_offload true \
+        --use_precision_aware_optimizer true \
+        --use_hf 1 \
+        --wandb_project qwen3_moe_megatron \
+        --wandb_exp_name $BT_TRAINING_JOB_NAME
+}
+
+set +e
+run_megatron_training 2>&1 | tee training.log
+EXIT_CODE=$?
+set -e  # Re-enable exit on error
+
+echo "Training completed with exit code: $EXIT_CODE"
+
 
 if [[ "${BT_NODE_RANK}" == "0" ]]; then
     echo "Stopping continuous rsync and performing final synchronization..."
@@ -100,6 +111,16 @@ if [[ "${BT_NODE_RANK}" == "0" ]]; then
     # Perform final synchronization to ensure everything is synced
     echo "Performing final rsync..."
     rsync -avz --delete $CKPT_DIR/ $BT_CHECKPOINT_DIR/
+
+    echo "Uploading checkpoints to hub..."
+    swift export \
+        --model $CKPT_DIR \
+        --to_hf true \
+        --torch_dtype bfloat16 \
+        --output_dir megatron_output/hf_converted \
+        --push_to_hub true \
+        --hub_token $HF_TOKEN \
+        --hub_model_id baseten-admin/megatron-qwen3-30b-a3b-2nodes 
     
     echo "Final synchronization complete!"
     # Optionally clear out cache. Set this in your config.py
@@ -108,6 +129,7 @@ if [[ "${BT_NODE_RANK}" == "0" ]]; then
         rm -rf $CKPT_DIR
     fi
 else
-    echo "Worker waiting for leader to finish rsync..."
+    echo "Worker waiting for leader to rsync..."
     sleep infinity
 fi
+
