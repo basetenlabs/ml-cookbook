@@ -113,14 +113,19 @@ if [[ "${BT_NODE_RANK}" == "0" ]]; then
     rsync -avz --delete $CKPT_DIR/ $BT_CHECKPOINT_DIR/
 
     echo "Uploading checkpoints to hub..."
+    pushd $CKPT_DIR
+    ls -la
+    V0_DIR=$(echo v0-*)
+    popd
+    echo "V0_DIR: $V0_DIR"
     swift export \
-        --model $CKPT_DIR \
+        --mcore_model "${CKPT_DIR}/${V0_DIR}" \
         --to_hf true \
         --torch_dtype bfloat16 \
         --output_dir megatron_output/hf_converted \
         --push_to_hub true \
         --hub_token $HF_TOKEN \
-        --hub_model_id baseten-admin/megatron-qwen3-30b-a3b-2nodes 
+        --hub_model_id rayraycano/megatron-qwen3-30b-a3b
     
     echo "Final synchronization complete!"
     # Optionally clear out cache. Set this in your config.py
