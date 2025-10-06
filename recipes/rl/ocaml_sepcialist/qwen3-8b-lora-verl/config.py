@@ -33,13 +33,12 @@ training_runtime = definitions.Runtime(
 )
 
 # Define the Compute Resources for the Training Job
-# Using 4 nodes with H100 GPUs for Qwen3-30B MoE training (matches original script)
 training_compute = definitions.Compute(
     accelerator=truss_config.AcceleratorSpec(
         accelerator=truss_config.Accelerator.H100,
-        count=8,  # 8 GPUs per node
+        count=4,  
     ),
-    node_count=1,  # 4 nodes for Qwen3-30B MoE training
+    node_count=1,  
 )
 
 # Define the Training Job

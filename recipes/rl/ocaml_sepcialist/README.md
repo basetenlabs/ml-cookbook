@@ -10,6 +10,11 @@ The configuration has special properties that lead to better rewards in the trai
 * Both runs implement (Truncated Importance Sampling)[https://fengyao.notion.site/off-policy-rl]
 * The LoRA run is a faithful adaptation of Lora-without-regret using VeRL, specifically with rank = 8. Existing dependencies don't allow for rank = 1.
 
+## Scaling
+
+To scale this to Qwen 30b, use
+* 4 nodes for the full finetune
+* <TODO> for the LoRA
 
 ## Examples 
 
