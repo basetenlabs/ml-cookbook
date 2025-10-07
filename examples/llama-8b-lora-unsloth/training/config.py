@@ -30,7 +30,7 @@ training_runtime = definitions.Runtime(
 training_compute = definitions.Compute(
     accelerator=truss_config.AcceleratorSpec(
         accelerator=truss_config.Accelerator.L4,
-        count=1,
+        count=4,
     ),
 )
 
