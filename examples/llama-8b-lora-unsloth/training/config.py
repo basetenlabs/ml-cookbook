@@ -29,7 +29,7 @@ training_runtime = definitions.Runtime(
 # 3. Define the Compute Resources for the Training Job
 training_compute = definitions.Compute(
     accelerator=truss_config.AcceleratorSpec(
-        accelerator=truss_config.Accelerator.H100,
+        accelerator=truss_config.Accelerator.L4,
         count=4,
     ),
 )
