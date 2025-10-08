@@ -18,7 +18,7 @@ training_runtime = definitions.Runtime(
         ),  # comment this out if you don't want to use wandb
     },
     cache_config=definitions.CacheConfig(
-        enabled=False,
+        enabled=True,
     ),
     checkpointing_config=definitions.CheckpointingConfig(
         enabled=True,
