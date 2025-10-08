@@ -17,13 +17,14 @@ python3 -m verl.trainer.main_ppo \
     data.filter_overlong_prompts=True \
     data.truncation='error' \
     actor_rollout_ref.model.path=Qwen/Qwen3-8B \
-    actor_rollout_ref.actor.optim.lr=5e-5 \
+    actor_rollout_ref.actor.optim.lr=3e-4 \
     actor_rollout_ref.model.use_remove_padding=True \
     actor_rollout_ref.model.lora_rank=8 \
     actor_rollout_ref.model.lora_alpha=32 \
     actor_rollout_ref.actor.ppo_mini_batch_size=8 \
     actor_rollout_ref.actor.ppo_micro_batch_size_per_gpu=1 \
     actor_rollout_ref.actor.use_kl_loss=True \
+    actor_rollout_ref.actor.policy_loss.loss_mode="gspo" \
     actor_rollout_ref.actor.kl_loss_coef=0.001 \
     actor_rollout_ref.actor.kl_loss_type=low_var_kl \
     actor_rollout_ref.actor.tis_imp_ratio_cap=2.0 \
@@ -50,5 +51,5 @@ python3 -m verl.trainer.main_ppo \
     trainer.nnodes=$BT_GROUP_SIZE \
     trainer.default_local_dir=/tmp/checkpoints \
     trainer.save_freq=32 \
-    trainer.test_freq=32 \
-    trainer.total_epochs=1 $@
+    trainer.test_freq=16 \
+    trainer.total_epochs=2 $@

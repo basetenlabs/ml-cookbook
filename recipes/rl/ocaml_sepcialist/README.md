@@ -12,9 +12,9 @@ The configuration has special properties that lead to better rewards in the trai
 
 ## Scaling
 
-To scale this to Qwen 30b, use
+To scale this to a Qwen 30b, use
 * 4 nodes for the full finetune
-* <TODO> for the LoRA
+* LoRA: <TODO>
 
 ## Examples 
 
@@ -25,8 +25,11 @@ Below are examples of the model from before it was trained, and after
 ## Experiments
 
 * Full finetune:
-  * DAPO? 
-  * GSPO? 
+  * DAPO 
+  * GSPO
+  * DAPO + GSPO 
+We found that GSPO alone outperformed DAPO on rewards (insert graph)
+<TODO>: Where do I find test reward performance on WANDB
 
 * LoRA
   * How small can we deploy on
