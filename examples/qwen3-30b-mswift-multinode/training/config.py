@@ -2,7 +2,9 @@ from truss_train import definitions
 from truss.base import truss_config
 
 BASE_IMAGE = "baseten/megatron:0.0.1"
-PROJECT_NAME = "Megatron-qwen3-30b-a3b 2nodes"
+PROJECT_NAME = "Megatron-qwen3-30b-a3b multinode"
+
+NUM_NODES = 2
 
 training_runtime = definitions.Runtime(
     start_commands=["/bin/sh -c 'chmod +x ./run.sh && ./run.sh'"],
@@ -28,7 +30,7 @@ training_compute = definitions.Compute(
         accelerator=truss_config.Accelerator.H100,
         count=8,
     ),
-    node_count=2,
+    node_count=NUM_NODES,
 )
 
 training_job = definitions.TrainingJob(

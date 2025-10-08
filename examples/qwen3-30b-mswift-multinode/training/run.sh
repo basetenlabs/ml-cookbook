@@ -61,6 +61,8 @@ PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True NPROC_PER_NODE=$BT_NUM_GPUS NNO
     --attention_backend flash \
     --optimizer_cpu_offload true \
     --use_precision_aware_optimizer true \
-    --use_hf 1 \
-    --wandb_project qwen3_moe_megatron \
-    --wandb_exp_name all_training_b10f 
+    --use_hf 1 
+
+# To use wandb with multinode, checkpoint to the distributed filesystem, e.g. $BT_CHECKPOINT_DIR/$BT_TRAINING_JOB_NAME.
+# You can then sync these checkpoint files into the checkpointing directory by copying or moving them to the $BT_CHECKPOINT_DIR 
+# in a separate job, or move them over after training.
