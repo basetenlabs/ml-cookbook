@@ -5,9 +5,6 @@ import datasets
 from verl.utils.hdfs_io import copy, makedirs
 import argparse
 
-with open("system_prompt.txt", "r") as f:
-    SYSTEM_PROMPT = f.read()
-
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--local_dir', default='/opt/tiger/gsm8k')
@@ -28,6 +25,7 @@ if __name__ == '__main__':
         def process_fn(example, idx):
             prompt = example.pop("prompt")
 
+            system = 'A conversation between User and Assistant. The user asks a question, and the Assistant solves it. The assistant first thinks about the reasoning process in the mind and then provides the user with the answer. The reasoning process and answer are enclosed within <think> </think> and <answer> </answer> tags, respectively, i.e., <think> reasoning process here </think> <answer> answer here </answer>.'
 
             tests = example.pop("tests")
             data = {
@@ -35,7 +33,7 @@ if __name__ == '__main__':
                 "prompt": [
                     {
                         "role": "system",
-                        "content": SYSTEM_PROMPT,
+                        "content": system,
                     },
                     {
                         "role": "user",
