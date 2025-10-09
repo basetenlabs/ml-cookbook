@@ -24,8 +24,10 @@ training_runtime = definitions.Runtime(
     environment_variables={
         "WANDB_API_KEY": definitions.SecretReference(name="wandb_api_key"),
     },
-    # Enable training cache for faster iteration
-    enable_cache=False,
+    # Enable training cache for faster iteration. Subsequent runs won't require model downlaods
+    cache_config = definitions.CacheConfig(
+        enabled=True,
+    ),
     checkpointing_config = definitions.CheckpointingConfig(
         enabled=True,
         checkpoint_path="/tmp/checkpoints"
@@ -42,14 +44,14 @@ training_compute = definitions.Compute(
 )
 
 # Define the Training Job
-my_training_job = definitions.TrainingJob(
+training_job = definitions.TrainingJob(
     image=definitions.Image(base_image=BASE_IMAGE),
     compute=training_compute,
     runtime=training_runtime,
 )
 
 # Create the training project
-verl_training_project = definitions.TrainingProject(
+_ = definitions.TrainingProject(
     name=project_name,
-    job=my_training_job
+    job=training_job
 )

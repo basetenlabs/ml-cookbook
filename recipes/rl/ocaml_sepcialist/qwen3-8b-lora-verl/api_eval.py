@@ -27,6 +27,7 @@ def evaluate_response(content):
 
 API_KEY = os.getenv("BASETEN_API_KEY")
 
+# For more details on deploying your trained model, checkout https://docs.baseten.co/training/deployment 
 client = OpenAI(
     api_key=API_KEY,
     base_url="https://model-vq07jj13.api.baseten.co/environments/production/sync/v1"

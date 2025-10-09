@@ -33,24 +33,23 @@ training_runtime = definitions.Runtime(
 )
 
 # Define the Compute Resources for the Training Job
-# Using 4 nodes with H100 GPUs for Qwen3-30B MoE training (matches original script)
 training_compute = definitions.Compute(
     accelerator=truss_config.AcceleratorSpec(
         accelerator=truss_config.Accelerator.H100,
         count=8,  # 8 GPUs per node
     ),
-    node_count=1,  # 4 nodes for Qwen3-30B MoE training
+    node_count=1,  
 )
 
 # Define the Training Job
-my_training_job = definitions.TrainingJob(
+training_job = definitions.TrainingJob(
     image=definitions.Image(base_image=BASE_IMAGE),
     compute=training_compute,
     runtime=training_runtime,
 )
 
 # Create the training project
-verl_training_project = definitions.TrainingProject(
+_ = definitions.TrainingProject(
     name=project_name,
-    job=my_training_job
+    job=training_job
 )

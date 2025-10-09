@@ -5,6 +5,9 @@ set -eux
 
 python3 prepare_dataset.py --local_dir /workspace/data/ocaml/
 
+HF_HOME=$BT_RW_CACHE_DIR/huggingface
+huggingface-cli download Qwen/Qwen3-8B
+
 python3 -m verl.trainer.main_ppo \
     custom_reward_function.path=reward_function.py \
     custom_reward_function.name=compute_score \
@@ -44,7 +47,7 @@ python3 -m verl.trainer.main_ppo \
     algorithm.use_kl_in_reward=False \
     trainer.critic_warmup=0 \
     trainer.logger=['console','wandb'] \
-    trainer.project_name='rcano OCaml Specialist' \
+    trainer.project_name='OCaml Specialist' \
     trainer.experiment_name=$BT_TRAINING_JOB_NAME \
     trainer.n_gpus_per_node=$BT_NUM_GPUS \
     trainer.nnodes=$BT_GROUP_SIZE \
