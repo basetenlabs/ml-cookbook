@@ -16,18 +16,14 @@ cd /app/
 dataset="zai-org/LongAlign-10k"
 model_id="Qwen/Qwen3-30B-A3B-Instruct-2507"
 
-mcore_model_dir="${BT_RW_CACHE_DIR}/converted/Qwen3-30B-A3B-Instruct-2507-mcore"
+mcore_model_dir="./converted/Qwen3-30B-A3B-Instruct-2507-mcore"
 
-if [ ! -d ${mcore_model_dir} ]; then
-    swift export \
-        --model ${model_id} \
-        --to_mcore true \
-        --torch_dtype bfloat16 \
-        --use_hf \
-        --output_dir ${mcore_model_dir}
-else
-    echo "Mcore model already exists, skipping conversion"
-fi
+swift export \
+    --model ${model_id} \
+    --to_mcore true \
+    --torch_dtype bfloat16 \
+    --use_hf \
+    --output_dir ${mcore_model_dir}
 
 echo "Starting training"
 
