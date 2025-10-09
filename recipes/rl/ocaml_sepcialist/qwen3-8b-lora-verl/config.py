@@ -1,23 +1,18 @@
-# Import necessary classes from the Baseten Training SDK
 from truss_train import definitions
 from truss.base import truss_config
 
-# Project name
 project_name = "OCaml Specialist - veRL GRPO"
 
 # Base image with VERL dependencies
-# You may need to build a custom image with VERL installed
 BASE_IMAGE = "verlai/verl:app-verl0.5-vllm0.10.0-mcore0.13.0-te2.2"
 
 # Define the Runtime Environment for the Training Job
 training_runtime = definitions.Runtime(
     start_commands=[
-        "git clone https://github.com/volcengine/verl && cd verl",
-        "pip3 install --no-deps -e .",
-        "cd ..",
-        "apt-get install ocaml -y",
-        # Make run script executable
-        "chmod +x ./run.sh",
+        # Make scripts executable
+        "chmod +x ./run.sh && chmod +x ./install_deps.sh",
+        # install most recent verl and ocaml dependencies
+        "./install_deps.sh",
         # Run the training script
         "./run.sh",
     ],
