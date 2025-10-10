@@ -51,7 +51,7 @@ python3 -m verl.trainer.main_ppo \
     trainer.experiment_name=$BT_TRAINING_JOB_NAME \
     trainer.n_gpus_per_node=$BT_NUM_GPUS \
     trainer.nnodes=$BT_GROUP_SIZE \
-    trainer.default_local_dir=/tmp/checkpoints \
+    trainer.default_local_dir=$BT_CHECKPOINT_DIR \
     trainer.save_freq=32 \
     trainer.test_freq=8 \
     trainer.total_epochs=1 $@

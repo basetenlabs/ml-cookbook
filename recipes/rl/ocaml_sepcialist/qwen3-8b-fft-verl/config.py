@@ -25,7 +25,9 @@ training_runtime = definitions.Runtime(
         "WANDB_API_KEY": definitions.SecretReference(name="wandb_api_key"),
     },
     # Enable training cache for faster iteration
-    enable_cache=False,
+    cache_config = definitions.CacheConfig(
+        enabled=True,
+    ),
     checkpointing_config = definitions.CheckpointingConfig(
         enabled=True,
         checkpoint_path="/tmp/checkpoints"
