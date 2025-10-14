@@ -29,7 +29,6 @@ python3 -m verl.trainer.main_ppo \
     actor_rollout_ref.actor.use_kl_loss=True \
     actor_rollout_ref.actor.kl_loss_coef=0.001 \
     actor_rollout_ref.actor.kl_loss_type=low_var_kl \
-    actor_rollout_ref.actor.tis_imp_ratio_cap=2.0 \
     actor_rollout_ref.rollout.calculate_log_probs=True \
     actor_rollout_ref.actor.entropy_coeff=0 \
     actor_rollout_ref.model.enable_gradient_checkpointing=True \
@@ -54,4 +53,8 @@ python3 -m verl.trainer.main_ppo \
     trainer.default_local_dir=$BT_CHECKPOINT_DIR \
     trainer.save_freq=32 \
     trainer.test_freq=8 \
-    trainer.total_epochs=1 $@
+    trainer.total_epochs=1 $@ \
+    algorithm.rollout_is_threshold=2.0 \
+    algorithm.rollout_is=true \
+    algorithm.rollout_is_level=token \
+    algorithm.rollout_is_mode=truncate \
