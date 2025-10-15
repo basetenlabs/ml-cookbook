@@ -58,3 +58,15 @@ python3 -m verl.trainer.main_ppo \
     algorithm.rollout_is=true \
     algorithm.rollout_is_level=token \
     algorithm.rollout_is_mode=truncate \
+
+for checkpoint_dir in $BT_CHECKPOINT_DIR/global_step_*/; do
+    if [ -d "$checkpoint_dir/actor" ]; then
+        echo "Merging actor model from $(basename $checkpoint_dir)..."
+        python -m verl.model_merger merge \
+            --backend fsdp \
+            --local_dir "$checkpoint_dir/actor" \
+            --target_dir "$checkpoint_dir/actor_hf"
+    else
+        echo "No actor directory found in $(basename $checkpoint_dir), skipping..."
+    fi
+done
