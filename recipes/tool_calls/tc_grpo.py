@@ -80,7 +80,7 @@ model.print_trainable_parameters()
 
 # Define reward function for tool calling
 # def reward_function(prompts, completions, references, tools_list):
-def reward_function(prompts, **kwargs):
+def reward_function(prompts, completions, **kwargs):
     """
     Reward function that evaluates the quality of tool calls.
     Returns a list of reward scores (one per completion).
@@ -90,60 +90,118 @@ def reward_function(prompts, **kwargs):
     #     print(f"  {key}: {type(kwargs[key])}")
     rewards = []
 
-    completions = kwargs.get("completions", [])
+    # completions = kwargs.get("completions", [])
     references = kwargs.get("references", [])
+    # references = kwargs.get("completion", [])
     tools = kwargs.get("tools", [])
 
     for completion, reference in zip(completions, references):
         reward = 0.0
+        ref_has_tool = '<tool_call>' in reference
+        comp_has_tool = '<tool_call>' in completion
+        # Case 1: Reference has tool call
+        if ref_has_tool:
+            if comp_has_tool:
+                # Both have tool calls - compare quality
+                try:
+                    tool_call_match = re.search(r'<tool_call>(.*?)</tool_call>', completion, re.DOTALL)
+                    ref_tool_match = re.search(r'<tool_call>(.*?)</tool_call>', reference, re.DOTALL)
+                    if tool_call_match and ref_tool_match:
+                        comp_tool = json.loads(tool_call_match.group(1))
+                        ref_tool = json.loads(ref_tool_match.group(1))
+                        
+                        # Reward for valid JSON structure
+                        reward += 3.0
+                        
+                        # Reward for correct tool name
+                        if comp_tool.get('name') == ref_tool.get('name'):
+                            reward += 5.0
+                            
+                            # Reward for matching arguments
+                            if 'arguments' in comp_tool and 'arguments' in ref_tool:
+                                comp_args = set(comp_tool['arguments'].keys())
+                                ref_args = set(ref_tool['arguments'].keys())
+                                
+                                # Jaccard similarity for arguments
+                                if len(ref_args) > 0:
+                                    overlap = len(comp_args & ref_args)
+                                    union = len(comp_args | ref_args)
+                                    reward += (overlap / union) * 4.0
+                        else:
+                            # Wrong tool name
+                            reward -= 3.0
+                    else:
+                        # Has tool call tags but invalid JSON
+                        reward += 1.0
+                     
+                except json.JSONDecodeError:
+                    # Malformed JSON in tool call
+                    reward -= 2.0
+            else:
+                # Missing tool call when one is needed
+                reward -= 5.0
+        # Case 2: Reference has no tool call
+        else:
+            if comp_has_tool:
+                # False positive - made a tool call when not needed
+                reward -= 3.0
+            else:
+                # Correct - no tool call needed
+                reward += 2.0
+        # Small penalty for excessive length (normalized)
+        len_ratio = len(completion) / max(len(reference), 1)
+        if len_ratio > 2.0:
+            reward -= 1.0
+        rewards.append(reward)
+    return rewards
         
         # 1. Check if completion contains valid JSON tool call
-        try:
-            # Look for tool call patterns
-            if '<tool_call>' in completion and '</tool_call>' in completion:
-                reward += 2.0
+    #     try:
+    #         # Look for tool call patterns
+    #         if '<tool_call>' in completion and '</tool_call>' in completion:
+    #             reward += 2.0
                 
-                # Extract and validate JSON
-                tool_call_match = re.search(r'<tool_call>(.*?)</tool_call>', completion, re.DOTALL)
-                if tool_call_match:
-                    tool_call_json = json.loads(tool_call_match.group(1))
-                    reward += 2.0
+    #             # Extract and validate JSON
+    #             tool_call_match = re.search(r'<tool_call>(.*?)</tool_call>', completion, re.DOTALL)
+    #             if tool_call_match:
+    #                 tool_call_json = json.loads(tool_call_match.group(1))
+    #                 reward += 2.0
                     
-                    # Check if tool name matches reference
-                    if 'name' in tool_call_json:
-                        ref_tool_match = re.search(r'<tool_call>(.*?)</tool_call>', reference, re.DOTALL)
-                        if ref_tool_match:
-                            ref_tool = json.loads(ref_tool_match.group(1))
-                            if tool_call_json.get('name') == ref_tool.get('name'):
-                                reward += 3.0
+    #                 # Check if tool name matches reference
+    #                 if 'name' in tool_call_json:
+    #                     ref_tool_match = re.search(r'<tool_call>(.*?)</tool_call>', reference, re.DOTALL)
+    #                     if ref_tool_match:
+    #                         ref_tool = json.loads(ref_tool_match.group(1))
+    #                         if tool_call_json.get('name') == ref_tool.get('name'):
+    #                             reward += 3.0
                             
-                            # Check if arguments overlap
-                            if 'arguments' in tool_call_json and 'arguments' in ref_tool:
-                                arg_overlap = len(set(tool_call_json['arguments'].keys()) & 
-                                                set(ref_tool['arguments'].keys()))
-                                reward += arg_overlap * 1.0
-        except:
-            reward -= 1.0
+    #                         # Check if arguments overlap
+    #                         if 'arguments' in tool_call_json and 'arguments' in ref_tool:
+    #                             arg_overlap = len(set(tool_call_json['arguments'].keys()) & 
+    #                                             set(ref_tool['arguments'].keys()))
+    #                             reward += arg_overlap * 1.0
+    #     except:
+    #         reward -= 1.0
         
-        # 2. Penalize if no tool call when reference has one
-        if '<tool_call>' in reference and '<tool_call>' not in completion:
-            reward -= 5.0
+    #     # 2. Penalize if no tool call when reference has one
+    #     if '<tool_call>' in reference and '<tool_call>' not in completion:
+    #         reward -= 5.0
         
-        # 3. Penalize if tool call when reference doesn't have one
-        if '<tool_call>' not in reference and '<tool_call>' in completion:
-            reward -= 2.0
+    #     # 3. Penalize if tool call when reference doesn't have one
+    #     if '<tool_call>' not in reference and '<tool_call>' in completion:
+    #         reward -= 2.0
         
-        # 4. Length penalty (avoid overly verbose responses)
-        if len(completion) > len(reference) * 2:
-            reward -= 1.0
+    #     # 4. Length penalty (avoid overly verbose responses)
+    #     if len(completion) > len(reference) * 2:
+    #         reward -= 1.0
         
-        rewards.append(reward)
+    #     rewards.append(reward)
     
-    return rewards
+    # return rewards
 
 # GRPO Configuration
 grpo_config = GRPOConfig(
-    output_dir="./qwen-tool-calling-grpo",
+    output_dir="./qwen-tool-calling-1",
     num_train_epochs=3,
     per_device_train_batch_size=2,
     per_device_eval_batch_size=4,
@@ -179,8 +237,8 @@ print("Starting GRPO training...")
 trainer.train()
 
 # Save the fine-tuned model
-trainer.save_model("./qwen-tool-calling-grpo-final")
-tokenizer.save_pretrained("./qwen-tool-calling-grpo-final")
+trainer.save_model("./qwen-tool-calling-grpo-1")
+tokenizer.save_pretrained("./qwen-tool-calling-grpo-1")
 
 print("Training complete!")
 
