@@ -43,6 +43,7 @@ python3 -m verl.trainer.main_ppo \
     actor_rollout_ref.model.enable_gradient_checkpointing=True \
     actor_rollout_ref.actor.fsdp_config.param_offload=True \
     actor_rollout_ref.actor.fsdp_config.optimizer_offload=True \
+    actor_rollout_ref.actor.checkpoint.save_contents=[model,optimizer,extra,hf_model] \
     actor_rollout_ref.rollout.log_prob_micro_batch_size_per_gpu=4 \
     actor_rollout_ref.rollout.tensor_model_parallel_size=2 \
     actor_rollout_ref.rollout.name=vllm \
@@ -67,15 +68,3 @@ python3 -m verl.trainer.main_ppo \
     algorithm.rollout_is=true \
     algorithm.rollout_is_level=token \
     algorithm.rollout_is_mode=truncate \
-
-for checkpoint_dir in $BT_CHECKPOINT_DIR/global_step_*/; do
-    if [ -d "$checkpoint_dir/actor" ]; then
-        echo "Merging actor model from $(basename $checkpoint_dir)..."
-        python -m verl.model_merger merge \
-            --backend fsdp \
-            --local_dir "$checkpoint_dir/actor" \
-            --target_dir "$checkpoint_dir/actor_hf"
-    else
-        echo "No actor directory found in $(basename $checkpoint_dir), skipping..."
-    fi
-done
