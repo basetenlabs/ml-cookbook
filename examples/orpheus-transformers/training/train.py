@@ -211,7 +211,7 @@ def main(args):
 
     # Create tokenized audio dataset
     print("Tokenizing audio dataset...")
-    dataset = dataset.map(add_codes, remove_columns=["audio"], orig_freq=ds_sample_rate)
+    dataset = dataset.map(lambda x: add_codes(x, orig_freq=ds_sample_rate), remove_columns=["audio"])
 
     # Clean dataset
     print("Cleaning dataset...")
