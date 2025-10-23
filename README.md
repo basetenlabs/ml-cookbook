@@ -36,10 +36,36 @@ Before getting started, ensure you have the following:
   - Add any access tokens, API keys (Example: Huggingface access token, Weights&Biases access token), passwords to securely access credentials from your models in [secrets](https://app.baseten.co/settings/secrets).
   - This is required to access models on Huggingface that have gated access. More information on setting up Huggingface access tokens can be found [here](https://huggingface.co/docs/hub/en/security-tokens).
 - Python 3.8 to 3.11 installed. [Conda](https://docs.conda.io/projects/conda/en/latest/user-guide/getting-started.html) env recommended.
-- Install [Truss](https://github.com/basetenlabs/truss), Baseten's open-source model packaging tool to configure and containerize model code.
-  - ` pip install --upgrade truss`
 
-### Clone this repository
+### Run the examples 
+
+#### Install `truss` 
+Use the appropriate command for your package manager
+```bash
+# pip
+pip install -U truss
+# uv
+uv add truss && uv sync --upgrade-package truss
+```
+
+#### Create the workspace for your training project
+
+```bash
+# for any example (replace with the specific example name)
+truss train init --examples <example-name> && cd <example-name>
+```
+
+#### Kick off the job
+
+Make sure you've plugged in proper secrets (e.g. wandb api key, huggingface token) via Baseten Secrets and Environment Variables, and kick off your job
+
+```bash
+truss train push config.py
+```
+
+For more details, take a look at the [docs](https://docs.baseten.co/training/overview)
+
+### If you'd like to fire off jobs from within this repository directly, you can clone the respository and navigagte to the approriate workspaces.
 
 ```bash
 git clone https://github.com/basetenlabs/ml-cookbook.git
