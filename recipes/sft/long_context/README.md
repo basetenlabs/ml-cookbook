@@ -9,5 +9,33 @@ We train Qwen3-30B-A3B with a sequence length of 64000 on the [LongAlign dataset
 
 The base image used is home-rolled by Baseten, which makes ms-swift easier to use off the shelf. 
 
+## Running the example
+
+### Install `truss` 
+Use the appropriate command for your package manager
+```bash
+# pip
+pip install -U truss
+# uv
+uv add truss && uv sync --upgrade-package truss
+```
+
+### Create the workspace for your training project
+
+```bash
+# for the multinode example
+truss train init --examples qwen3-30b-mswift-multinode && cd qwen3-30b-mswift-multinode
+```
+
+### Kick off the job
+
+Make sure you've plugged in proper secrets (e.g. wandb api key, huggingface token) via Baseten Secrets and Environment Variables, and kick off your job
+
+```bash
+truss train push config.py
+```
+
+For more details, take a look at the [docs](https://docs.baseten.co/training/overview)
+
 ## Access
 Reach out to Baseten to get access to Multinode Training!
