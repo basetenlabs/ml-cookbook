@@ -2,6 +2,7 @@
 
 import ast
 import re
+import os
 import json
 import torch
 from transformers import AutoTokenizer, AutoModelForCausalLM
@@ -9,7 +10,7 @@ from trl import GRPOConfig, GRPOTrainer
 from datasets import load_dataset
 from peft import LoraConfig, get_peft_model, prepare_model_for_kbit_training
 
-
+os.environ["WANDB_PROJECT"] = "qwen-tool-calling-grpo-t"
 # Load dataset
 # ds = load_dataset("NousResearch/hermes-function-calling-v1", "func_calling_singleturn")
 # ds = load_dataset("baseten-admin/CleanNousResearch_simple")
@@ -47,7 +48,8 @@ def format_example(x, add_generation_prompt=False):
 formatted_dataset = ds.map(format_example).filter(lambda x: x is not None)
 # formatted_dataset = formatted_dataset.remove_columns(["conversations", "category", "subcategory", "task"])
 
-train_test_split = formatted_dataset['train'].train_test_split(test_size=0.1, seed=42)
+# train_test_split = formatted_dataset['train'].train_test_split(test_size=0.1, seed=42)
+train_test_split = formatted_dataset['train'].train_test_split(test_size=300, seed=42)
 train_dataset = train_test_split['train']
 eval_dataset = train_test_split['test']
 
@@ -103,11 +105,18 @@ def get_selected_tools_list(generated_text):
     parsed_tools = []
     for tool in tools:
         try:
+            stripped_tool = tool.encode().decode('unicode_escape').strip()
             # tool = ast.literal_eval(tool.encode().decode('unicode_escape').strip().replace('"', "'")) # escape chars and some other nonsense
-            tool = json.loads(tool.encode().decode('unicode_escape').strip())
+            tool = json.loads(stripped_tool)
             parsed_tools.append(tool)
-        except Exception as e:
-            print(f"Exception in parsing generated tools for {tool}")
+        except:
+            try:
+                tool = ast.literal_eval(tool.encode().decode('unicode_escape').strip().replace('"', "'"))
+                print("Prsed with ast.literal_eval")
+                parsed_tools.append(tool)
+            except Exception as e:
+                print(f"Exception in parsing generated tools for {tool}")
+                print("Generated text\n", generated_text)
     return parsed_tools
 
 # def reward_function(prompts, completions, references, tools_list):
@@ -182,6 +191,7 @@ def reward_function(prompts, completions, **kwargs):
                 # partial match: maybe +0 or some smaller reward
                 reward += REWARD_CORRECT_CALL * 0.5
         rewards.append(reward)
+    print("Rewards:", rewards)
     return rewards
 
 # GRPO Configuration
@@ -199,7 +209,8 @@ grpo_config = GRPOConfig(
     eval_strategy="steps",
     eval_steps=10,
     bf16=True,
-    max_grad_norm=0.3,
+    max_grad_norm=1.0,
+    report_to=["wandb"],
     
     # GRPO-specific parameters
     num_generations=4,  # Number of generations per prompt for group comparison
@@ -247,7 +258,7 @@ def test_tool_calling(prompt, tools):
     with torch.no_grad():
         outputs = model.generate(
             **inputs,
-            max_new_tokens=512,
+            max_new_tokens=1024,
             temperature=0.7,
             do_sample=True
         )
