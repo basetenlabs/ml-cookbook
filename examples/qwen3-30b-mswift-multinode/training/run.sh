@@ -57,7 +57,7 @@ PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True NPROC_PER_NODE=$BT_NUM_GPUS NNO
     --save ${ckpt_dir} \
     --eval_interval 40 \
     --save_interval 40 \
-    --max_length 32000 \
+    --max_length 64000 \
     --num_workers 8 \
     --dataset_num_proc 8 \
     --no_save_optim true \
