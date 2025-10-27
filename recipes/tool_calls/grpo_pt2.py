@@ -22,7 +22,7 @@ model_name = "Qwen/Qwen2.5-7B-Instruct"
 tokenizer = AutoTokenizer.from_pretrained(model_name, trust_remote_code=True)
 tokenizer.pad_token = tokenizer.eos_token
 
-def format_example(x, add_generation_prompt=False):
+deflearn(x, add_generation_prompt=False):
     try:
         pattern = r'<tools>(.*?)</tools>'
         tools = json.loads(x['tools'])
@@ -69,9 +69,9 @@ model = AutoModelForCausalLM.from_pretrained(
 model = prepare_model_for_kbit_training(model)
 
 lora_config = LoraConfig(
-    r=16, # higher rank = more weights in lora
+    r=16,
     lora_alpha=32,
-    target_modules=["q_proj", "k_proj", "v_proj", "o_proj", "all_linear"], 
+    target_modules=["q_proj", "k_proj", "v_proj", "o_proj", "all_linear"],
     lora_dropout=0.05,
     bias="none",
     # task_type="CAUSAL_LM"
@@ -105,9 +105,9 @@ def get_selected_tools_list(generated_text):
     parsed_tools = []
     for tool in tools:
         try:
-            stripped_tool = tool.encode().decode('unicode_escape').strip()
+            # stripped_tool = tool.encode().decode('unicode_escape').strip()
             # tool = ast.literal_eval(tool.encode().decode('unicode_escape').strip().replace('"', "'")) # escape chars and some other nonsense
-            tool = json.loads(stripped_tool)
+            tool = json.loads(tool)
             parsed_tools.append(tool)
         except:
             try:
@@ -163,6 +163,13 @@ def reward_function(prompts, completions, **kwargs):
         # Compare in order
         for gt_tool, gen_tool in zip(gt_tools, gen_tools):
             # tool name
+            if 'name' not in gt_tool:
+                print("GT tool missing name:", gt_tool)
+                # reward = 0.0
+                continue
+            if 'name' not in gen_tool:
+                print("Generated tool missing name:", gen_tool)
+                gen_tool['name'] = ''
             if gt_tool['name'] != gen_tool['name']:
                 reward -= PENALTY_NAME
                 continue
@@ -200,23 +207,25 @@ grpo_config = GRPOConfig(
     num_train_epochs=3,
     per_device_train_batch_size=2,
     per_device_eval_batch_size=4,
-    gradient_accumulation_steps=2,
-    # learning_rate=5e-4,
-    learning_rate=1e-5,
-    warmup_steps=100,
+    # gradient_accumulation_steps=2,
+    gradient_accumulation_steps=1,
+    learning_rate=5e-4,
+    # learning_rate=1e-5,
+    lr_scheduler="cosine",
+    warmup_steps=50,
     logging_steps=10,
-    save_steps=100,
+    save_steps=200,
     eval_strategy="steps",
-    eval_steps=10,
+    eval_steps=200,
     bf16=True,
     max_grad_norm=1.0,
     report_to=["wandb"],
     
     # GRPO-specific parameters
-    num_generations=4,  # Number of generations per prompt for group comparison
+    num_generations=8,  # Number of generations per prompt for group comparison
     temperature=0.9,  # Sampling temperature
-    # max_new_tokens=512,
-    # kl=0.05,  # KL divergence coefficient to prevent drift from reference
+    max_new_tokens=512,
+    kl=0.05,  # KL divergence coefficient to prevent drift from reference
 )
 
 # Initialize GRPO Trainer
@@ -258,7 +267,7 @@ def test_tool_calling(prompt, tools):
     with torch.no_grad():
         outputs = model.generate(
             **inputs,
-            max_new_tokens=1024,
+            max_new_tokens=512,
             temperature=0.7,
             do_sample=True
         )
