@@ -1,3 +1,6 @@
+# Orpheus + Transformers library
+This example demonstrates how to train [Orpheus](https://github.com/canopyai/Orpheus-TTS) on a specific voice dataset by training a [LoRA module](https://www.ibm.com/think/topics/lora). This allows you to customize the powerful Text-To-Speech (TTS) model to use accents and tones that fit your use case best.
+
 ## Run instructions
 
 ### Update config.py 

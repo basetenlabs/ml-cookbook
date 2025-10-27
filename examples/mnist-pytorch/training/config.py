@@ -19,11 +19,8 @@ training_runtime = definitions.Runtime(
 )
 
 training_compute = definitions.Compute(
-    accelerator=truss_config.AcceleratorSpec(
-        accelerator=truss_config.Accelerator.H100,
-        count=1,
-    ),
-    node_count=1,
+    cpu_count=4,
+    memory="16Gi",
 )
 
 training_job = definitions.TrainingJob(
