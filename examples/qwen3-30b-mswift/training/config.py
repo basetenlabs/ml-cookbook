@@ -2,7 +2,7 @@ from truss_train import definitions
 from truss.base import truss_config
 
 BASE_IMAGE = "baseten/megatron:0.0.3"
-PROJECT_NAME = "MSwift Megatron - Single Node Megatron"
+PROJECT_NAME = "MSwift Megatron - Single Node"
 
 training_runtime = definitions.Runtime(
     start_commands=["/bin/sh -c 'chmod +x ./run_1node.sh && ./run_1node.sh'"],
