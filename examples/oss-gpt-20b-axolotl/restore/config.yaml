@@ -1,0 +1,68 @@
+base_model: openai/gpt-oss-20b
+
+use_kernels: false
+model_quantization_config: Mxfp4Config
+model_quantization_config_kwargs:
+  dequantize: true
+
+plugins:
+  - axolotl.integrations.cut_cross_entropy.CutCrossEntropyPlugin
+
+experimental_skip_move_to_device: true  # prevent OOM by NOT putting model to GPU before sharding
+
+datasets:
+  - path: HuggingFaceH4/Multilingual-Thinking
+    type: chat_template
+    field_thinking: thinking
+    template_thinking_key: thinking
+
+dataset_prepared_path: last_run_prepared
+val_set_size: 0.1
+eval_steps: 10
+
+sequence_len: 4096
+sample_packing: true
+
+gradient_accumulation_steps: 2
+micro_batch_size: 1
+num_epochs: 1
+
+optimizer: adamw_torch_8bit
+lr_scheduler: constant_with_warmup
+learning_rate: 2e-5
+
+bf16: true
+tf32: true
+
+flash_attention: true
+attn_implementation: kernels-community/vllm-flash-attn3
+
+gradient_checkpointing: true
+activation_offloading: true
+
+logging_steps: 1
+saves_per_epoch: 1
+
+save_first_step: True
+save_safetensors: True
+output_dir: /tmp/training_checkpoints
+resume_from_checkpoint: /tmp/loaded_checkpoints/rank-0/checkpoint-14/
+
+warmup_ratio: 0.03
+max_grad_norm: 1.0
+
+special_tokens:
+eot_tokens:
+  - "<|end|>"
+  - "<|return|>"
+
+fsdp_version: 2
+fsdp_config:
+  offload_params: false
+  state_dict_type: FULL_STATE_DICT
+  auto_wrap_policy: TRANSFORMER_BASED_WRAP
+  transformer_layer_cls_to_wrap: GptOssDecoderLayer
+  reshard_after_forward: true
+
+use_wandb: true
+wandb_project: Axolotl GPT OSS 20B
