@@ -14,7 +14,7 @@ axolotl preprocess $AXOLOTL_CONFIG_FILE
 
 # First try to replace existing output_dir line
 if grep -q "^[[:space:]]*output_dir:" $AXOLOTL_CONFIG_FILE; then
-    sed -i 's/^[[:space:]]*output_dir:.*/output_dir: $BT_CHECKPOINT_DIR/' $AXOLOTL_CONFIG_FILE
+    sed -i "s|^[[:space:]]*output_dir:.*|output_dir: $BT_CHECKPOINT_DIR|" $AXOLOTL_CONFIG_FILE
 else
     # If no output_dir exists, append it
     echo "output_dir: $BT_CHECKPOINT_DIR" >> $AXOLOTL_CONFIG_FILE
