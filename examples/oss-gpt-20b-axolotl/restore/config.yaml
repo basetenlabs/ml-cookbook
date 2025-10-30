@@ -46,7 +46,7 @@ saves_per_epoch: 1
 save_first_step: True
 save_safetensors: True
 output_dir: /tmp/training_checkpoints
-resume_from_checkpoint: /tmp/loaded_checkpoints/rank-0/checkpoint-14/
+resume_from_checkpoint: /tmp/loaded_checkpoints/4q9g403/rank-0/checkpoint-14/
 
 warmup_ratio: 0.03
 max_grad_norm: 1.0
