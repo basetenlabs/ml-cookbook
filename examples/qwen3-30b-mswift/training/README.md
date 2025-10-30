@@ -17,3 +17,6 @@ Upon successful submission, the CLI will output helpful information about your j
 
 ### Accessing checkpoints
 To get the location of your checkpoints, run `truss train get_checkpoint_urls --job-id your-job-id`, this downloads a file containing information about your checkpoint storage locations.
+
+### Troubleshooting CUDA OOM Errors
+CUDA out-of-memory (OOM) errors are often buried by Megatron and may manifest as NCCL errors instead. If you encounter errors like `RuntimeError: NCCL Error 1: unhandled cuda error … group.reduce_scatter_tensor_coalesced(outputs, inputs, reduce_opts)`, this typically indicates that your GPU memory usage is too high. In such cases, you should tweak some of the launch commands in `run_1node.sh` to reduce memory consumption (e.g., adjust batch size, sequence length, or model parallelism settings).
