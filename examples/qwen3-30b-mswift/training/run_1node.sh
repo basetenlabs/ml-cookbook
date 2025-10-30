@@ -86,7 +86,7 @@ megatron sft \
     --save "${CKPT_DIR}" \
     --eval_interval 40 \
     --save_interval 40 \
-    --max_length 40960 \
+    --max_length 16000 \
     --num_workers 8 \
     --dataset_num_proc 8 \
     --no_save_optim true \
