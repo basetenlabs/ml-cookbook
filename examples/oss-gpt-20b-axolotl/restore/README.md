@@ -20,7 +20,7 @@ This example demonstrates how to restore a checkpoint from a prior training job 
   1. From the UI: Navigate to your previous training job and locate the checkpoint path
   2. From CLI: Run `truss train view --job-id=<previous-job-id>` to see checkpoint details
   - The path format should be: `/tmp/loaded_checkpoints/<old-job-id>/rank-0/<checkpoint-name>/`
-  - Set: `resume_from_checkpoint: /tmp/loaded_checkpoints/4q9g403/rank-0/checkpoint-14/` inside your Axolotl `config.yaml`
+  - Set: `resume_from_checkpoint: /tmp/loaded_checkpoints/<old-job-id>/rank-0/<checkpoint-name>/` inside your Axolotl `config.yaml`
 
 ### Launch run 
 
