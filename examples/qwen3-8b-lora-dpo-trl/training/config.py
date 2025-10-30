@@ -2,7 +2,7 @@ from truss_train import definitions
 from truss.base import truss_config
 
 BASE_IMAGE = "pytorch/pytorch:2.7.0-cuda12.8-cudnn9-runtime"
-PROJECT_NAME = "Qwen3-8b-lora-dpo-trl"
+PROJECT_NAME = "Qwen3-8b-lora-dpo-trl 2GPU"
 
 training_runtime = definitions.Runtime(
     start_commands=["/bin/sh -c 'chmod +x ./run.sh && ./run.sh'"],
@@ -23,7 +23,7 @@ training_runtime = definitions.Runtime(
 training_compute = definitions.Compute(
     accelerator=truss_config.AcceleratorSpec(
         accelerator=truss_config.Accelerator.H100,
-        count=8,
+        count=2,
     ),
     node_count=1,  
 )

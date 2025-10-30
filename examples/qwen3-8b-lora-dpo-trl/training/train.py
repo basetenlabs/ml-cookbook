@@ -20,7 +20,7 @@ def parse_args():
                         help="Pretrained model name or path")
     parser.add_argument("--dataset_name", type=str, default="HumanLLMs/Human-Like-DPO-Dataset",
                         help="Dataset name or path")
-    parser.add_argument("--output_dir", type=str, default="./dpo_qwen_output",
+    parser.add_argument("--output_dir", type=str, default=os.getenv("BT_CHECKPOINT_DIR", "./dpo_qwen_output"),
                         help="Output directory for model checkpoints")
     parser.add_argument("--logging_dir", type=str, default="./logs",
                         help="Directory for logging")
@@ -32,9 +32,14 @@ def parse_args():
                         help="LoRA alpha (scaling factor)")
     parser.add_argument("--lora_dropout", type=float, default=0.05,
                         help="LoRA dropout")
+    parser.add_argument("--lora_target_modules", type=str, nargs='+',
+                    default=['q_proj', 'k_proj', 'v_proj', 'o_proj', 'gate_proj', 'up_proj', 'down_proj'],
+                    help="Target modules for LoRA")
+    parser.add_argument("--lora_bias", type=str, default="none",
+                        help="LoRA bias type")
     
     # Training arguments
-    parser.add_argument("--num_train_epochs", type=int, default=1,
+    parser.add_argument("--num_train_epochs", type=int, default=3,
                         help="Number of training epochs")
     parser.add_argument("--per_device_train_batch_size", type=int, default=2,
                         help="Training batch size per device")
@@ -42,14 +47,16 @@ def parse_args():
                         help="Evaluation batch size per device")
     parser.add_argument("--gradient_accumulation_steps", type=int, default=8,
                         help="Number of gradient accumulation steps")
-    parser.add_argument("--learning_rate", type=float, default=5e-5,
+    parser.add_argument("--learning_rate", type=float, default=5e-7,
                         help="Learning rate")
-    parser.add_argument("--lr_scheduler_type", type=str, default="cosine",
+    parser.add_argument("--lr_scheduler_type", type=str, default="linear",
                         help="Learning rate scheduler type")
     parser.add_argument("--warmup_ratio", type=float, default=0.1,
                         help="Warmup ratio")
-    parser.add_argument("--weight_decay", type=float, default=0.05,
+    parser.add_argument("--weight_decay", type=float, default=0.0,
                         help="Weight decay")
+    parser.add_argument("--max_grad_norm", type=float, default=1.0,
+                        help="Maximum gradient norm for clipping")
     parser.add_argument("--logging_steps", type=int, default=10,
                         help="Logging steps")
     parser.add_argument("--save_steps", type=int, default=100,
@@ -59,13 +66,25 @@ def parse_args():
     parser.add_argument("--save_total_limit", type=int, default=3,
                         help="Maximum number of checkpoints to keep")
     
-    # DPO specific arguments
+    # DPO specific arguments (matching DPOConfig)
     parser.add_argument("--beta", type=float, default=0.1,
                         help="KL penalty coefficient for DPO")
-    parser.add_argument("--max_length", type=int, default=1024,
+    parser.add_argument("--loss_type", type=str, default="sigmoid",
+                        help="DPO loss type")
+    parser.add_argument("--max_length", type=int, default=512,
                         help="Maximum sequence length")
-    parser.add_argument("--max_prompt_length", type=int, default=512,
+    parser.add_argument("--max_prompt_length", type=int, default=256,
                         help="Maximum prompt length")
+    parser.add_argument("--max_completion_length", type=int, default=None,
+                        help="Maximum completion length")
+    parser.add_argument("--label_pad_token_id", type=int, default=-100,
+                        help="Label padding token ID")
+    parser.add_argument("--truncation_mode", type=str, default="keep_end",
+                        help="Truncation mode for sequences")
+    parser.add_argument("--label_smoothing", type=float, default=0.0,
+                        help="Label smoothing factor")
+    parser.add_argument("--disable_dropout", action="store_true", default=True,
+                        help="Disable dropout during training")
     
     # Other arguments
     parser.add_argument("--bf16", action="store_true", default=True,
