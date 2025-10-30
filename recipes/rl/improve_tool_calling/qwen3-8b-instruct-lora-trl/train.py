@@ -8,17 +8,14 @@ from trl import GRPOConfig, GRPOTrainer
 from datasets import load_dataset
 from peft import LoraConfig, get_peft_model, prepare_model_for_kbit_training
 
-os.environ["WANDB_PROJECT"] = "qwen-tool-calling-grpo-t"
+os.environ["WANDB_PROJECT"] = os.getenv("WANDB_PROJECT", "qwen-tool-calling-grpo-t")
 # Load dataset
-# ds = load_dataset("NousResearch/hermes-function-calling-v1", "func_calling_singleturn")
-# ds = load_dataset("baseten-admin/CleanNousResearch_simple")
-# ds = load_dataset("Salesforce/xlam-function-calling-60k")
+""" Below is a sampled dataset from Salesforce/xlam-function-calling-60k, this is another good option"""
 ds = load_dataset("baseten-admin/xlam-function-calling-sampled")
 pattern = r'<tools>(.*?)</tools>'
 
 # Load model and tokenizer
-# model_name = "Qwen/Qwen2.5-7B-Instruct"
-model_name = "Qwen/Qwen3-8B"
+model_name = "Qwen/Qwen3-8B" # can also be run with Qwen/Qwen2.5-7B-Instruct
 tokenizer = AutoTokenizer.from_pretrained(model_name, trust_remote_code=True)
 tokenizer.pad_token = tokenizer.eos_token
 
@@ -36,8 +33,6 @@ def format_example(x, add_generation_prompt=False):
         )
         return {
             "prompt": text,
-            # "text": text,
-            # "tools": tools,
             "gt_generation": x['answers'],
             }
     except Exception as e:
@@ -46,10 +41,8 @@ def format_example(x, add_generation_prompt=False):
         return None
 
 formatted_dataset = ds.map(format_example).filter(lambda x: x is not None)
-# formatted_dataset = formatted_dataset.remove_columns(["conversations", "category", "subcategory", "task"])
 
-# train_test_split = formatted_dataset['train'].train_test_split(test_size=0.1, seed=42)
-train_test_split = formatted_dataset['train'].train_test_split(test_size=300, seed=42)
+train_test_split = formatted_dataset['train'].train_test_split(test_size=300, seed=42) # alternatively, change test_size to a float like 0.1 for 10% 
 train_dataset = train_test_split['train']
 eval_dataset = train_test_split['test']
 
@@ -62,7 +55,6 @@ model = AutoModelForCausalLM.from_pretrained(
     torch_dtype=torch.bfloat16,
     device_map="auto",
     trust_remote_code=True,
-    # load_in_8bit=True
 )
 
 # Prepare model for LoRA fine-tuning
@@ -74,7 +66,6 @@ lora_config = LoraConfig(
     target_modules=["q_proj", "k_proj", "v_proj", "o_proj", "all_linear"], 
     lora_dropout=0.05,
     bias="none",
-    # task_type="CAUSAL_LM"
 )
 
 model = get_peft_model(model, lora_config)
@@ -106,7 +97,6 @@ def get_selected_tools_list(generated_text):
     for tool in tools:
         try:
             stripped_tool = tool.encode().decode('unicode_escape').strip()
-            # tool = ast.literal_eval(tool.encode().decode('unicode_escape').strip().replace('"', "'")) # escape chars and some other nonsense
             tool = json.loads(stripped_tool)
             parsed_tools.append(tool)
         except:
@@ -125,13 +115,11 @@ def reward_function(prompts, completions, **kwargs):
     Reward function that evaluates the quality of tool calls.
     Returns a list of reward scores (one per completion).
     """
-    # print("All kwargs:")
+    # print("All kwargs:") # when writing your own reward function, you can pass in extra args via the kwargs
     # for key in kwargs:
     #     print(f"  {key}: {type(kwargs[key])}")
     rewards = []
-    # completions = kwargs.get("completions", [])
     references = kwargs.get("gt_generation", [])
-    # references = kwargs.get("completion", [])
     tools = kwargs.get("tools", [])
     for prompts, completion, reference in zip(prompts, completions, references):
         available_tools = get_all_available_tools_dict(prompts) # dict of tool_name: tool_def
@@ -201,7 +189,6 @@ grpo_config = GRPOConfig(
     per_device_train_batch_size=2,
     per_device_eval_batch_size=4,
     gradient_accumulation_steps=2,
-    # learning_rate=5e-4,
     learning_rate=1e-5,
     warmup_steps=100,
     logging_steps=10,
@@ -215,8 +202,6 @@ grpo_config = GRPOConfig(
     # GRPO-specific parameters
     num_generations=4,  # Number of generations per prompt for group comparison
     temperature=0.9,  # Sampling temperature
-    # max_new_tokens=512,
-    # kl=0.05,  # KL divergence coefficient to prevent drift from reference
 )
 
 # Initialize GRPO Trainer
@@ -225,7 +210,6 @@ trainer = GRPOTrainer(
     args=grpo_config,
     train_dataset=train_dataset,
     eval_dataset=eval_dataset,
-    # tokenizer=tokenizer,
     reward_funcs=[reward_function],
 )
 
@@ -234,7 +218,9 @@ print("Starting GRPO training...")
 trainer.train()
 
 # Save the fine-tuned model
-trainer.save_model("./qwen-tool-calling-grpo-1")
-tokenizer.save_pretrained("./qwen-tool-calling-grpo-1")
+
+save_location = os.getenv("BT_CHECKPOINT_DIR", "./qwen-tool-calling-grpo-1")
+trainer.save_model(save_location)
+tokenizer.save_pretrained(save_location)
 
 print("Training complete!")
