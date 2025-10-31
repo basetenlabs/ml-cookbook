@@ -4,7 +4,7 @@ from truss.base import truss_config
 
 # 1. Define a base image for your training job. You can also use
 # private images via AWS IAM or GCP Service Account authentication.
-BASE_IMAGE = "axolotlai/axolotl:0.11.0.post1-py3.11-cu128-2.7.1"
+BASE_IMAGE = "unsloth/unsloth:2025.10.9-pt2.8.0-cu12.8-updates-fixes"
 
 # 2. Define the Runtime Environment for the Training Job
 # This includes start commands and environment variables.
@@ -18,11 +18,12 @@ training_runtime = definitions.Runtime(
     environment_variables={
         # Secrets (ensure these are configured in your Baseten workspace)
         "HF_TOKEN": definitions.SecretReference(name="hf_access_token"),
-        "WANDB_API_KEY": definitions.SecretReference(name="wandb_api_key"),
+        # "WANDB_API_KEY": definitions.SecretReference(name="wandb_api_key"),
         "HELLO": "WORLD",
     },
     checkpointing_config=definitions.CheckpointingConfig(  # this defines BT_CHECKPOINT_DIR
         enabled=True,
+        checkpoint_path="/app/data/checkpoints",
     ),
 )
 
