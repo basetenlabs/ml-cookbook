@@ -101,3 +101,20 @@ megatron sft \
 
 echo "Training completed successfully."
 echo "Checkpoints saved under: $CKPT_DIR"
+
+# Look for v0-timestamp directories and export them directly
+for v0_dir in "$CKPT_DIR"/v0-*; do
+  if [ -d "$v0_dir" ]; then
+    v0_name=$(basename "$v0_dir")
+    echo "[INFO] Found v0-timestamp directory: $v0_name"
+    echo "[INFO] Exporting checkpoint from: $v0_name"
+
+    swift export \
+      --model "${MODEL_ID}" \
+      --mcore_model "$v0_dir" \
+      --model_type qwen3_moe \
+      --to_hf true \
+      --torch_dtype bfloat16 \
+      --output_dir "$HF_EXPORT_DIR/${v0_name}-hf"
+  fi
+done
