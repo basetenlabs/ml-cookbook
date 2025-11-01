@@ -102,6 +102,8 @@ megatron sft \
 echo "Training completed successfully."
 echo "Checkpoints saved under: $CKPT_DIR"
 
+HF_EXPORT_DIR="$BT_CHECKPOINT_DIR/${BT_TRAINING_JOB_NAME}-hf"
+
 # Look for v0-timestamp directories and export them directly
 for v0_dir in "$CKPT_DIR"/v0-*; do
   if [ -d "$v0_dir" ]; then
@@ -114,6 +116,7 @@ for v0_dir in "$CKPT_DIR"/v0-*; do
       --mcore_model "$v0_dir" \
       --model_type qwen3_moe \
       --to_hf true \
+      --use_hf true \
       --torch_dtype bfloat16 \
       --output_dir "$HF_EXPORT_DIR/${v0_name}-hf"
   fi
