@@ -121,3 +121,5 @@ for v0_dir in "$CKPT_DIR"/v0-*; do
       --output_dir "$HF_EXPORT_DIR/${v0_name}-hf"
   fi
 done
+
+echo "Done converting checkpoints from Megatron-Core to Hugging Face format."
