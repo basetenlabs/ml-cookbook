@@ -20,11 +20,8 @@ training_runtime = definitions.Runtime(
         "HF_TOKEN": definitions.SecretReference(name="hf_access_token"),
         # "WANDB_API_KEY": definitions.SecretReference(name="wandb_api_key"),
         "HELLO": "WORLD",
+        "HF_WRITE_REPO": "", # Define your HF Repo for uploading your model
     },
-    checkpointing_config=definitions.CheckpointingConfig(  # this defines BT_CHECKPOINT_DIR
-        enabled=True,
-        checkpoint_path="/app/data/checkpoints",
-    ),
 )
 
 # 3. Define the Compute Resources for the Training Job
