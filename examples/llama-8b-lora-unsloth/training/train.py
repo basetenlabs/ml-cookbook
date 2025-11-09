@@ -1,10 +1,16 @@
 import os
+import sys
 from unsloth import FastLanguageModel
 from datasets import load_dataset
 from unsloth.chat_templates import get_chat_template
 from trl import SFTTrainer
 from transformers import TrainingArguments
 from unsloth import is_bfloat16_supported
+
+# Check if HF_WRITE_REPO is defined
+if not os.environ.get("HF_WRITE_REPO"):
+    print("ERROR: HF_WRITE_REPO environment variable is not defined", file=sys.stderr)
+    sys.exit(1)
 
 max_seq_length = 4096
 dtype = (
@@ -103,9 +109,9 @@ trainer = SFTTrainer(
         report_to="none",  # Use this for wandb etc
         # push to hf
         push_to_hub=bool(
-            os.environ.get("HF_WRITE_LOC", "")
+            os.environ.get("HF_WRITE_REPO", "")
         ),  # Set this to your HuggingFace repo name
-        hub_model_id=os.environ.get("HF_WRITE_LOC", ""),
+        hub_model_id=os.environ.get("HF_WRITE_REPO", ""),
     ),
 )
 
