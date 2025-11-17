@@ -30,7 +30,6 @@ python3 -m verl.trainer.main_ppo \
     actor_rollout_ref.actor.ppo_mini_batch_size=32 \
     actor_rollout_ref.actor.ppo_micro_batch_size_per_gpu=1 \
     actor_rollout_ref.actor.use_kl_loss=True \
-    actor_rollout_ref.actor.policy_loss.loss_mode="gspo" \
     actor_rollout_ref.actor.clip_ratio_low=${clip_ratio_low} \
     actor_rollout_ref.actor.clip_ratio_high=${clip_ratio_high} \
     actor_rollout_ref.actor.use_dynamic_bsz=${use_dynamic_bsz} \
@@ -64,7 +63,5 @@ python3 -m verl.trainer.main_ppo \
     trainer.save_freq=5 \
     trainer.test_freq=2 \
     trainer.total_epochs=10 $@ \
-    algorithm.rollout_is_threshold=2.0 \
-    algorithm.rollout_is=true \
-    algorithm.rollout_is_level=token \
-    algorithm.rollout_is_mode=truncate \
+    algorithm.rollout_correction.rollout_is_threshold=2.0 \
+    algorithm.rollout_correction.rollout_is=token \
