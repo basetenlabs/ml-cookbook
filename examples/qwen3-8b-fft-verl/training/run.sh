@@ -30,7 +30,6 @@ python3 -m verl.trainer.main_ppo \
     actor_rollout_ref.actor.ppo_mini_batch_size=32 \
     actor_rollout_ref.actor.ppo_micro_batch_size_per_gpu=1 \
     actor_rollout_ref.actor.use_kl_loss=True \
-    actor_rollout_ref.actor.policy_loss.loss_mode="gspo" \
     actor_rollout_ref.actor.clip_ratio_low=${clip_ratio_low} \
     actor_rollout_ref.actor.clip_ratio_high=${clip_ratio_high} \
     actor_rollout_ref.actor.use_dynamic_bsz=${use_dynamic_bsz} \
