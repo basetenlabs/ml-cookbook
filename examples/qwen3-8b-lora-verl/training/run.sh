@@ -55,7 +55,5 @@ python3 -m verl.trainer.main_ppo \
     trainer.save_freq=32 \
     trainer.test_freq=8 \
     trainer.total_epochs=1 $@ \
-    algorithm.rollout_is_threshold=2.0 \
-    algorithm.rollout_is=true \
-    algorithm.rollout_is_level=token \
-    algorithm.rollout_is_mode=truncate \
+    algorithm.rollout_correction.rollout_is_threshold=2.0 \
+    algorithm.rollout_correction.rollout_is=token \
