@@ -12,9 +12,7 @@ BASE_IMAGE = "verlai/verl:app-verl0.5-vllm0.10.0-mcore0.13.0-te2.2"
 # Define the Runtime Environment for the Training Job
 training_runtime = definitions.Runtime(
     start_commands=[
-        "git clone https://github.com/volcengine/verl && cd verl",
-        "pip3 install --no-deps -e .",
-        "cd ..",
+        "pip install verl==0.6.1",
         "apt-get install ocaml -y",
         # Make run script executable
         "chmod +x ./run.sh",
@@ -38,7 +36,7 @@ training_runtime = definitions.Runtime(
 training_compute = definitions.Compute(
     accelerator=truss_config.AcceleratorSpec(
         accelerator=truss_config.Accelerator.H100,
-        count=8,  
+        count=4,  
     ),
     node_count=1,  
 )

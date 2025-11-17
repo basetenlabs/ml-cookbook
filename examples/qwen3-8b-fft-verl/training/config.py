@@ -12,9 +12,7 @@ BASE_IMAGE = "verlai/verl:app-verl0.5-transformers4.55.4-vllm0.10.0-mcore0.13.0-
 # Define the Runtime Environment for the Training Job
 training_runtime = definitions.Runtime(
     start_commands=[
-        "git clone https://github.com/volcengine/verl && cd verl",
-        "pip3 install --no-deps -e .",
-        "cd ..",
+        "pip install verl==0.6.1",
         "apt-get install ocaml -y",
         # Make run script executable
         "chmod +x ./run.sh",
