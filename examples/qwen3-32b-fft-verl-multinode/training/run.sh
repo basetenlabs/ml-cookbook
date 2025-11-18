@@ -15,14 +15,15 @@ sync_checkpoints_loop() {
 
 if [ "$BT_NODE_RANK" = "0" ]; then
   # sync checkpoints from shared directory to checkpoint directory
-  # Uncomment to enable checkpoint syncing during the run
-#   sync_checkpoints_loop &
-#   sync_checkpoints_pid=$!
+  # [CONTINUOUS SYNC] Uncomment to enable checkpoint syncing during the run
+  # sync_checkpoints_loop &
+  # sync_checkpoints_pid=$!
   ray start --head --port=$RAY_SERVICE_PORT
   python ray/rendezvous.py
   echo "Starting training job on node $BT_NODE_RANK"
   ray job submit --address="http://127.0.0.1:$RAY_DASHBOARD_PORT" -- ./train.sh
-  kill $sync_checkpoints_pid 2>/dev/null || true
+  # [CONTINUOUS SYNC] Uncomment to enable checkpoint syncing during the run
+  # kill $sync_checkpoints_pid 2>/dev/null || true
   # one final sync of checkpoints
   sync_checkpoints
 

@@ -9,8 +9,7 @@ project_name = "OCaml Specialist - veRL GRPO multinode neb"
 # You may need to build a custom image with VERL installed
 BASE_IMAGE = "verlai/verl:app-verl0.5-transformers4.55.4-vllm0.10.0-mcore0.13.0-te2.2"
 
-ITERATIVE = False
-file = "run.sh" if not ITERATIVE else "rssh.sh"
+file = "run.sh" 
 # Define the Runtime Environment for the Training Job
 training_runtime = definitions.Runtime(
     start_commands=[
@@ -26,7 +25,7 @@ training_runtime = definitions.Runtime(
         "RAY_SERVICE_PORT": "6379",
         "RAY_DASHBOARD_PORT": "8265",
     },
-    # Enable training cache for faster iteration
+    # Required so that we have shared checkpoint directory
     cache_config = definitions.CacheConfig(
         enabled=True,
     ),
