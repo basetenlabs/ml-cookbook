@@ -15,6 +15,8 @@ use_dynamic_bsz=True
 
 ckpt_dir=${SHARED_CHECKPOINT_DIR}/${BT_TRAINING_JOB_NAME}
 echo "Checkpoint directory: $ckpt_dir"
+# Checkpoints will be persisted to the Baseten cache.
+# It's recommended to export these checkpoints with another job, or sync them to to the checkpoint directory after training completes.
 
 echo "Starting training"
 python3 -m verl.trainer.main_ppo \
@@ -66,6 +68,6 @@ python3 -m verl.trainer.main_ppo \
     trainer.default_local_dir=$ckpt_dir \
     trainer.save_freq=2 \
     trainer.test_freq=2 \
-    trainer.total_epochs=10 $@ \
+    trainer.total_epochs=4 $@ \
     algorithm.rollout_correction.rollout_is_threshold=2.0 \
     algorithm.rollout_correction.rollout_is=token 
