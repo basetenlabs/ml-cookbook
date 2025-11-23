@@ -29,6 +29,11 @@ training_runtime = definitions.Runtime(
         enabled=True,
         checkpoint_path="/tmp/training_checkpoints",
     ),
+    load_checkpoint_config=definitions.LoadCheckpointConfig(
+        enabled=True,
+        checkpoints=[definitions.BasetenCheckpoint.from_named_checkpoint(job_id="4q9g403", checkpoint_name="checkpoint-14")],
+        download_folder="/tmp/loaded_checkpoints",
+    ),
 )
 
 # 3. Define the Compute Resources for the Training Job
