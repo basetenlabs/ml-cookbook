@@ -8,7 +8,7 @@ project_name = "demo/qwen3-0.6b"
 BASE_IMAGE = "axolotlai/axolotl:main-20250811-py3.11-cu126-2.7.1"
 
 # 2. Define the Runtime Environment for the Training Job
-# This includes start commands and environment variables.a
+# This includes start commands and environment variables
 # Secrets from the baseten workspace like API keys are referenced using
 # `SecretReference`.
 
