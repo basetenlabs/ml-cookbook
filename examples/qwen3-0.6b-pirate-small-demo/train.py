@@ -37,10 +37,7 @@ def main():
         lora_alpha=32,
         lora_r=64,
         lora_mlp_kernel=True,
-        lora_target_modules=[
-            "q_proj", "k_proj", "v_proj", "o_proj",
-            "gate_proj", "down_proj", "up_proj",
-        ],
+        lora_target_modules="all-linear",
 
         # Optim & schedule
         optimizer="adamw_torch",
