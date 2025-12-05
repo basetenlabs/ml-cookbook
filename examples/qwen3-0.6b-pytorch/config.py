@@ -5,7 +5,7 @@ from truss.base import truss_config
 project_name = "demo/qwen3-0.6b"
 
 # 1. Define a base image for your training job
-BASE_IMAGE = "axolotlai/axolotl:main-20250811-py3.11-cu126-2.7.1"
+BASE_IMAGE = "pytorch/pytorch:2.8.0-cuda12.9-cudnn9-runtime"
 
 # 2. Define the Runtime Environment for the Training Job
 # This includes start commands and environment variables.a
@@ -16,6 +16,7 @@ NUM_GPUS = 1
 
 training_runtime = definitions.Runtime(
     start_commands=[
+        "pip install transformers datasets accelerate bitsandbytes",
         f"torchrun --nproc-per-node={NUM_GPUS} train.py",
     ],
     environment_variables={
