@@ -1,34 +1,32 @@
 from truss_train import definitions
 from truss.base import truss_config
 
-BASE_IMAGE = "axolotlai/axolotl:main-py3.11-cu128-2.7.1"
+BASE_IMAGE = "axolotlai/axolotl:main-20251031-py3.11-cu128-2.8.0"
+
+NUM_GPUS = 8
+NUM_NODES = 1
+GPU_TYPE = truss_config.Accelerator.H100
 
 training_runtime = definitions.Runtime(
     start_commands=[
-        "/bin/sh -c 'chmod +x ./run.sh && ./run.sh'",
+        f"torchrun --nproc-per-node={NUM_GPUS} train.py",
     ],
     environment_variables={
         "HF_TOKEN": definitions.SecretReference(
             name="hf_access_token"
         ),  # The name of the HF Access Token secret in your B10 account
-        "WANDB_API_KEY": definitions.SecretReference(
-            name="wandb_api_key"
-        ),  # The name of the WandB API Key secret in your B10 account
     },
     checkpointing_config=definitions.CheckpointingConfig(  # this defines BT_CHECKPOINT_DIR
-        enabled=False,
-    ),
-    cache_config=definitions.CacheConfig(  # this defines BT_RW_CACHE_DIR
         enabled=True,
-    ),
+    )
 )
 
 training_compute = definitions.Compute(
     accelerator=truss_config.AcceleratorSpec(
-        accelerator=truss_config.Accelerator.H100,
-        count=8,
+        accelerator=GPU_TYPE,
+        count=NUM_GPUS,
     ),
-    node_count=2,
+    node_count=NUM_NODES,
 )
 
 training_job = definitions.TrainingJob(
@@ -38,5 +36,5 @@ training_job = definitions.TrainingJob(
 )
 
 training_project = definitions.TrainingProject(
-    name="Finetune Gemma 3 27B - SP", job=training_job
+    name="Finetune Gemma 3 27B - ML Cookbook", job=training_job
 )
