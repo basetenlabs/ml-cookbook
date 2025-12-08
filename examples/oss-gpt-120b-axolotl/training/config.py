@@ -5,7 +5,7 @@ from truss.base import truss_config
 project_name = "axolotl-120b multi-node"
 
 # 1. Define a base image for your training job
-BASE_IMAGE = "axolotlai/axolotl:main-20250811-py3.11-cu126-2.7.1"
+BASE_IMAGE = "axolotlai/axolotl:main-20251031-py3.11-cu128-2.8.0"
 
 # 2. Define the Runtime Environment for the Training Job
 # This includes start commands and environment variables.a
@@ -14,13 +14,8 @@ BASE_IMAGE = "axolotlai/axolotl:main-20250811-py3.11-cu126-2.7.1"
 
 training_runtime = definitions.Runtime(
     start_commands=[  # Example: list of commands to run your training script
-        "/bin/sh -c 'chmod +x ./run.sh && ./run.sh'"
+        "hf download axolotl-ai-co/gpt-oss-120b-dequantized && torchrun --nnodes=$BT_GROUP_SIZE --nproc-per-node=$BT_NUM_GPUS --node-rank=$BT_NODE_RANK --rdzv-backend=c10d --rdzv-id=axolotl-${BT_TRAINING_JOB_ID} --rdzv-endpoint=${BT_LEADER_ADDR}:29400 train.py"
     ],
-    environment_variables={
-        # Secrets (ensure these are configured in your Baseten workspace)
-        "HF_TOKEN": definitions.SecretReference(name="hf_access_token"),
-        "WANDB_API_KEY": definitions.SecretReference(name="wandb_api_key"),
-    },
     cache_config=definitions.CacheConfig(
         enabled=True,
     ),
@@ -33,7 +28,7 @@ training_runtime = definitions.Runtime(
 training_compute = definitions.Compute(
     node_count=2,
     accelerator=truss_config.AcceleratorSpec(
-        accelerator=truss_config.Accelerator.H100,
+        accelerator=truss_config.Accelerator.H200,
         count=8,
     ),
 )
