@@ -1,12 +1,11 @@
 export HF_HOME=$BT_RW_CACHE_DIR/huggingface
 
 SAVE_FULL_MODEL=false
-
-set +e  # disable immediate exit on error for this block
+checkpoint_dir="$BT_CHECKPOINT_DIR/glm-4.6-lora-64-128"
 
 PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True NPROC_PER_NODE=$BT_NUM_GPUS NNODES=$BT_GROUP_SIZE NODE_RANK=$BT_NODE_RANK MASTER_ADDR=$BT_LEADER_ADDR megatron sft \
     --model zai-org/GLM-4.6 \
-    --save $BT_CHECKPOINT_DIR/glm-4.6-lora-64-128 \
+    --save $checkpoint_dir \
     --dataset 'winglian/pirate-ultrachat-10k' \
     --load_safetensors true \
     --save_safetensors true \
@@ -48,16 +47,19 @@ PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True NPROC_PER_NODE=$BT_NUM_GPUS NNO
     --merge_lora $SAVE_FULL_MODEL \
     --use_hf 1
 
-rc=$?
+# Capture the exit code
+MEGATRON_EXIT_CODE=$?
 
-set -e  # restore 'exit on error'
-
-if [ $rc -ne 0 ]; then
-    if [ -d "$checkpoint_dir" ] && [ "$(ls -A "$checkpoint_dir")" ]; then
-        echo "Checkpoint exists at $checkpoint_dir. Exiting successfully."
+# If the command failed, check if safetensors exist in checkpoint_dir
+if [ $MEGATRON_EXIT_CODE -ne 0 ]; then
+    if [ -d "$checkpoint_dir" ] && [ -n "$(find "$checkpoint_dir" -name "*.safetensors" -type f 2>/dev/null)" ]; then
+        echo "Safetensors found in $checkpoint_dir. Exiting successfully."
         exit 0
     else
-        echo "Training failed and no checkpoint exists. Exiting with error."
-        exit $rc
+        echo "Megatron command failed and no safetensors found in $checkpoint_dir. Exiting with error code."
+        exit $MEGATRON_EXIT_CODE
     fi
 fi
+
+# If we get here, the command succeeded
+exit 0
