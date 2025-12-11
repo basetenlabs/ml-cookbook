@@ -2,37 +2,34 @@
 from truss_train import definitions
 from truss.base import truss_config
 
-project_name = "LoRA Qwen3 0.6B"
+project_name = "LoRA GLM-4.6 - ML Cookbook"
 
 # 1. Define a base image for your training job
-BASE_IMAGE = "axolotlai/axolotl:main-20250811-py3.11-cu126-2.7.1"
+BASE_IMAGE = "baseten/megatron:py3.11.11-cuda12.8.1-torch2.8.0-fa2.8.1-megatron0.14.1-msswift3.10.3"
 
 # 2. Define the Runtime Environment for the Training Job
-# This includes start commands and environment variables
+# This includes start commands and environment variables.a
 # Secrets from the baseten workspace like API keys are referenced using
 # `SecretReference`.
 
-NUM_GPUS = 1
-
 training_runtime = definitions.Runtime(
-    start_commands=[
-        f"axolotl fetch deepspeed_configs && torchrun --nproc-per-node={NUM_GPUS} train.py",
+    start_commands=[  # Example: list of commands to run your training script
+        "chmod +x ./run.sh && ./run.sh"
     ],
-    environment_variables={
-        # Secrets (ensure these are configured in your Baseten workspace)
-        # Include other environment variables as needed
-    },
     checkpointing_config=definitions.CheckpointingConfig(
+        enabled=True,
+    ),
+    cache_config=definitions.CacheConfig(
         enabled=True,
     ),
 )
 
 # 3. Define the Compute Resources for the Training Job
 training_compute = definitions.Compute(
-    node_count=1,
+    node_count=2,
     accelerator=truss_config.AcceleratorSpec(
-        accelerator=truss_config.Accelerator.H100,
-        count=1,
+        accelerator=truss_config.Accelerator.H200,
+        count=8,
     ),
 )
 
