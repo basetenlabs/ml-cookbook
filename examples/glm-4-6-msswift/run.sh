@@ -47,6 +47,11 @@ PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True NPROC_PER_NODE=$BT_NUM_GPUS NNO
     --merge_lora $SAVE_FULL_MODEL \
     --use_hf 1
 
+# Only check for safetensors on the last node
+if [ $BT_NODE_RANK -ne $BT_GROUP_SIZE - 1 ]; then
+    exit 0
+fi
+
 # Capture the exit code
 MEGATRON_EXIT_CODE=$?
 
@@ -60,6 +65,3 @@ if [ $MEGATRON_EXIT_CODE -ne 0 ]; then
         exit $MEGATRON_EXIT_CODE
     fi
 fi
-
-# If we get here, the command succeeded
-exit 0
