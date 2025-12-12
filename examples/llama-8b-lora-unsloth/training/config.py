@@ -22,6 +22,10 @@ training_runtime = definitions.Runtime(
         "HELLO": "WORLD",
         "HF_WRITE_REPO": "", # Define your HF Repo for uploading your model
     },
+    cache_config=definitions.CacheConfig(
+        enabled=True,
+        mount_base_path="/workspace/cache",
+    ),
 )
 
 # 3. Define the Compute Resources for the Training Job
