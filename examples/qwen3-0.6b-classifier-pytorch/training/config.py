@@ -2,13 +2,13 @@
 from truss_train import definitions
 from truss.base import truss_config
 
-project_name = "LoRA Qwen3 0.6B"
+project_name = "demo/qwen3-0.6b"
 
 # 1. Define a base image for your training job
-BASE_IMAGE = "axolotlai/axolotl:main-20250811-py3.11-cu126-2.7.1"
+BASE_IMAGE = "pytorch/pytorch:2.8.0-cuda12.9-cudnn9-runtime"
 
 # 2. Define the Runtime Environment for the Training Job
-# This includes start commands and environment variables
+# This includes start commands and environment variables.a
 # Secrets from the baseten workspace like API keys are referenced using
 # `SecretReference`.
 
@@ -16,12 +16,17 @@ NUM_GPUS = 1
 
 training_runtime = definitions.Runtime(
     start_commands=[
-        f"axolotl fetch deepspeed_configs && torchrun --nproc-per-node={NUM_GPUS} train.py",
+        "pip install transformers datasets accelerate bitsandbytes",
+        f"torchrun --nproc-per-node={NUM_GPUS} train.py",
     ],
     environment_variables={
         # Secrets (ensure these are configured in your Baseten workspace)
         # Include other environment variables as needed
     },
+    cache_config=definitions.CacheConfig(
+        enabled=True,
+        enable_legacy_hf_mount=True,
+    ),
     checkpointing_config=definitions.CheckpointingConfig(
         enabled=True,
     ),

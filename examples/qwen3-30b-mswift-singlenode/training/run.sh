@@ -1,4 +1,4 @@
-checkpoint_dir="$BT_CHECKPOINT_DIR/qwen3-30b-a3b8"
+checkpoint_dir="$BT_CHECKPOINT_DIR/qwen3-30b-a3b-lora-64-128"
 
 PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True NPROC_PER_NODE=$BT_NUM_GPUS NNODES=$BT_GROUP_SIZE NODE_RANK=$BT_NODE_RANK MASTER_ADDR=$BT_LEADER_ADDR megatron sft \
     --model Qwen/Qwen3-30B-A3B \
@@ -16,20 +16,22 @@ PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True NPROC_PER_NODE=$BT_NUM_GPUS NNO
     --moe_shared_expert_overlap true \
     --moe_aux_loss_coeff 1e-3 \
     --micro_batch_size 1 \
-    --global_batch_size 4 \
+    --global_batch_size 2 \
     --packing true \
     --recompute_granularity full \
     --recompute_method uniform \
-    --train_iters 25 \
+    --train_iters 100 \
+    --eval_iters 40 \
     --finetune true \
     --cross_entropy_loss_fusion true \
     --lr 1e-4 \
     --lr_warmup_fraction 0.05 \
     --recompute_num_layers 8 \
     --min_lr 1e-5 \
+    --eval_interval 40 \
     --max_length 16384 \
     --num_workers 8 \
-    --dataset_num_proc 2 \
+    --dataset_num_proc 8 \
     --no_save_optim true \
     --no_save_rng true \
     --attention_backend flash \

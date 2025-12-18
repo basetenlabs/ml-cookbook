@@ -1,8 +1,8 @@
 from truss_train import definitions
 from truss.base import truss_config
 
-BASE_IMAGE = "baseten/megatron:0.0.1"
-PROJECT_NAME = "Megatron-qwen3-30b-a3b multinode"
+BASE_IMAGE = "baseten/megatron:py3.11.11-cuda12.8.1-torch2.8.0-fa2.8.1-megatron0.14.1-msswift3.10.3"
+PROJECT_NAME = "Qwen3-30B Megatron Multi Node - ML Cookbook"
 
 NUM_NODES = 2
 
@@ -13,9 +13,6 @@ training_runtime = definitions.Runtime(
             name="hf_access_token"
         ),  # The name of the HF Access Token secret in your B10 account
         "HF_HUB_ENABLE_HF_TRANSFER": "true",
-        "WANDB_API_KEY": definitions.SecretReference(
-            name="wandb_api_key"
-        ),  # comment this out if you don't want to use wandb
     },
     cache_config=definitions.CacheConfig(
         enabled=True,
