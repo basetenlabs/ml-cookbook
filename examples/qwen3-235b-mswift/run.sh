@@ -1,5 +1,4 @@
-# export HF_HOME=$BT_RW_CACHE_DIR/huggingface
-export HF_HOME=/root/huggingface
+export HF_HOME=$BT_RW_CACHE_DIR/huggingface
 
 SAVE_FULL_MODEL=false
 checkpoint_dir="$BT_CHECKPOINT_DIR/qwen3-235b-a22b-lora-64-128"
