@@ -36,7 +36,7 @@ NGPU=8 CONFIG_FILE="./torchtitan/experiments/nemotron3/train_configs/nemotron3-n
     ./run_train.sh \
     --checkpoint.initial_load_path "$BT_TEAM_CACHE_DIR/NVIDIA-Nemotron-3-Nano-30B-A3B-BF16" \
     --model.hf_assets_path "$BT_TEAM_CACHE_DIR/NVIDIA-Nemotron-3-Nano-30B-A3B-BF16" \
-    --checkpoint.interval 500 \
+    --checkpoint.interval 50 \
     --lr_scheduler.warmup_steps 10 \
     --job.dump_folder "$BT_CHECKPOINT_DIR" \
     --training.dataset "hf://HuggingFaceFW/fineweb" \
@@ -45,5 +45,5 @@ NGPU=8 CONFIG_FILE="./torchtitan/experiments/nemotron3/train_configs/nemotron3-n
     --training.local_batch_size 1 \
     --training.seq_len 2048 \
     --training.max_norm 1.0 \
-    --training.steps 500 \
+    --training.steps 100 \
     --training.dtype "bfloat16"
