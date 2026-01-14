@@ -8,7 +8,7 @@ apt-get install -y build-essential curl fzf ripgrep git git-lfs tmux htop lsof g
 # Install uv
 curl -LsSf https://astral.sh/uv/install.sh | sh
 
-# Clone KingKong (experimental LLM library built on TorchTitan)
+# Clone KingKong (Baseten's experimental LLM training library built ontop TorchTitan)
 mkdir -p workspace
 cd workspace
 echo "Cloning KingKong..."
