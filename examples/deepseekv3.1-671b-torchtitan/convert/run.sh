@@ -125,7 +125,7 @@ if [[ -d "${CHECKPOINT_SUBDIR}" ]]; then
                 --hf_assets_path "$HF_ASSETS_PATH" \
                 --export_dtype bfloat16 \
                 --adapters-only \
-                --base_model_name_or_path "${BT_TEAM_CACHE_DIR}/DeepSeek-V3.1-Base"
+                --base_model_name_or_path "deepseek-ai/DeepSeek-V3"
             
             if [ $? -eq 0 ]; then
                 echo "✓ Successfully converted $dir_name"
