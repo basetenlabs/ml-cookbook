@@ -32,8 +32,11 @@ python scripts/download_hf_assets.py \
 
 # Run training
 chmod +x run_train.sh
-NGPU=8 CONFIG_FILE="./torchtitan/experiments/nemotron3/train_configs/nemotron3-nano-30B-finetune.toml" \
-    ./run_train.sh \
+
+export LOG_RANK=0
+export NGPU=$BT_NUM_GPUS
+
+CONFIG_FILE="./torchtitan/experiments/nemotron3/train_configs/nemotron3-nano-30B-finetune.toml" ./run_train.sh \
     --checkpoint.initial_load_path "$BT_TEAM_CACHE_DIR/NVIDIA-Nemotron-3-Nano-30B-A3B-BF16" \
     --model.hf_assets_path "$BT_TEAM_CACHE_DIR/NVIDIA-Nemotron-3-Nano-30B-A3B-BF16" \
     --checkpoint.interval 50 \

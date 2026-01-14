@@ -17,9 +17,6 @@ training_runtime = definitions.Runtime(
         "HF_TOKEN": definitions.SecretReference(name="hf_access_token"),
         "HF_HUB_ENABLE_HF_TRANSFER": "true",
         "WANDB_API_KEY": definitions.SecretReference(name="wandb_api_key"),
-        "NGPU": str(NGPU),
-        "NODE_COUNT": str(NODE_COUNT),
-        "LOG_RANK": "0",
     },
     cache_config=definitions.CacheConfig(
         enabled=True,
