@@ -20,7 +20,6 @@ training_runtime = definitions.Runtime(
         "NGPU": str(NGPU),
         "NODE_COUNT": str(NODE_COUNT),
         "LOG_RANK": "0",
-        "GITHUB_TOKEN": definitions.SecretReference(name="github_token"),
     },
     cache_config=definitions.CacheConfig(
         enabled=True,
