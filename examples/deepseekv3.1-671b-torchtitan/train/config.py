@@ -11,7 +11,7 @@ NODE_COUNT = 4
 
 training_runtime = definitions.Runtime(
     start_commands=[
-        "chmod +x ./run2.sh && ./run2.sh",
+        "chmod +x ./run.sh && ./run.sh",
     ],
     environment_variables={
         "HF_HUB_ENABLE_HF_TRANSFER": "true",
