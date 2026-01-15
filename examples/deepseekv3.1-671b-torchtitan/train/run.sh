@@ -23,9 +23,8 @@ mkdir aghilan-workspace
 
 cd aghilan-workspace
 echo "Cloning torchtitan"
-git clone https://github.com/aghilann/torchtitan
-cd torchtitan
-git checkout lora-stuff
+git clone https://github.com/basetenlabs/kingkong.git
+cd kingkong
 uv venv
 echo "Creating virtual environment"
 . .venv/bin/activate
@@ -160,7 +159,13 @@ torchrun \
     --checkpoint.export_dtype bfloat16 \
     --activation_checkpoint.mode full \
     --training.local_batch_size 2 \
-    --training.steps 100
+    --training.steps 1000 \
+    --checkpoint.interval 500 \
+    --optimizer.lr 1.5e-4 \
+    --lr_scheduler.warmup_steps 0 \
+    --lr_scheduler.min_lr_factor 1.0
+
+
 
 echo ""
 echo "Checkpoint directory AFTER training:"
