@@ -2,7 +2,7 @@
 from truss_train import definitions
 from truss.base import truss_config
 
-project_name = "LoRA GLM-4.6 - ML Cookbook"
+project_name = "LoRA GLM-4.7 - ML Cookbook"
 
 # 1. Define a base image for your training job
 BASE_IMAGE = "baseten/megatron:py3.11.11-cuda12.8.1-torch2.8.0-fa2.8.1-megatron0.14.1-msswift3.10.3"
