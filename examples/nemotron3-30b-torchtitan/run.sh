@@ -46,7 +46,7 @@ CONFIG_FILE="./torchtitan/experiments/nemotron3/train_configs/nemotron3-nano-30B
     --training.dataset_config_name "sample-10BT" \
     --training.dataset_split "train" \
     --training.local_batch_size 1 \
-    --training.seq_len 2048 \
+    --training.seq_len 4096 \
     --training.max_norm 1.0 \
     --training.steps 100 \
     --training.dtype "bfloat16"
