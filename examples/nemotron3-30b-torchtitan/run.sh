@@ -53,7 +53,7 @@ CONFIG_FILE="./torchtitan/experiments/nemotron3/train_configs/nemotron3-nano-30B
     --checkpoint.initial_load_path "$BT_TEAM_CACHE_DIR/NVIDIA-Nemotron-3-Nano-30B-A3B-BF16" \
     --checkpoint.initial_load_in_hf \
     --checkpoint.initial_load_model_only \
-    --checkpoint.interval 100 \
+    --checkpoint.interval 500 \
     --job.dump_folder "$BT_CHECKPOINT_DIR" \
     --training.dataset "hf://HuggingFaceH4/ultrachat_200k" \
     --training.dataset_split "train_sft" \
