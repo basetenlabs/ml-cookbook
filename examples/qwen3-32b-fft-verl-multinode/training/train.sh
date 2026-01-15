@@ -6,13 +6,19 @@ set -eux
 python3 prepare_dataset.py --local_dir /workspace/data/ocaml/
 
 HF_HOME=$BT_RW_CACHE_DIR/huggingface
-huggingface-cli download Qwen/Qwen3-8B
+huggingface-cli download Qwen/Qwen3-32B
 
 temperature=1.0
 clip_ratio_low=0.2
 clip_ratio_high=0.28
 use_dynamic_bsz=True
 
+ckpt_dir=${SHARED_CHECKPOINT_DIR}/${BT_TRAINING_JOB_NAME}
+echo "Checkpoint directory: $ckpt_dir"
+# Checkpoints will be persisted to the Baseten cache.
+# It's recommended to export these checkpoints with another job, or sync them to to the checkpoint directory after training completes.
+
+echo "Starting training"
 python3 -m verl.trainer.main_ppo \
     custom_reward_function.path=reward_function.py \
     custom_reward_function.name=compute_score \
@@ -24,7 +30,7 @@ python3 -m verl.trainer.main_ppo \
     data.max_response_length=8192 \
     data.filter_overlong_prompts=True \
     data.truncation='error' \
-    actor_rollout_ref.model.path=Qwen/Qwen3-8B \
+    actor_rollout_ref.model.path=Qwen/Qwen3-32B \
     actor_rollout_ref.actor.optim.lr=1e-6 \
     actor_rollout_ref.model.use_remove_padding=True \
     actor_rollout_ref.actor.ppo_mini_batch_size=32 \
@@ -59,9 +65,9 @@ python3 -m verl.trainer.main_ppo \
     trainer.experiment_name=$BT_TRAINING_JOB_NAME \
     trainer.n_gpus_per_node=$BT_NUM_GPUS \
     trainer.nnodes=$BT_GROUP_SIZE \
-    trainer.default_local_dir=$BT_CHECKPOINT_DIR \
-    trainer.save_freq=5 \
+    trainer.default_local_dir=$ckpt_dir \
+    trainer.save_freq=2 \
     trainer.test_freq=2 \
-    trainer.total_epochs=10 $@ \
+    trainer.total_epochs=4 $@ \
     algorithm.rollout_correction.rollout_is_threshold=2.0 \
-    algorithm.rollout_correction.rollout_is=token \
+    algorithm.rollout_correction.rollout_is=token 
