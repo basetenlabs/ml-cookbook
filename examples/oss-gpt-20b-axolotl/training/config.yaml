@@ -1,8 +1,5 @@
 base_model: openai/gpt-oss-20b
 
-hub_model_id: baseten-admin/multilingual-sft-gpt-oss-20b-longcontext
-hub_strategy: end  # only push the final model, don't push intermediate checkpoints
-
 use_kernels: false
 model_quantization_config: Mxfp4Config
 model_quantization_config_kwargs:
@@ -22,7 +19,7 @@ datasets:
 dataset_prepared_path: last_run_prepared
 val_set_size: 0.1
 eval_steps: 10
-output_dir: temp_dirs/x/y
+output_dir: /workspace/checkpoints
 
 sequence_len: 4096
 sample_packing: true
@@ -62,7 +59,3 @@ fsdp_config:
   auto_wrap_policy: TRANSFORMER_BASED_WRAP
   transformer_layer_cls_to_wrap: GptOssDecoderLayer
   reshard_after_forward: true
-
-use_wandb: true
-wandb_project: Axolotl GPT OSS 20b 1node longcontext
-wandb_entity: philipkiely-baseten
