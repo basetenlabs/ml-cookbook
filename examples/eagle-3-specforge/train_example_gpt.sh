@@ -4,16 +4,34 @@ pip install -q uv
 apt update -y
 apt install -y git curl
 
+if [ ! -d "model-training-SpecForge" ]; then
+    echo "Cloning model-training-SpecForge..."
+    git clone https://github token@github.com/basetenlabs/model-training-SpecForge.git
+fi
+
 cd model-training-SpecForge
 
-uv venv -p 3.11
-source .venv/bin/activate
-uv pip install -v .
-uv pip install torch-c-dlpack-ext
-uv pip install vllm
-uv pip install datasets huggingface_hub
-uv pip install ninja  # Speed up compilation
-
+# Create venv if it doesn't exist
+if [ ! -d ".venv" ]; then
+    echo "Setting up virtual environment..."
+    pip install -q uv
+    apt update -y
+    apt install -y git curl wget
+    
+    uv venv -p 3.11
+    source .venv/bin/activate
+    uv pip install -v .
+    uv pip install torch-c-dlpack-ext
+    uv pip install vllm
+    uv pip install datasets huggingface_hub
+    uv pip install ninja
+    
+    # Install flash-attn
+    echo "Installing flash-attn..."
+    uv pip install https://github.com/mjun0812/flash-attention-prebuild-wheels/releases/download/v0.7.0/flash_attn-2.8.3+cu128torch2.9-cp311-cp311-linux_x86_64.whl
+else
+    source .venv/bin/activate
+fi
 # Set up CUDA environment
 export CUDA_HOME=/opt/conda
 export PATH=$CUDA_HOME/bin:$PATH
@@ -21,27 +39,8 @@ export LIBRARY_PATH=$CUDA_HOME/lib64:$CUDA_HOME/lib:$LIBRARY_PATH
 export LD_LIBRARY_PATH=$CUDA_HOME/lib64:$CUDA_HOME/lib:/usr/local/nvidia/lib:/usr/local/nvidia/lib64:$LD_LIBRARY_PATH
 export CPATH=$CUDA_HOME/targets/x86_64-linux/include:$CUDA_HOME/include:$CPATH
 
-# Install flash-attn from pre-built wheel (much faster and more reliable)
-# For PyTorch 2.8+ and CUDA 12.x
-echo "Installing flash-attn..."
-
-# Verify CUDA extensions are available
-
-echo "⚠️  Pre-built wheel missing CUDA extensions. Building from source..."
-
-# Set build environment variables
-export FLASH_ATTENTION_SKIP_CUDA_BUILD=FALSE
-# export MAX_JOBS=8
-export TORCH_CUDA_ARCH_LIST="8.0;9.0"  # Limit architectures to speed up build
-
-git clone https://github.com/Dao-AILab/flash-attention.git
-cd flash-attention
-
-# Build and install into uv venv
-uv pip install -v . --no-build-isolation
-
-cd ..
-#rm -rf flash-attention
+# Disable hf_transfer to avoid I/O errors
+export HF_HUB_ENABLE_HF_TRANSFER=0
 
 set -e
 
