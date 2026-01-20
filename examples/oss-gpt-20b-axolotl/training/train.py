@@ -46,7 +46,7 @@ def main():
         sample_packing=True,
 
         # Training loop
-        gradient_accumulation_steps=2,
+        gradient_accumulation_steps=4,
         micro_batch_size=1,
         num_epochs=1,
 
@@ -83,7 +83,7 @@ def main():
         fsdp_version=2,
         fsdp_config={
             "offload_params": False,
-            "state_dict_type": "SHARDED_STATE_DICT",
+            "state_dict_type": "FULL_STATE_DICT",
             "auto_wrap_policy": "TRANSFORMER_BASED_WRAP",
             "transformer_layer_cls_to_wrap": "GptOssDecoderLayer",
             "reshard_after_forward": True,
