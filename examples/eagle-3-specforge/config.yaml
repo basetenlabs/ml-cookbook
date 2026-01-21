@@ -1,17 +1,17 @@
-model_name: GPT OSS 20B
+model_name: Qwen3-4B-Eagle3
 build_commands:
-  - python -c 'from openai_harmony import load_harmony_encoding; load_harmony_encoding("HarmonyGptOss")'
-python_version: py39
+  - hf download baseten-admin/model-eagle-head
+python_version: py311
 model_metadata:
-  repo_id: openai/gpt-oss-20b
+  repo_id: Qwen/Qwen3-4B
   example_model_input:
     {
-      "model": "openai/gpt-oss-20b",
+      "model": "Qwen/Qwen3-4B",
       "messages":
         [
           {
             "role": "user",
-            "content": "Given an array of integers nums and an integer target, return indices of the two numbers such that they add up to target. You may assume that each input would have exactly one solution, and you may not use the same element twice. You can return the answer in any order. class Solution: def twoSum(self, nums: List[int], target: int) -> List[int]:",
+            "content": "What is Qwen3-4B and what are some applications of this model?",
           },
         ],
       "stream": true,
@@ -26,22 +26,22 @@ resources:
   memory: 10Gi
   use_gpu: true
 model_cache:
-  - repo_id: baseten-admin/gpt_lora_oss_20b_eagle_head
+  - repo_id: baseten-admin/model-eagle-head
     revision: main
     use_volume: true
-    volume_folder: gpt_oss_20b_eagle3
+    volume_folder: qwen3_4b_eagle3
 trt_llm:
   build:
     checkpoint_repository:
-      repo: baseten-admin/gpt_lora_oss_20b
+      repo: huihui-ai/Huihui-Qwen3-4B-abliterated-v2 # example checkpoint, please change this
       revision: main
       source: HF
   inference_stack: v2
   runtime:
     enable_chunked_prefill: true
     max_batch_size: 64
-    max_num_tokens: 8192
-    max_seq_len: 8192
+    max_num_tokens: 2048
+    max_seq_len: 2048
     tensor_parallel_size: 2
     patch_kwargs:
       disable_overlap_scheduler: True
@@ -54,4 +54,4 @@ trt_llm:
       speculative_config:
         decoding_type: Eagle
         max_draft_len: 3
-        speculative_model_dir: /app/model_cache/gpt-oss-20b-eagle3
+        speculative_model_dir: /app/model_cache/qwen3_4b_eagle3
