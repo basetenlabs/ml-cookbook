@@ -6,16 +6,20 @@ BASE_IMAGE = "pytorch/pytorch:2.7.0-cuda12.8-cudnn9-runtime"
 training_runtime = definitions.Runtime(
     start_commands=["/bin/sh -c 'chmod +x ./run.sh && ./run.sh'"],
     environment_variables={
-        "HF_TOKEN": definitions.SecretReference(
-            name="hf_access_token"
-        ),  # The name of the HF Access Token secret in your B10 account
-        "WANDB_API_KEY": definitions.SecretReference(
-            name="wandb_api_key"
-        ),  # comment this out if you don't want to use wandb
+        # Uncomment the environment variables to use them
+        # "HF_TOKEN": definitions.SecretReference(
+        #     name="hf_access_token"
+        # ),  # The name of the HF Access Token secret in your B10 account
+        # "WANDB_API_KEY": definitions.SecretReference(
+        #     name="wandb_api_key"
+        # ),  # comment this out if you don't want to use wandb
     },
     cache_config=definitions.CacheConfig(
         enabled=True,
     ),
+    checkpointing_config=definitions.CheckpointingConfig(
+        enabled=True,
+    )
 )
 
 training_compute = definitions.Compute(
