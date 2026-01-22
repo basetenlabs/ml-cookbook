@@ -73,6 +73,10 @@ async def create_training_job(request: TrainingRequest):
 
 ## Configuration
 
+### Truss API Key
+You'll need to store your truss api key in the environment that your code is running in. You can do this 
+with `truss login <api-key>` - see docs [here](https://docs.baseten.co/reference/cli/truss/login)
+
 ### Environment Variables
 
 The training template uses environment variables to pass dynamic configuration:
@@ -82,6 +86,8 @@ The training template uses environment variables to pass dynamic configuration:
 | `MODEL_ID` | HuggingFace model ID to fine-tune |
 | `DATASET_ID` | HuggingFace dataset ID for training |
 | `PROJECT_NAME` | Name for the training project |
+
+Parsing the configuration in the config.py allows you to parametrize on hardware resources as well (e.g. accelerator and number of gpus).
 
 ### Secrets
 
