@@ -14,15 +14,7 @@ from truss_train import definitions
 
 # Read runtime configuration (written by training_handler.py)
 config_path = Path(__file__).parent / "runtime_config.json"
-if config_path.exists():
-    runtime_config = json.loads(config_path.read_text())
-else:
-    # Default values for local development/testing
-    runtime_config = {
-        "dataset_id": "HuggingFaceH4/Multilingual-Thinking",
-        "model_id": "openai/gpt-oss-20b",
-        "project_name": "programmatic-training-job",
-    }
+runtime_config = json.loads(config_path.read_text())
 
 BASE_IMAGE = "pytorch/pytorch:2.7.0-cuda12.8-cudnn9-runtime"
 
