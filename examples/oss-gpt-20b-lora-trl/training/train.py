@@ -55,7 +55,7 @@ training_args = SFTConfig(
     lr_scheduler_type="cosine_with_min_lr",
     lr_scheduler_kwargs={"min_lr_rate": 0.1},
     output_dir=os.getenv("BT_CHECKPOINT_DIR", "gpt-oss-20b-multilingual-reasoner"),
-    report_to="wandb",  # Comment this out if you don't want to use Weights & Biases
+    # report_to="wandb",  # Comment this out if you don't want to use Weights & Biases
     push_to_hub=False,
 )
 
@@ -69,8 +69,3 @@ trainer = SFTTrainer(
 trainer.train()
 
 trainer.save_model(training_args.output_dir)
-# Push the trained model in output_dir to a Hugging Face model repo
-hf_write_loc = os.environ.get(
-    "HF_WRITE_LOC", "baseten-admin/gpt-oss-20b-multilingual-reasoner-ee"
-)
-trainer.push_to_hub(hf_write_loc)
