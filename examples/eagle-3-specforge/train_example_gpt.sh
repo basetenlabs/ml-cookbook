@@ -6,32 +6,32 @@ apt install -y git curl
 
 if [ ! -d "model-training-SpecForge" ]; then
     echo "Cloning model-training-SpecForge..."
-    git clone https://github token@github.com/basetenlabs/model-training-SpecForge.git
+    git clone https://token@github.com/basetenlabs/model-training-SpecForge.git
 fi
 
 cd model-training-SpecForge
 
-# Create venv if it doesn't exist
-if [ ! -d ".venv" ]; then
-    echo "Setting up virtual environment..."
-    pip install -q uv
-    apt update -y
-    apt install -y git curl wget
-    
-    uv venv -p 3.11
-    source .venv/bin/activate
-    uv pip install -v .
-    uv pip install torch-c-dlpack-ext
-    uv pip install vllm
-    uv pip install datasets huggingface_hub
-    uv pip install ninja
-    
-    # Install flash-attn
-    echo "Installing flash-attn..."
-    uv pip install https://github.com/mjun0812/flash-attention-prebuild-wheels/releases/download/v0.7.0/flash_attn-2.8.3+cu128torch2.9-cp311-cp311-linux_x86_64.whl
-else
-    source .venv/bin/activate
-fi
+# Always create fresh venv
+echo "Setting up virtual environment..."
+rm -rf .venv
+pip install -q uv
+apt update -y
+apt install -y git curl wget
+
+uv venv -p 3.11
+source .venv/bin/activate
+uv pip install -v .
+uv pip install torch-c-dlpack-ext
+uv pip install vllm
+uv pip install datasets huggingface_hub
+uv pip install ninja
+
+# Install flash-attn
+echo "Installing flash-attn..."
+uv pip install https://github.com/mjun0812/flash-attention-prebuild-wheels/releases/download/v0.7.0/flash_attn-2.8.3+cu128torch2.9-cp311-cp311-linux_x86_64.whl
+
+
+
 # Set up CUDA environment
 export CUDA_HOME=/opt/conda
 export PATH=$CUDA_HOME/bin:$PATH
@@ -54,10 +54,10 @@ MODEL_NAME="openai/gpt-oss-20b"
 EAGLE_HEAD_CHECKPOINT=""
 
 # Dataset (HF dataset repo)
-CUSTOM_DATASET="baseten-admin/orpheus-v1-english-preview-1712-high-quality-english-sentences:train"
+CUSTOM_DATASET="baseten-admin/ultrachat-train-regen-gpt-oss"
 
 # Optional eval dataset (update/remove if your dataset doesn't have this split)
-EVAL_DATASET="baseten-admin/orpheus-v1-english-preview-1712-high-quality-english-sentences:test"
+EVAL_DATASET="baseten-admin/ultrachat-train-regen-gpt-oss"
 
 # Training hyperparameters
 BATCH_SIZE=1
@@ -65,13 +65,13 @@ LEARNING_RATE=1e-4
 NUM_EPOCHS=3
 MAX_LENGTH=4096
 TTT_LENGTH=7
-SAVE_INTERVAL=50
+SAVE_INTERVAL=500
 EVAL_INTERVAL=500
 LOG_INTERVAL=50
 
 
 # Output directory
-OUTPUT_DIR=./output/gpt-oss-20b-eagle3-custom
+OUTPUT_DIR=./output/gpt-oss-20b-eagle3-ultrachat-regen
 
 # HuggingFace Hub upload settings
 HF_REPO_ID=baseten-admin/gpt-oss-20b-eagle3  # Change to your desired repo
@@ -99,14 +99,12 @@ echo "Output: $OUTPUT_DIR"
 echo "============================================"
 
 # Verify we're in the venv and flash-attn is available
-echo "Python: $(which python)"
-python -c "from flash_attn import flash_attn_func; print('✅ flash-attn verified')"
+echo "Python: $(.venv/bin/python --version)"
+.venv/bin/python -c "import flash_attn; print('✅ flash-attn verified')"
 
 # Use torchrun for multi-GPU training
 TRAIN_ARGS="--target-model-path $MODEL_NAME \
     --train-data-path $CUSTOM_DATASET \
-    --eval-data-path $EVAL_DATASET \
-    --is-prompt-output \
     --draft-model-config /workspace/model-training-SpecForge/configs/gpt-oss-20B-eagle3.json \
     --output-dir $OUTPUT_DIR \
     --batch-size $BATCH_SIZE \
@@ -115,11 +113,11 @@ TRAIN_ARGS="--target-model-path $MODEL_NAME \
     --max-length $MAX_LENGTH \
     --ttt-length $TTT_LENGTH \
     --save-interval $SAVE_INTERVAL \
-    --eval-interval $EVAL_INTERVAL \
     --log-interval $LOG_INTERVAL \
     --seed $SEED \
     --tp-size $TP_SIZE \
     --attention-backend $ATTENTION_BACKEND \
+    --chat-template gpt-oss-naive \
     --report-to wandb \
     --cache-dir ./cache \
     --hf-repo-id $HF_REPO_ID \
@@ -132,7 +130,7 @@ if [ -n "$EAGLE_HEAD_CHECKPOINT" ]; then
     TRAIN_ARGS="$TRAIN_ARGS --eagle-head-hf-checkpoint \"$EAGLE_HEAD_CHECKPOINT\""
 fi
 
-torchrun --nproc_per_node=$NUM_GPUS --master_port=29500 scripts/train_eagle3_extended.py $TRAIN_ARGS
+.venv/bin/torchrun --nproc_per_node=$NUM_GPUS --master_port=29500 scripts/train_eagle3_extended.py $TRAIN_ARGS
 
 echo "✅ Training completed!"
 echo "Model saved to: $OUTPUT_DIR"
