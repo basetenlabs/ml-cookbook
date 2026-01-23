@@ -4,7 +4,7 @@
 # Configuration
 ############################################
 # Base model for data generation
-MODEL_NAME="Qwen/Qwen3-4B"
+MODEL_NAME="openai/gpt-oss-20b"
 
 # SGLang server settings
 SERVER_BASE_PORT=30000
@@ -12,17 +12,17 @@ CONCURRENCY=128
 
 # Dataset paths
 INPUT_FILE_PATH="./cache/dataset/ultrachat_train.jsonl"
-OUTPUT_FILE_PATH="./cache/dataset/ultrachat_train_regen.jsonl"
+OUTPUT_FILE_PATH="./cache/dataset/ultrachat_train_regen_gpt_oss.jsonl"
 
 # Generation parameters
-NUM_SAMPLES=10000
+NUM_SAMPLES=10
 MAX_LENGTH=4096
 TEMPERATURE=0.8
 TOP_P=0.95
 
 # HuggingFace upload settings
 UPLOAD_TO_HF=true
-HF_DATASET_REPO="baseten-admin/qwen3-4b-eagle-training-data"
+HF_DATASET_REPO="baseten-admin/gpt-oss-20b-ultrachat-eagle-training-data"
 
 ############################################
 # Dataset Regeneration
@@ -33,9 +33,9 @@ HF_DATASET_REPO="baseten-admin/qwen3-4b-eagle-training-data"
 
 cd model-training-SpecForge
 
-python scripts/prepare_data.py --dataset ultrachat --sample-size 10000
-
 source .venv/bin/activate
+
+python scripts/prepare_data.py --dataset ultrachat
 
 echo "============================================"
 echo "🔄 Regenerating Eagle Training Dataset"
@@ -86,31 +86,45 @@ done
 
 # Wait for all servers to be ready
 echo "⏳ Waiting for all servers to be ready..."
-MAX_WAIT=300  # 5 minutes
-ELAPSED=0
+MAX_WAIT=300  # 5 minutes per server
+READY_SERVERS=()
+READY_ADDRESSES=()
 
 for ((i=0; i<NUM_GPUS; i++)); do
     PORT=$((SERVER_BASE_PORT + i))
-    while ! curl -s http://localhost:$PORT/health > /dev/null 2>&1; do
-        sleep 5
-        ELAPSED=$((ELAPSED + 5))
-        if [ $ELAPSED -ge $MAX_WAIT ]; then
-            echo "❌ Server $i failed to start within ${MAX_WAIT}s"
-            # Kill all servers
-            for pid in "${SERVER_PIDS[@]}"; do
-                kill $pid 2>/dev/null
-            done
-            exit 1
+    SERVER_ELAPSED=0  # Reset timer for each server
+    SERVER_READY=false
+    
+    while [ $SERVER_ELAPSED -lt $MAX_WAIT ]; do
+        if curl -s http://localhost:$PORT/health > /dev/null 2>&1; then
+            echo "✅ Server $i ready on port $PORT"
+            READY_SERVERS+=("${SERVER_PIDS[$i]}")
+            READY_ADDRESSES+=("127.0.0.1:$PORT")
+            SERVER_READY=true
+            break
         fi
-        echo "  Waiting for server $i... (${ELAPSED}s elapsed)"
+        sleep 5
+        SERVER_ELAPSED=$((SERVER_ELAPSED + 5))
+        echo "  Waiting for server $i... (${SERVER_ELAPSED}s elapsed)"
     done
-    echo "✅ Server $i ready on port $PORT"
+    
+    if [ "$SERVER_READY" = false ]; then
+        echo "⚠️  Server $i on port $PORT failed to start, skipping..."
+        kill ${SERVER_PIDS[$i]} 2>/dev/null
+    fi
 done
 
-echo "✅ All $NUM_GPUS servers are ready!"
+# Check if we have at least one server ready
+if [ ${#READY_ADDRESSES[@]} -eq 0 ]; then
+    echo "❌ No servers started successfully"
+    exit 1
+fi
 
-# Build server addresses argument
-SERVER_ADDRESSES_STR="${SERVER_ADDRESSES[@]}"
+echo "✅ ${#READY_ADDRESSES[@]} servers are ready!"
+
+# Build server addresses argument from ready servers only
+SERVER_ADDRESSES_STR="${READY_ADDRESSES[@]}"
+SERVER_PIDS=("${READY_SERVERS[@]}")
 
 # Generate dataset using Eagle data generation script
 echo "🎲 Generating training data using $NUM_GPUS servers..."
@@ -123,7 +137,8 @@ python scripts/regenerate_train_data.py \
     --top-p "$TOP_P" \
     --input-file-path "$INPUT_FILE_PATH" \
     --output-file-path "$OUTPUT_FILE_PATH" \
-    --num-samples "$NUM_SAMPLES"
+    --is-gpt-oss \
+    --is-reasoning-model
 
 # Kill all servers
 echo "🛑 Stopping all SGLang servers..."
