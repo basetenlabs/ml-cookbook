@@ -59,14 +59,17 @@ CUSTOM_DATASET="baseten-admin/ultrachat-train-regen-gpt-oss"
 # Optional eval dataset (update/remove if your dataset doesn't have this split)
 EVAL_DATASET="baseten-admin/ultrachat-train-regen-gpt-oss"
 
+# optional eagle head checkpoint
+EAGLE_HEAD_CHECKPOINT=baseten-admin/gpt-oss-20b-eagle3
+
 # Training hyperparameters
 BATCH_SIZE=1
 LEARNING_RATE=1e-4
-NUM_EPOCHS=3
+NUM_EPOCHS=5
 MAX_LENGTH=4096
 TTT_LENGTH=7
-SAVE_INTERVAL=500
-EVAL_INTERVAL=500
+SAVE_INTERVAL=5000
+EVAL_INTERVAL=5000
 LOG_INTERVAL=50
 
 
@@ -74,7 +77,7 @@ LOG_INTERVAL=50
 OUTPUT_DIR=./output/gpt-oss-20b-eagle3-ultrachat-regen
 
 # HuggingFace Hub upload settings
-HF_REPO_ID=baseten-admin/gpt-oss-20b-eagle3  # Change to your desired repo
+HF_REPO_ID=baseten-admin/gpt-oss-20b-eagle3-10epoch  # Change to your desired repo
 UPLOAD_TO_HF=true  # Set to false to disable upload
 
 # Other settings
@@ -117,7 +120,7 @@ TRAIN_ARGS="--target-model-path $MODEL_NAME \
     --seed $SEED \
     --tp-size $TP_SIZE \
     --attention-backend $ATTENTION_BACKEND \
-    --chat-template gpt-oss-naive \
+    --chat-template gpt-oss \
     --report-to wandb \
     --cache-dir ./cache \
     --hf-repo-id $HF_REPO_ID \
@@ -127,7 +130,7 @@ TRAIN_ARGS="--target-model-path $MODEL_NAME \
 
 # Add Eagle head checkpoint if specified
 if [ -n "$EAGLE_HEAD_CHECKPOINT" ]; then
-    TRAIN_ARGS="$TRAIN_ARGS --eagle-head-hf-checkpoint \"$EAGLE_HEAD_CHECKPOINT\""
+    TRAIN_ARGS="$TRAIN_ARGS --eagle-head-hf-checkpoint $EAGLE_HEAD_CHECKPOINT"
 fi
 
 .venv/bin/torchrun --nproc_per_node=$NUM_GPUS --master_port=29500 scripts/train_eagle3_extended.py $TRAIN_ARGS
