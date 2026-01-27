@@ -17,8 +17,8 @@ OUTPUT_FILE_PATH="./cache/dataset/ultrachat_train_regen_gpt_oss.jsonl"
 # Generation parameters
 NUM_SAMPLES=10
 MAX_LENGTH=4096
-TEMPERATURE=0.8
-TOP_P=0.95
+TEMPERATURE=0.5
+TOP_P=1
 
 # HuggingFace upload settings
 UPLOAD_TO_HF=true
@@ -35,8 +35,7 @@ cd model-training-SpecForge
 
 source .venv/bin/activate
 
-python scripts/prepare_data.py --dataset ultrachat
-
+python scripts/prepare_data.py --dataset ultrachat --sample-size 10
 echo "============================================"
 echo "🔄 Regenerating Eagle Training Dataset"
 echo "Model: $MODEL_NAME"
@@ -68,7 +67,7 @@ SERVER_ADDRESSES=()
 for ((i=0; i<NUM_GPUS; i++)); do
     PORT=$((SERVER_BASE_PORT + i))
     echo "  Starting server on GPU $i, port $PORT..."
-    
+    # note that you need to skip special tokens for gpt oss
     CUDA_VISIBLE_DEVICES=$i python -m sglang.launch_server \
         --model "$MODEL_NAME" \
         --mem-fraction-static 0.75 \
@@ -128,7 +127,7 @@ SERVER_PIDS=("${READY_SERVERS[@]}")
 
 # Generate dataset using Eagle data generation script
 echo "🎲 Generating training data using $NUM_GPUS servers..."
-python scripts/regenerate_train_data.py \
+python scripts/regenerate_train_data_gpt.py \
     --model "$MODEL_NAME" \
     --server-address $SERVER_ADDRESSES_STR \
     --concurrency "$CONCURRENCY" \
@@ -137,8 +136,8 @@ python scripts/regenerate_train_data.py \
     --top-p "$TOP_P" \
     --input-file-path "$INPUT_FILE_PATH" \
     --output-file-path "$OUTPUT_FILE_PATH" \
-    --is-gpt-oss \
-    --is-reasoning-model
+    --raw-input-output \
+    --num-samples 10 \
 
 # Kill all servers
 echo "🛑 Stopping all SGLang servers..."
