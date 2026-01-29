@@ -115,7 +115,8 @@ echo "Python: $(.venv/bin/python --version)"
     --attention-backend "$ATTENTION_BACKEND" \
     --report-to wandb \
     --cache-dir ./cache \
-    --hf-repo-id "$HF_REPO_ID"
+    --hf-repo-id "$HF_REPO_ID" \
+    --is-prompt-output
 
 echo "✅ Training completed!"
 echo "Model saved to: $OUTPUT_DIR"
