@@ -33,7 +33,7 @@ fi
 #SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
 #ROOT_DIR=$(dirname $SCRIPT_DIR)
 #export TORCHINDUCTOR_CACHE_DIR=$ROOT_DIR/cache/compiled_kernels
-
+export FLASHINFER_DISABLE_VERSION_CHECK=1
 # Set up CUDA environment
 export CUDA_HOME=/opt/conda
 export PATH=$CUDA_HOME/bin:$PATH
