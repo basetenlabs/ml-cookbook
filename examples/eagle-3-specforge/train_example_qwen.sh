@@ -50,13 +50,10 @@ set -e
 MODEL_NAME="Qwen/Qwen3-4B"
 
 # Eagle head checkpoint (HF repo)
-EAGLE_HEAD_CHECKPOINT="baseten-admin/qwen3-4b-eagle3-orpheus"
+#EAGLE_HEAD_CHECKPOINT=""
 
 # Dataset (HF dataset repo)
-CUSTOM_DATASET="baseten-admin/qwen3-4b-eagle-training-data"
-
-# Optional eval dataset (update/remove if your dataset doesn't have this split)
-EVAL_DATASET="baseten-admin/qwen3-4b-eagle-training-data"
+CUSTOM_DATASET="/workspace/model-training-SpecForge/cache/dataset/test_dataset.jsonl"
 
 # Training hyperparameters
 BATCH_SIZE=1
@@ -75,14 +72,14 @@ INIT_BACKBONE_LAYER=15  # Use middle layer of Qwen3-4B
 OUTPUT_DIR="./output/qwen3-4b-eagle3-custom"
 
 # HuggingFace Hub upload settings
-HF_REPO_ID="baseten-admin/qwen3-4b-eagle3-orpheus"  # Change to your desired repo
+HF_REPO_ID="baseten-admin/qwen3-4b-eagle3"  # Change to your desired repo
 UPLOAD_TO_HF=true  # Set to false to disable upload
 
 # Other settings
 SEED=0
-TP_SIZE=1
+TP_SIZE=2
 ATTENTION_BACKEND="flex_attention"
-NUM_GPUS=1
+NUM_GPUS=8
 
 ############################################
 # Train with extended script
@@ -103,7 +100,6 @@ echo "Python: $(.venv/bin/python --version)"
 # Use torchrun for multi-GPU training
 .venv/bin/torchrun --nproc_per_node=$NUM_GPUS --master_port=29500 scripts/train_eagle3_extended.py \
     --target-model-path "$MODEL_NAME" \
-    --eagle-head-hf-checkpoint "$EAGLE_HEAD_CHECKPOINT" \
     --train-data-path "$CUSTOM_DATASET" \
     --draft-model-config /workspace/model-training-SpecForge/configs/qwen3-4b-eagle3-auto.json \
     --output-dir "$OUTPUT_DIR" \
