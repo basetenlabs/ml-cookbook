@@ -38,7 +38,7 @@ export PATH=$CUDA_HOME/bin:$PATH
 export LIBRARY_PATH=$CUDA_HOME/lib64:$CUDA_HOME/lib:$LIBRARY_PATH
 export LD_LIBRARY_PATH=$CUDA_HOME/lib64:$CUDA_HOME/lib:/usr/local/nvidia/lib:/usr/local/nvidia/lib64:$LD_LIBRARY_PATH
 export CPATH=$CUDA_HOME/targets/x86_64-linux/include:$CUDA_HOME/include:$CPATH
-
+export FLASHINFER_DISABLE_VERSION_CHECK=1
 # Disable hf_transfer to avoid I/O errors
 export HF_HUB_ENABLE_HF_TRANSFER=0
 
