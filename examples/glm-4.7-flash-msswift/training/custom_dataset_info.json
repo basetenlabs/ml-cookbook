@@ -1,0 +1,10 @@
+[
+    {
+        "hf_dataset_id": "HuggingFaceTB/everyday-conversations-llama3.1-2k",
+        "split": ["train_sft"],
+        "columns": {
+            "messages": "messages"
+        },
+        "tags": ["chat", "en"]
+    }
+]
