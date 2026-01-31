@@ -51,7 +51,8 @@ PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True NPROC_PER_NODE=$BT_NUM_GPUS NNO
 
 # Only check for safetensors on the last node
 if [ $BT_NODE_RANK -ne $(($BT_GROUP_SIZE - 1)) ]; then
-    exit 0
+    # Non-master nodes spin forever; master node sends the exit code
+    sleep infinity
 fi
 
 # Capture the exit code
