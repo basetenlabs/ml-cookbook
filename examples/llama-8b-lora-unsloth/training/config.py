@@ -19,12 +19,9 @@ training_runtime = definitions.Runtime(
         # Secrets (ensure these are configured in your Baseten workspace)
         "HF_TOKEN": definitions.SecretReference(name="hf_access_token"),
         # "WANDB_API_KEY": definitions.SecretReference(name="wandb_api_key"),
-        "HELLO": "WORLD",
-        "HF_WRITE_REPO": "", # Define your HF Repo for uploading your model
     },
-    cache_config=definitions.CacheConfig(
+    checkpointing_config=definitions.CheckpointingConfig(
         enabled=True,
-        mount_base_path="/workspace/cache",
     ),
 )
 
