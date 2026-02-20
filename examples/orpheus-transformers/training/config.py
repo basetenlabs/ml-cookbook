@@ -12,7 +12,7 @@ runtime = definitions.Runtime(
         "apt-get update && apt-get install -y build-essential",
         "pip install --upgrade pip",
         "pip install -r requirements.txt",
-        "/bin/sh -c './run.sh'",
+        "/bin/sh -c 'chmod +x ./run.sh && ./run.sh'",
     ],
     checkpointing_config=definitions.CheckpointingConfig(
         enabled=True,
