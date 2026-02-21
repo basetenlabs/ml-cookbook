@@ -9,23 +9,22 @@ exec > >(tee -a "${LOG_FILE}") 2>&1
 echo "==== run_msswift.sh start node=${BT_NODE_RANK:-0} $(date -Is) ===="
 echo "log_file=${LOG_FILE}"
 
-CACHE_ROOT="${BT_RW_CACHE_DIR:-/tmp}"
-export HF_HOME="${HF_HOME:-${CACHE_ROOT}/huggingface}"
-export HUGGINGFACE_HUB_CACHE="${HUGGINGFACE_HUB_CACHE:-${HF_HOME}/hub}"
-export TRANSFORMERS_CACHE="${TRANSFORMERS_CACHE:-${HF_HOME}/transformers}"
-export HF_DATASETS_CACHE="${HF_DATASETS_CACHE:-${HF_HOME}/datasets}"
-export PIP_CACHE_DIR="${PIP_CACHE_DIR:-${CACHE_ROOT}/pip}"
-export TRITON_CACHE_DIR="${TRITON_CACHE_DIR:-${CACHE_ROOT}/triton-cache}"
-export TORCH_EXTENSIONS_DIR="${TORCH_EXTENSIONS_DIR:-${CACHE_ROOT}/torch-extensions}"
-export NCCL_DEBUG="${NCCL_DEBUG:-INFO}"
-export TORCH_DISTRIBUTED_DEBUG="${TORCH_DISTRIBUTED_DEBUG:-OFF}"
-export TORCH_NCCL_ASYNC_ERROR_HANDLING="${TORCH_NCCL_ASYNC_ERROR_HANDLING:-1}"
-export NCCL_SOCKET_IFNAME="${NCCL_SOCKET_IFNAME:-^docker0,lo}"
-export OMP_NUM_THREADS="${OMP_NUM_THREADS:-4}"
-export PYTORCH_CUDA_ALLOC_CONF="${PYTORCH_CUDA_ALLOC_CONF:-expandable_segments:True}"
-export TORCH_COMPILE_DISABLE="${TORCH_COMPILE_DISABLE:-1}"
-export TORCHINDUCTOR_COMPILE_THREADS="${TORCHINDUCTOR_COMPILE_THREADS:-1}"
-
+CACHE_ROOT="/tmp"
+export HF_HOME="${CACHE_ROOT}/huggingface"
+export HUGGINGFACE_HUB_CACHE="${HF_HOME}/hub"
+export TRANSFORMERS_CACHE="${HF_HOME}/transformers"
+export HF_DATASETS_CACHE="${HF_HOME}/datasets"
+export PIP_CACHE_DIR="${CACHE_ROOT}/pip"
+export TRITON_CACHE_DIR="${CACHE_ROOT}/triton-cache"
+export TORCH_EXTENSIONS_DIR="${CACHE_ROOT}/torch-extensions"
+export NCCL_DEBUG="INFO"
+export TORCH_DISTRIBUTED_DEBUG="OFF"
+export TORCH_NCCL_ASYNC_ERROR_HANDLING="1"
+export NCCL_SOCKET_IFNAME="^docker0,lo"
+export OMP_NUM_THREADS="4"
+export PYTORCH_CUDA_ALLOC_CONF="expandable_segments:True"
+export TORCH_COMPILE_DISABLE="1"
+export TORCHINDUCTOR_COMPILE_THREADS="1"
 
 export TORCH_DISTRIBUTED_DEBUG=DETAIL
 export NCCL_DEBUG=INFO
@@ -178,7 +177,7 @@ MASTER_PORT="${MASTER_PORT}" \
 megatron sft \
   --model "${MODEL_ARG}" \
   --save "${checkpoint_dir}" \
-  --dataset "${DATASET_ID}#50" \
+  --dataset "${DATASET_ID}" \
   --template minimax_m2 \
   --check_model false \
   --load_safetensors true \
