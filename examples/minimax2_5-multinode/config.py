@@ -8,24 +8,11 @@ BASE_IMAGE = "baseten/megatron:py3.11.11-cuda12.8.1-torch2.8.0-fa2.8.1-megatron0
 
 training_runtime = definitions.Runtime(
     start_commands=[
-        "/bin/bash -c 'chmod +x ./rssh.sh && ./rssh.sh'",
+        "/bin/bash -c 'chmod +x ./run_msswift.sh && ./run_msswift.sh'",
     ],
     environment_variables={
         "HF_TOKEN": definitions.SecretReference(name="hf_access_token"),
         "WANDB_API_KEY": definitions.SecretReference(name="wandb_api_key"),
-        # Override in Baseten UI for your run.
-        "MODEL_ID": "MiniMaxAI/MiniMax-M2.5",
-        "DATASET_ID": "winglian/pirate-ultrachat-10k",
-        "CHECKPOINT_NAME": "minimax-2-5-lora-8-32",
-        "SAVE_FULL_MODEL": "false",
-        "TRAIN_TYPE": "lora",
-        "LR_WARMUP_FRACTION": "0.05",
-        "MIN_LR": "1e-5",
-        "EVAL_INTERVAL": "5",
-        "MAX_LENGTH": "1024",
-        "NUM_WORKERS": "8",
-        "DATASET_NUM_PROC": "8",
-        "MASTER_PORT": "29500",
     },
     cache_config=definitions.CacheConfig(
         enabled=True,

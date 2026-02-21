@@ -41,49 +41,45 @@ if [[ -z "${PY_BIN}" ]]; then
   exit 1
 fi
 
-SWIFT_VERSION="${SWIFT_VERSION:-3.12.5}"
+SWIFT_VERSION="3.12.5"
 "${PY_BIN}" -m pip install --upgrade pip
 "${PY_BIN}" -m pip install "ms-swift[llm]==${SWIFT_VERSION}" datasets wandb huggingface_hub
 "${PY_BIN}" -m pip install "transformers==4.57.1" -U
-if [[ -n "${HF_TOKEN:-}" ]]; then
-  export HUGGING_FACE_HUB_TOKEN="${HF_TOKEN}"
-  export HUGGINGFACE_HUB_TOKEN="${HF_TOKEN}"
-  echo "Using HF token from environment (no git credential helper)."
-fi
 
-# Training variables (edit these directly).
-MODEL_ID="${MODEL_ID:-MiniMaxAI/MiniMax-M2.5}"
-DATASET_ID="${DATASET_ID:-winglian/pirate-ultrachat-10k}"
-DATASET_SPLIT="${DATASET_SPLIT:-train}"
-CHECKPOINT_NAME="${CHECKPOINT_NAME:-minimax-m2-5-msswift-lora}"
-RUN_NAME="${RUN_NAME:-minimax-m2-5-msswift-lora}"
+# Training variables (edit these directly; all set to fixed defaults).
+MODEL_ID="MiniMaxAI/MiniMax-M2.5"
+DATASET_ID="winglian/pirate-ultrachat-10k"
+DATASET_SPLIT="train"
+CHECKPOINT_NAME="minimax-m2-5-msswift-lora"
+RUN_NAME="minimax-m2-5-msswift-lora"
 MODEL_ARG="${MODEL_ID}"
 
-LORA_RANK="${LORA_RANK:-8}"
-LORA_ALPHA="${LORA_ALPHA:-16}"
-SPLIT_DATASET_RATIO="${SPLIT_DATASET_RATIO:-0.01}"
-TENSOR_PARALLEL_SIZE="${TENSOR_PARALLEL_SIZE:-8}"
-PIPELINE_PARALLEL_SIZE="${PIPELINE_PARALLEL_SIZE:-1}"
-CONTEXT_PARALLEL_SIZE="${CONTEXT_PARALLEL_SIZE:-1}"
-EXPERT_PARALLEL_SIZE="${EXPERT_PARALLEL_SIZE:-16}"
-MICRO_BATCH_SIZE="${MICRO_BATCH_SIZE:-1}"
-GLOBAL_BATCH_SIZE="${GLOBAL_BATCH_SIZE:-2}"
-MAX_EPOCHS="${MAX_EPOCHS:-1}"
-LR="${LR:-2e-4}"
-LR_DECAY_STYLE="${LR_DECAY_STYLE:-constant}"
-LR_WARMUP_FRACTION="${LR_WARMUP_FRACTION:-0.05}"
-MIN_LR="${MIN_LR:-1e-5}"
-MAX_LENGTH="${MAX_LENGTH:-1024}"
-NUM_WORKERS="${NUM_WORKERS:-8}"
-DATASET_NUM_PROC="${DATASET_NUM_PROC:-8}"
-SAVE_FULL_MODEL="${SAVE_FULL_MODEL:-false}"
-SAVE_INTERVAL="${SAVE_INTERVAL:-5}"
-LOG_INTERVAL="${LOG_INTERVAL:-1}"
-REPORT_TO="${REPORT_TO:-none}"
-MSSWIFT_COMPAT_MODE="${MSSWIFT_COMPAT_MODE:-true}"
+LORA_RANK=8
+LORA_ALPHA=16
+SPLIT_DATASET_RATIO=0.01
+TENSOR_PARALLEL_SIZE=8
+PIPELINE_PARALLEL_SIZE=1
+CONTEXT_PARALLEL_SIZE=1
+EXPERT_PARALLEL_SIZE=16
+MICRO_BATCH_SIZE=1
+GLOBAL_BATCH_SIZE=2
+MAX_EPOCHS=1
+LR=2e-4
+LR_DECAY_STYLE="constant"
+LR_WARMUP_FRACTION=0.05
+MIN_LR=1e-5
+MAX_LENGTH=1024
+NUM_WORKERS=8
+DATASET_NUM_PROC=8
+SAVE_FULL_MODEL="false"
+SAVE_INTERVAL=5
+LOG_INTERVAL=1
+REPORT_TO="none"
+MSSWIFT_COMPAT_MODE="true"
+
 
 if [[ ! -d "${MODEL_ID}" ]]; then
-  LOCAL_MODEL_DIR="${LOCAL_MODEL_DIR:-${CACHE_ROOT}/model-snapshots/${MODEL_ID//\//__}}"
+  LOCAL_MODEL_DIR="${CACHE_ROOT}/model-snapshots/${MODEL_ID//\//__}"
   mkdir -p "${LOCAL_MODEL_DIR}"
   echo "Pre-downloading model snapshot to cache: ${LOCAL_MODEL_DIR}"
   MODEL_ID_ENV="${MODEL_ID}" LOCAL_MODEL_DIR_ENV="${LOCAL_MODEL_DIR}" "${PY_BIN}" - <<'PY'
@@ -125,32 +121,11 @@ if (( GLOBAL_BATCH_SIZE % MIN_DIVISOR != 0 )); then
   GLOBAL_BATCH_SIZE="${MIN_DIVISOR}"
 fi
 
-echo "---- startup diagnostics node=${BT_NODE_RANK:-0} $(date -Is) ----"
-echo "host=$(hostname) master=${BT_LEADER_ADDR:-127.0.0.1}:${MASTER_PORT:-29500}"
-nvidia-smi --query-gpu=index,name,temperature.gpu,utilization.gpu,memory.used,memory.total --format=csv,noheader || true
-
-if [[ "${BT_NODE_RANK:-0}" != "0" ]]; then
-  echo "[node ${BT_NODE_RANK:-0}] Waiting for master ${BT_LEADER_ADDR:-127.0.0.1}:${MASTER_PORT:-29500}..."
-  MASTER_READY=0
-  for _ in $(seq 1 120); do
-    if timeout 2 bash -c "cat < /dev/null > /dev/tcp/${BT_LEADER_ADDR:-127.0.0.1}/${MASTER_PORT:-29500}"; then
-      MASTER_READY=1
-      break
-    fi
-    sleep 2
-  done
-  if [[ "${MASTER_READY}" == "1" ]]; then
-    echo "master_port_reachable=true (pre-launch)"
-  else
-    echo "master_port_reachable=false after waiting; continuing anyway."
-  fi
-fi
-
 echo "Launching ms-swift Megatron SFT for ${MODEL_ID}"
 echo "model_path=${MODEL_ARG}"
 echo "checkpoint_dir=${checkpoint_dir}"
-echo "BT_GROUP_SIZE=${BT_GROUP_SIZE:-1} BT_NUM_GPUS=${BT_NUM_GPUS:-1} BT_NODE_RANK=${BT_NODE_RANK:-0}"
-echo "MASTER_ADDR=${BT_LEADER_ADDR:-127.0.0.1} MASTER_PORT=${MASTER_PORT:-29500}"
+echo "BT_GROUP_SIZE=${BT_GROUP_SIZE} BT_NUM_GPUS=${BT_NUM_GPUS} BT_NODE_RANK=${BT_NODE_RANK}"
+echo "MASTER_ADDR=${BT_LEADER_ADDR} MASTER_PORT=${MASTER_PORT}"
 echo "ms_swift_version=${SWIFT_VERSION}"
 echo "profile=working_config TP=${TENSOR_PARALLEL_SIZE} EP=${EXPERT_PARALLEL_SIZE} PP=${PIPELINE_PARALLEL_SIZE} CP=${CONTEXT_PARALLEL_SIZE} LORA_RANK=${LORA_RANK} MAX_LENGTH=${MAX_LENGTH} MICRO_BATCH_SIZE=${MICRO_BATCH_SIZE} GLOBAL_BATCH_SIZE=${GLOBAL_BATCH_SIZE}"
 echo "MSSWIFT_COMPAT_MODE=${MSSWIFT_COMPAT_MODE}"
@@ -195,11 +170,11 @@ if [[ "${MSSWIFT_COMPAT_MODE}" == "true" ]]; then
 fi
 
 PYTORCH_CUDA_ALLOC_CONF="${PYTORCH_CUDA_ALLOC_CONF}" \
-NPROC_PER_NODE="${BT_NUM_GPUS:-1}" \
-NNODES="${BT_GROUP_SIZE:-1}" \
-NODE_RANK="${BT_NODE_RANK:-0}" \
-MASTER_ADDR="${BT_LEADER_ADDR:-127.0.0.1}" \
-MASTER_PORT="${MASTER_PORT:-29500}" \
+NPROC_PER_NODE="${BT_NUM_GPUS}" \
+NNODES="${BT_GROUP_SIZE}" \
+NODE_RANK="${BT_NODE_RANK}" \
+MASTER_ADDR="${BT_LEADER_ADDR}" \
+MASTER_PORT="${MASTER_PORT}" \
 megatron sft \
   --model "${MODEL_ARG}" \
   --save "${checkpoint_dir}" \
@@ -278,7 +253,7 @@ PY
   touch "${NODE1_UPLOAD_DONE_MARKER}"
 fi
 
-if [[ "${BT_NODE_RANK:-0}" == "0" ]]; then
+if [[ "${BT_NODE_RANK}" == "0" ]]; then
   NODE0_WAIT_TIMEOUT_SECONDS="${NODE0_WAIT_TIMEOUT_SECONDS:-3600}"
   NODE0_WAIT_POLL_SECONDS="${NODE0_WAIT_POLL_SECONDS:-5}"
   echo "Node 0 waiting for node 1 upload marker: ${NODE1_UPLOAD_DONE_MARKER} (timeout ${NODE0_WAIT_TIMEOUT_SECONDS}s)"
@@ -297,7 +272,7 @@ fi
 
 
 
-echo "[rank ${BT_NODE_RANK:-0}] megatron exit code=${TRAIN_EXIT_CODE}"
+echo "[rank ${BT_NODE_RANK}] megatron exit code=${TRAIN_EXIT_CODE}"
 if [[ "${TRAIN_EXIT_CODE}" -ne 0 ]]; then
   if [[ -d "${checkpoint_dir}" ]] && find "${checkpoint_dir}" -name "*.safetensors" -type f | grep -q .; then
     echo "Training exited ${TRAIN_EXIT_CODE}, but safetensors exist in ${checkpoint_dir}; treating as success."
