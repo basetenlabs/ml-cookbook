@@ -4,7 +4,7 @@ from truss.base import truss_config
 BASE_IMAGE = "baseten/trl-oss-gpt:devel-0"
 
 training_runtime = definitions.Runtime(
-    start_commands=["./run.sh"],
+    start_commands=["/bin/sh -c 'chmod +x ./run.sh && ./run.sh'"],
     environment_variables={
         "HF_TOKEN": definitions.SecretReference(
             name="hf_access_token"
