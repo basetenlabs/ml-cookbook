@@ -1,39 +1,34 @@
-## Baseten MiniMax 2.5 Training (Multi-Node, DeepSpeed + LoRA)
+## Baseten MiniMax 2.5 Training (Multi-Node, ms-swift)
 
-This repo now uses a multinode `torchrun` launch with Transformers + PEFT + DeepSpeed.
+This example supports two ms-swift paths in the same folder:
+- `run_msswift.sh`: `megatron sft` (Megatron path with TP/EP and FP8 training flags).
 
-### What changed
-- `config.py`: Baseten job config with 2 nodes x 8xH100.
-- `run.sh`: installs dependencies, sets debug envs, and launches multinode `torchrun`.
-- `train_ds.py`: training script that loads MiniMax M2.5, applies LoRA, and trains with DeepSpeed.
-- `ds_config.json`: DeepSpeed ZeRO Stage 3 config used by `TrainingArguments`.
+Current files:
+- `config.py`: Baseten training job config (2 nodes x 8 GPUs, H200 in current config).
+- `run_msswift.sh`: Megatron SFT launcher.
 
 ### Required Baseten secrets
 - `hf_access_token`
-- `wandb_api_key` (optional if you remove/reporting integrations)
+- `wandb_api_key` (optional if reporting is disabled)
 
 ### Runtime knobs
-Edit variables directly in `run.sh`:
-- `MODEL_ID` (default `MiniMaxAI/MiniMax-M2.5`)
-- `DATASET_ID`, `DATASET_SPLIT`
-- `LORA_RANK`, `LORA_ALPHA`, `LORA_DROPOUT`
-- `MICRO_BATCH_SIZE`, `GRAD_ACC_STEPS`, `LEARNING_RATE`
-- `NUM_EPOCHS` or `MAX_STEPS`
-- `MAX_LENGTH`, `SAVE_STEPS`, `LOGGING_STEPS`
+Edit variables directly in the script you use:
+- `run_msswift.sh`:
+  - `MODEL_ID`, `DATASET_ID`, `DATASET_SPLIT`
+  - `LORA_RANK`, `LORA_ALPHA`
+  - `TENSOR_PARALLEL_SIZE`, `PIPELINE_PARALLEL_SIZE`, `CONTEXT_PARALLEL_SIZE`, `EXPERT_PARALLEL_SIZE`
+  - `MICRO_BATCH_SIZE`, `GLOBAL_BATCH_SIZE`, `MAX_LENGTH`
+  - `FP8_FORMAT`, `FP8_RECIPE`, `FP8_AMAX_HISTORY_LEN`, `FP8_AMAX_COMPUTE_ALGO`
 
 ### Launch
+`config.py` runs whichever script is in `training_runtime.start_commands`.
+
+Run:
 ```bash
 truss train push config.py
 ```
 
-Baseten will print a job id for logs and checkpoint tracking.
-
-### Optional: ms-swift Variant
-This repo also includes an ms-swift/Megatron attempt path:
-- `/Users/ervinwang/Documents/trussclone/mm_2_5/config_msswift.py`
-- `/Users/ervinwang/Documents/trussclone/mm_2_5/run_msswift.sh`
-
-Launch it with:
-```bash
-truss train push config_msswift.py
+If you want Megatron ms-swift, set `start_commands` in `config.py` to:
+```python
+"/bin/bash -c 'chmod +x ./run_msswift.sh && ./run_msswift.sh'"
 ```
