@@ -18,6 +18,7 @@ Edit variables directly in the script you use:
   - `LORA_RANK`, `LORA_ALPHA`
   - `TENSOR_PARALLEL_SIZE`, `PIPELINE_PARALLEL_SIZE`, `CONTEXT_PARALLEL_SIZE`, `EXPERT_PARALLEL_SIZE`
   - `MICRO_BATCH_SIZE`, `GLOBAL_BATCH_SIZE`, `MAX_LENGTH`
+  - `LR_DECAY_STYLE`, `MIN_LR`, `SAVE_INTERVAL`, `LOG_INTERVAL`, `SAVE_FULL_MODEL`
 
 ### Launch
 `config.py` runs whichever script is in `training_runtime.start_commands`.
