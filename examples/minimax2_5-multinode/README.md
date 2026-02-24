@@ -1,11 +1,11 @@
-## Baseten MiniMax 2.5 Training (Multi-Node, ms-swift)
+## Baseten MiniMax 2.5 Training (Multi-Node, Megatron)
 
 This example uses megatron training
-- `run_msswift.sh` (Megatron path with TP/EP and FP8 training flags).
+- `run_megatron.sh` (Megatron path with TP/EP and FP8 training flags).
 
 Current files:
 - `config.py`: Baseten training job config (2 nodes x 8 GPUs, H200 in current config).
-- `run_msswift.sh`: Megatron SFT launcher.
+- `run_megatron.sh`: Megatron SFT launcher.
 
 ### Required Baseten secrets
 - `hf_access_token`
@@ -13,7 +13,7 @@ Current files:
 
 ### Runtime knobs
 Edit variables directly in the script you use:
-- `run_msswift.sh`:
+- `run_megatron.sh`:
   - `MODEL_ID`, `DATASET_ID`, `DATASET_SPLIT`
   - `LORA_RANK`, `LORA_ALPHA`
   - `TENSOR_PARALLEL_SIZE`, `PIPELINE_PARALLEL_SIZE`, `CONTEXT_PARALLEL_SIZE`, `EXPERT_PARALLEL_SIZE`
