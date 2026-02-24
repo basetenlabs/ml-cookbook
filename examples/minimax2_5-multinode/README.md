@@ -18,7 +18,6 @@ Edit variables directly in the script you use:
   - `LORA_RANK`, `LORA_ALPHA`
   - `TENSOR_PARALLEL_SIZE`, `PIPELINE_PARALLEL_SIZE`, `CONTEXT_PARALLEL_SIZE`, `EXPERT_PARALLEL_SIZE`
   - `MICRO_BATCH_SIZE`, `GLOBAL_BATCH_SIZE`, `MAX_LENGTH`
-  - `FP8_FORMAT`, `FP8_RECIPE`, `FP8_AMAX_HISTORY_LEN`, `FP8_AMAX_COMPUTE_ALGO`
 
 ### Launch
 `config.py` runs whichever script is in `training_runtime.start_commands`.
@@ -26,9 +25,4 @@ Edit variables directly in the script you use:
 Run:
 ```bash
 truss train push config.py
-```
-
-Make sure to set `start_commands` in `config.py` to:
-```python
-"/bin/bash -c 'chmod +x ./run_msswift.sh && ./run_msswift.sh'"
 ```
