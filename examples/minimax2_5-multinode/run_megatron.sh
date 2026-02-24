@@ -3,10 +3,10 @@ set -euo pipefail
 
 LOG_BASE_DIR="${BT_CHECKPOINT_DIR:-/mnt/ckpts}/debug_logs"
 mkdir -p "${LOG_BASE_DIR}"
-LOG_FILE="${LOG_BASE_DIR}/run-msswift-node-${BT_NODE_RANK:-0}-$(date +%Y%m%d-%H%M%S).log"
+LOG_FILE="${LOG_BASE_DIR}/run-megatron-node-${BT_NODE_RANK:-0}-$(date +%Y%m%d-%H%M%S).log"
 exec > >(tee -a "${LOG_FILE}") 2>&1
 
-echo "==== run_msswift.sh start node=${BT_NODE_RANK:-0} $(date -Is) ===="
+echo "==== run_megatron.sh start node=${BT_NODE_RANK:-0} $(date -Is) ===="
 echo "log_file=${LOG_FILE}"
 
 CACHE_ROOT="/tmp"
@@ -49,8 +49,8 @@ SWIFT_VERSION="3.12.5"
 MODEL_ID="MiniMaxAI/MiniMax-M2.5"
 DATASET_ID="winglian/pirate-ultrachat-10k"
 DATASET_SPLIT="train"
-CHECKPOINT_NAME="minimax-m2-5-msswift-lora"
-RUN_NAME="minimax-m2-5-msswift-lora"
+CHECKPOINT_NAME="minimax-m2-5-megatron-lora"
+RUN_NAME="minimax-m2-5-megatron-lora"
 MODEL_ARG="${MODEL_ID}"
 
 LORA_RANK=8
@@ -225,7 +225,7 @@ set -e
 
 
 export CHECKPOINT_DIR="${checkpoint_dir}"
-export HUB_MODEL_ID="baseten-admin/minimax-m2-5-msswift-lora"
+export HUB_MODEL_ID="baseten-admin/minimax-m2-5-megatron-lora"
 NODE1_UPLOAD_DONE_MARKER="${CHECKPOINT_DIR}/.node1_upload_done"
 # Final checkpoint upload to Hugging Face Hub from rank 0.
 if [[ "${BT_NODE_RANK}" == "1" ]]; then
