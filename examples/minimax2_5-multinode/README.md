@@ -1,7 +1,7 @@
 ## Baseten MiniMax 2.5 Training (Multi-Node, ms-swift)
 
-This example supports two ms-swift paths in the same folder:
-- `run_msswift.sh`: `megatron sft` (Megatron path with TP/EP and FP8 training flags).
+This example uses megatron training
+- `run_msswift.sh` (Megatron path with TP/EP and FP8 training flags).
 
 Current files:
 - `config.py`: Baseten training job config (2 nodes x 8 GPUs, H200 in current config).
@@ -28,7 +28,7 @@ Run:
 truss train push config.py
 ```
 
-If you want Megatron ms-swift, set `start_commands` in `config.py` to:
+Make sure to set `start_commands` in `config.py` to:
 ```python
 "/bin/bash -c 'chmod +x ./run_msswift.sh && ./run_msswift.sh'"
 ```
