@@ -1,5 +1,8 @@
 ## Baseten MiniMax 2.5 Training (Multi-Node, Megatron)
 
+### Prerequisites
+https://github.com/basetenlabs/ml-cookbook/tree/main?tab=readme-ov-file#prerequisites
+
 This example uses megatron training
 - `run_megatron.sh` (Megatron path with TP/EP and FP8 training flags).
 
