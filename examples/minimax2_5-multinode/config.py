@@ -1,7 +1,7 @@
 from truss_train import definitions
 from truss.base import truss_config
 
-project_name = "minimax-2-5-ori-new2"
+project_name = "minimax-2-5"
 
 # Prebuilt image with Megatron + ms-swift.
 BASE_IMAGE = "baseten/megatron:py3.11.11-cuda12.8.1-torch2.8.0-fa2.8.1-megatron0.14.1-msswift3.10.3"
