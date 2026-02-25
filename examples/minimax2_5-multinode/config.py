@@ -8,7 +8,7 @@ BASE_IMAGE = "baseten/megatron:py3.11.11-cuda12.8.1-torch2.8.0-fa2.8.1-megatron0
 
 training_runtime = definitions.Runtime(
     start_commands=[
-        "/bin/bash -c 'chmod +x ./run_msswift.sh && ./run_msswift.sh'",
+        "/bin/bash -c 'chmod +x ./run_megatron.sh && ./run_megatron.sh'",
     ],
     environment_variables={
         "HF_TOKEN": definitions.SecretReference(name="hf_access_token"),
