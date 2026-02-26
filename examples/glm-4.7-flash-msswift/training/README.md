@@ -1,8 +1,8 @@
-# Gemma 27B Fine-Tuning with Axolotl
+# GLM-4.7 Flash Fine-Tuning with MS-Swift
 
-This example fine-tunes Google's Gemma 27B model using the Axolotl framework on Baseten.
+This example fine-tunes the GLM-4.7 Flash model using the MS-Swift framework with MegatronLM on Baseten.
 
-**Resources:** 2 nodes, 8x H100 GPUs each (16 GPUs total)
+**Resources:** 1 node, 8x H100 GPUs
 
 ## Prerequisites
 
@@ -20,8 +20,8 @@ This example fine-tunes Google's Gemma 27B model using the Axolotl framework on 
 Initialize the example, navigate into the directory, and push the training job:
 
 ```bash
-truss train init --examples gemma-27b-axolotl
-cd gemma-27b-axolotl
+truss train init --examples glm-4.7-flash-msswift
+cd glm-4.7-flash-msswift
 truss train push config.py
 ```
 

@@ -1,8 +1,8 @@
-# Gemma 27B Fine-Tuning with Axolotl
+# Qwen3 8B Full Fine-Tuning with VeRL
 
-This example fine-tunes Google's Gemma 27B model using the Axolotl framework on Baseten.
+This example performs full fine-tuning of the Qwen3 8B model using the VeRL (Verifiable Reinforcement Learning) framework on Baseten.
 
-**Resources:** 2 nodes, 8x H100 GPUs each (16 GPUs total)
+**Resources:** 1 node, 8x H100 GPUs
 
 ## Prerequisites
 
@@ -20,8 +20,8 @@ This example fine-tunes Google's Gemma 27B model using the Axolotl framework on 
 Initialize the example, navigate into the directory, and push the training job:
 
 ```bash
-truss train init --examples gemma-27b-axolotl
-cd gemma-27b-axolotl
+truss train init --examples qwen3-8b-fft-verl
+cd qwen3-8b-fft-verl
 truss train push config.py
 ```
 

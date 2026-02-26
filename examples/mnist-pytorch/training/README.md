@@ -1,8 +1,8 @@
-# OSS GPT 20B Fine-Tuning with Axolotl
+# MNIST Digit Classifier with PyTorch
 
-This example fine-tunes the OSS GPT 20B model using the Axolotl framework on Baseten.
+This example trains an MNIST digit classifier using PyTorch on Baseten.
 
-**Resources:** 1 node, 4x H100 GPUs
+**Resources:** CPU only (4 vCPU, 16Gi memory)
 
 ## Prerequisites
 
@@ -20,7 +20,7 @@ This example fine-tunes the OSS GPT 20B model using the Axolotl framework on Bas
 Initialize the example, navigate into the directory, and push the training job:
 
 ```bash
-truss train init --examples oss-gpt-20b-axolotl
-cd oss-gpt-20b-axolotl
+truss train init --examples mnist-pytorch
+cd mnist-pytorch
 truss train push config.py
 ```

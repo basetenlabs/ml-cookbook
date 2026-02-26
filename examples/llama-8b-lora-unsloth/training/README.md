@@ -2,30 +2,25 @@
 
 This example demonstrates how to fine-tune [Llama 4 Maverick 17B](https://huggingface.co/meta-llama/Llama-4-Maverick-17B-128E-Instruct) using LoRA (Low-Rank Adaptation) with [Unsloth](https://github.com/unslothai/unsloth), which provides significant speedups for training.
 
-## Running the example
+**Resources:** 1 node, 1x H100 GPU
 
-### Install `truss` 
-Use the appropriate command for your package manager
-```bash
-# pip
-pip install -U truss
-# uv
-uv add truss && uv sync --upgrade-package truss
-```
+## Prerequisites
 
-### Create the workspace for your training project
+1. [Create a Baseten account](https://baseten.co/signup) if you don't already have one.
+2. Install the Truss CLI:
+   ```bash
+   # pip
+   pip install -U truss
+   # or uv
+   uv add truss
+   ```
 
-```bash
-# for the unsloth example
-truss train init --examples llama-8b-lora-unsloth && cd llama-8b-lora-unsloth
-```
+## Getting Started
 
-### Kick off the job
-
-Make sure you've plugged in proper secrets (e.g. wandb api key, huggingface token) via Baseten Secrets and Environment Variables, and kick off your job
+Initialize the example, navigate into the directory, and push the training job:
 
 ```bash
+truss train init --examples llama-8b-lora-unsloth
+cd llama-8b-lora-unsloth
 truss train push config.py
 ```
-
-For more details, take a look at the [docs](https://docs.baseten.co/training/overview)
