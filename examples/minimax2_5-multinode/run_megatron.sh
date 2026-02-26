@@ -170,6 +170,8 @@ if [[ "${MSSWIFT_COMPAT_MODE}" == "true" ]]; then
   )
 fi
 
+TRAIN_START_TS="$(date +%s)"
+echo "[rank ${BT_NODE_RANK}] training_start_ts=${TRAIN_START_TS} ($(date -Is))"
 PYTORCH_CUDA_ALLOC_CONF="${PYTORCH_CUDA_ALLOC_CONF}" \
 NPROC_PER_NODE="${BT_NUM_GPUS}" \
 NNODES="${BT_GROUP_SIZE}" \
@@ -222,6 +224,11 @@ megatron sft \
   "${SPLIT_ARGS[@]}" \
   --use_hf 1
 TRAIN_EXIT_CODE=$?
+TRAIN_END_TS="$(date +%s)"
+TRAIN_ELAPSED_S=$(( TRAIN_END_TS - TRAIN_START_TS ))
+printf -v TRAIN_ELAPSED_HHMMSS '%02d:%02d:%02d' $((TRAIN_ELAPSED_S/3600)) $(((TRAIN_ELAPSED_S%3600)/60)) $((TRAIN_ELAPSED_S%60))
+echo "[rank ${BT_NODE_RANK}] training_end_ts=${TRAIN_END_TS} ($(date -Is))"
+echo "[rank ${BT_NODE_RANK}] training_elapsed_seconds=${TRAIN_ELAPSED_S} training_elapsed_hhmmss=${TRAIN_ELAPSED_HHMMSS}"
 set -e
 
 
