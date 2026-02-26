@@ -65,7 +65,3 @@ fsdp_config:
   transformer_layer_cls_to_wrap: GptOssDecoderLayer
   reshard_after_forward: 8
   cpu_ram_efficient_loading: true
-
-use_wandb: true
-wandb_project: Axolotl GPT OSS 120b 2node longcontext
-wandb_entity: philipkiely-baseten

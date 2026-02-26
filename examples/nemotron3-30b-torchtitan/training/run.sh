@@ -22,7 +22,7 @@ uv venv
 uv sync
 # Nightly PyTorch required for torchtitan
 uv pip install --pre torch torchvision --index-url https://download.pytorch.org/whl/nightly/cu128
-uv pip install safetensors wandb
+uv pip install safetensors
 uv pip install transformers hf_transfer
 
 # Download model assets

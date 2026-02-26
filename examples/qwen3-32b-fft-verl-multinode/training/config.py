@@ -21,7 +21,6 @@ training_runtime = definitions.Runtime(
         f"./{file}",
     ],
     environment_variables={
-        "WANDB_API_KEY": definitions.SecretReference(name="wandb_api_key"),
         "RAY_SERVICE_PORT": "6379",
         "RAY_DASHBOARD_PORT": "8265",
     },

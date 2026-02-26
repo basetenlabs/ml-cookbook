@@ -21,7 +21,7 @@ From data preprocessing to checkpointed and trained models, these recipes cover 
 - [Usage](#usage)
   - [Fine-tune GPT OSS 20B with LoRa and trl](#fine-tune-gpt-oss-20b-with-lora-and-trl)
     - [Training](#training)
-  - [Fine-tune Llama 3.1 8b Instruct with LoRa and Unsloth](#fine-tune-llama-31-8b-instruct-with-lora-and-unsloth)
+  - [Fine-tune Qwen3 8B with LoRa and trl](#fine-tune-qwen3-8b-with-lora-and-trl)
     - [Training](#training-1)
   - [Train and deploy an MNIST digit classifier with Pytorch](#train-and-deploy-an-mnist-digit-classifier-with-pytorch)
     - [Training](#training-2)
@@ -33,7 +33,7 @@ From data preprocessing to checkpointed and trained models, these recipes cover 
 Before getting started, ensure you have the following:
 
 - A Baseten account. [Sign up here](https://baseten.co/signup) if you don't have one.
-  - Add any access tokens, API keys (Example: Huggingface access token, Weights&Biases access token), passwords to securely access credentials from your models in [secrets](https://app.baseten.co/settings/secrets).
+  - Add any access tokens, API keys (example: Hugging Face access token), passwords to securely access credentials from your models in [secrets](https://app.baseten.co/settings/secrets).
   - This is required to access models on Huggingface that have gated access. More information on setting up Huggingface access tokens can be found [here](https://huggingface.co/docs/hub/en/security-tokens).
 - Python 3.8 to 3.11 installed. [Conda](https://docs.conda.io/projects/conda/en/latest/user-guide/getting-started.html) env recommended.
 
@@ -57,7 +57,7 @@ truss train init --examples <example-name> && cd <example-name>
 
 #### Kick off the job
 
-Make sure you've plugged in proper secrets (e.g. wandb api key, huggingface token) via Baseten Secrets and Environment Variables, and kick off your job
+Make sure you've plugged in proper secrets (e.g. Hugging Face token) via Baseten Secrets and Environment Variables, and kick off your job
 
 ```bash
 truss train push config.py
@@ -75,7 +75,7 @@ git clone https://github.com/basetenlabs/ml-cookbook.git
 
 ### Fine-tune GPT OSS 20B with LoRa and [trl](https://github.com/huggingface/trl)
 
-If using a model with gated access, make sure you have access to the model on HuggingFace and your API token uploaded to your [secrets](https://app.baseten.co/settings/secrets). This example requires an [HF access token](https://huggingface.co/docs/hub/en/security-tokens) and an optional [Weights&Biases access token](https://docs.wandb.ai/quickstart/). To disable W&B, comment out any lines with wandb in `examples/oss-gpt-20b-lora/training/config.py` and `examples/oss-gpt-20b-lora/training/train.py`.
+If using a model with gated access, make sure you have access to the model on HuggingFace and your API token uploaded to your [secrets](https://app.baseten.co/settings/secrets). This example requires an [HF access token](https://huggingface.co/docs/hub/en/security-tokens).
 
 #### Training
 
@@ -104,18 +104,18 @@ Alternatively, you can view all your training jobs at (https://app.baseten.co/tr
 
 - As checkpoints are generated, you can access them on Huggingface at the same location defined in `run.sh`.
 
-### Fine-tune Llama 3.1 8b Instruct with LoRa and [Unsloth](https://github.com/unslothai/unsloth/tree/main)
+### Fine-tune Qwen3 8B with LoRa and [trl](https://github.com/huggingface/trl)
 
 If using a model with gated access, make sure you have access to the model on HuggingFace and your API token uploaded to your [secrets](https://app.baseten.co/settings/secrets).
 
 #### Training
 
-`examples/llama-finetune-8b-lora/training/train.py` contains the training code.
+`examples/qwen3-8b-lora-dpo-trl/training/train.py` contains the training code.
 
-`examples/llama-finetune-8b-lora/training/config.py` will be the entry point to start training, where you can [define your training configuration](https://docs.baseten.co/training/getting-started#step-1%3A-define-your-training-configuration). This also includes the start commands to launch your training job. Make sure these commands also include any file permission changes to make shell scripts run. We do not change any file system permissions.
+`examples/qwen3-8b-lora-dpo-trl/training/config.py` will be the entry point to start training, where you can [define your training configuration](https://docs.baseten.co/training/getting-started#step-1%3A-define-your-training-configuration). This also includes the start commands to launch your training job. Make sure these commands also include any file permission changes to make shell scripts run. We do not change any file system permissions.
 
 ```bash
-cd examples/llama-finetune-8b-lora/training
+cd examples/qwen3-8b-lora-dpo-trl/training
 truss train push config.py
 ```
 

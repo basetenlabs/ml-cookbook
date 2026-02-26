@@ -78,10 +78,6 @@ save_strategy: epoch
 hub_model_id: baseten-admin/Gemma-27B-Finetuned-Full-Context #Where to store the model, need to make one in your account first if your API key has finegrained permissions
 hub_strategy: all_checkpoints #How often to store to HF
 
-use_wandb: true
-wandb_project: Med Gemma 27B text FT 
-wandb_entity: philipkiely-baseten
-
 save_safetensors: false
 
 flash_attention: true

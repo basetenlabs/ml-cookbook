@@ -147,7 +147,6 @@ def main():
         eval_steps=args.eval_steps,
         save_total_limit=args.save_total_limit,
         load_best_model_at_end=True,
-        report_to="wandb",
         remove_unused_columns=False,
         beta=args.beta,
         max_length=args.max_length,
