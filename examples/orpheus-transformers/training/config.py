@@ -17,9 +17,6 @@ runtime = definitions.Runtime(
     checkpointing_config=definitions.CheckpointingConfig(
         enabled=True,
     ),
-    environment_variables={
-        "HF_TOKEN": definitions.SecretReference(name="hf_access_token"),
-    },
 )
 
 training_compute = definitions.Compute(

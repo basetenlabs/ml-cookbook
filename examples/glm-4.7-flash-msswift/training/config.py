@@ -21,10 +21,7 @@ training_runtime = definitions.Runtime(
     ),
     cache_config=definitions.CacheConfig(
         enabled=True,
-    ),
-    environment_variables={
-        "HF_TOKEN": definitions.SecretReference(name="hf_access_token"),
-    }
+    )
 )
 
 # 3. Define the Compute Resources for the Training Job

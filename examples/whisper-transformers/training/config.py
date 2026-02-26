@@ -5,11 +5,6 @@ BASE_IMAGE = "pytorch/pytorch:2.7.0-cuda12.8-cudnn9-runtime"
 
 training_runtime = definitions.Runtime(
     start_commands=["/bin/sh -c 'chmod +x ./run.sh && ./run.sh'"],
-    environment_variables={
-        "HF_TOKEN": definitions.SecretReference(
-            name="hf_access_token"
-        ),  # The name of the HF Access Token secret in your B10 account
-    },
     cache_config=definitions.CacheConfig(
         enabled=True,
     ),

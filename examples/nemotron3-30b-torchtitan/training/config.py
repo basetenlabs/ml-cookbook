@@ -14,7 +14,6 @@ training_runtime = definitions.Runtime(
         "chmod +x ./run.sh && ./run.sh",
     ],
     environment_variables={
-        "HF_TOKEN": definitions.SecretReference(name="hf_access_token"),
         "HF_HUB_ENABLE_HF_TRANSFER": "true",
     },
     cache_config=definitions.CacheConfig(
