@@ -13,6 +13,5 @@ python3 train.py \
     --model_id=$MODEL_ID \
     --dataset_name=DTU54DL/common-accent \
     --mixed_precision_fp16 \
-    --report_to=wandb \
     --push_to_hub \
     --hub_model_id=baseten-admin/whisper-larger-v3-turbo 

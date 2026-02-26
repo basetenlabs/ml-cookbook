@@ -17,8 +17,6 @@ training_runtime = definitions.Runtime(
     ],
     environment_variables={
         "HF_ACCESS_TOKEN": definitions.SecretReference(name="hf_access_token"),
-        "WANDB_API_KEY": definitions.SecretReference(name="wandb_api_key"),
-        "WANDB_PROJECT": "Qwen3-8B-Tool-Calling-GRPO",
     },
     # Enable training cache for faster iteration
     cache_config = definitions.CacheConfig(

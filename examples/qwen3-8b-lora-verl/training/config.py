@@ -19,9 +19,7 @@ training_runtime = definitions.Runtime(
         # Run the training script
         "./run.sh",
     ],
-    environment_variables={
-        "WANDB_API_KEY": definitions.SecretReference(name="wandb_api_key"),
-    },
+    environment_variables={},
     # Enable training cache for faster iteration. Subsequent runs won't require model downlaods
     cache_config = definitions.CacheConfig(
         enabled=True,

@@ -7,11 +7,7 @@ PROJECT_NAME = "MSwift Megatron - Single Node"
 training_runtime = definitions.Runtime(
     start_commands=["/bin/sh -c 'chmod +x ./run_1node.sh && ./run_1node.sh'"],
     environment_variables={
-        "HF_TOKEN": definitions.SecretReference(
-            name="hf_access_token"
-        ),  # The name of the HF Access Token secret in your B10 account
         "HF_HUB_ENABLE_HF_TRANSFER": "true",
-        "WANDB_API_KEY": definitions.SecretReference(name="wandb_api_key"),
     },
     cache_config=definitions.CacheConfig(
         enabled=True,

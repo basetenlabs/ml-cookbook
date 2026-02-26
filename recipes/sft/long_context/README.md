@@ -29,7 +29,7 @@ truss train init --examples qwen3-30b-mswift-multinode && cd qwen3-30b-mswift-mu
 
 ### Kick off the job
 
-Make sure you've plugged in proper secrets (e.g. wandb api key, huggingface token) via Baseten Secrets and Environment Variables, and kick off your job
+Make sure you've plugged in proper secrets (e.g. Hugging Face token) via Baseten Secrets and Environment Variables, and kick off your job
 
 ```bash
 truss train push config.py

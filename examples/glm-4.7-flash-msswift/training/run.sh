@@ -39,6 +39,4 @@ megatron sft \
   --save_interval 200 \
   --eval_interval 200 \
   --no_save_optim true \
-  --no_save_rng true \
-  --report_to wandb \
-  --wandb_project GLM-4.7-Flash-sft
+  --no_save_rng true

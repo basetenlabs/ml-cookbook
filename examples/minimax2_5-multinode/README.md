@@ -12,7 +12,6 @@ Current files:
 
 ### Required Baseten secrets
 - `hf_access_token`
-- `wandb_api_key` (optional if reporting is disabled)
 
 ### Runtime knobs
 Edit variables directly in the script you use:

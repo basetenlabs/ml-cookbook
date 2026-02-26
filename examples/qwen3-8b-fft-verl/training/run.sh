@@ -54,7 +54,7 @@ python3 -m verl.trainer.main_ppo \
     actor_rollout_ref.rollout.max_model_len=16384 \
     algorithm.use_kl_in_reward=False \
     trainer.critic_warmup=0 \
-    trainer.logger=['console','wandb'] \
+    trainer.logger=['console'] \
     trainer.project_name='OCaml Specialist' \
     trainer.experiment_name=$BT_TRAINING_JOB_NAME \
     trainer.n_gpus_per_node=$BT_NUM_GPUS \

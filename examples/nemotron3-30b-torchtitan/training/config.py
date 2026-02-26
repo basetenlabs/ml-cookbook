@@ -16,7 +16,6 @@ training_runtime = definitions.Runtime(
     environment_variables={
         "HF_TOKEN": definitions.SecretReference(name="hf_access_token"),
         "HF_HUB_ENABLE_HF_TRANSFER": "true",
-        "WANDB_API_KEY": definitions.SecretReference(name="wandb_api_key"),
     },
     cache_config=definitions.CacheConfig(
         enabled=True,

@@ -44,7 +44,7 @@ fi
 
 SWIFT_VERSION="3.12.5"
 "${PY_BIN}" -m pip install --upgrade pip
-"${PY_BIN}" -m pip install "ms-swift[llm]==${SWIFT_VERSION}" datasets wandb huggingface_hub
+"${PY_BIN}" -m pip install "ms-swift[llm]==${SWIFT_VERSION}" datasets huggingface_hub
 "${PY_BIN}" -m pip install "transformers==4.57.1" -U
 
 # Training variables (edit these directly; all set to fixed defaults).
