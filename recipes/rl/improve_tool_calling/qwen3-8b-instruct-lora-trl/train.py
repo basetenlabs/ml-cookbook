@@ -8,6 +8,7 @@ from trl import GRPOConfig, GRPOTrainer
 from datasets import load_dataset
 from peft import LoraConfig, get_peft_model, prepare_model_for_kbit_training
 
+os.environ["WANDB_PROJECT"] = os.getenv("WANDB_PROJECT", "qwen-tool-calling-grpo-t")
 # Load dataset
 """ Below is a sampled dataset from Salesforce/xlam-function-calling-60k, this is another good option"""
 ds = load_dataset("baseten-admin/xlam-function-calling-sampled")
@@ -196,6 +197,8 @@ grpo_config = GRPOConfig(
     eval_steps=10,
     bf16=True,
     max_grad_norm=1.0,
+    report_to=["wandb"],
+
     # GRPO-specific parameters
     num_generations=4,  # Number of generations per prompt for group comparison
     temperature=0.9,  # Sampling temperature
