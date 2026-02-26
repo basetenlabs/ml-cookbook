@@ -283,7 +283,7 @@ def parse_args():
         "--report_to",
         type=str,
         default=None,
-        help="Reporting tool to use (e.g., 'wandb', 'tensorboard').",
+        help="Reporting tool to use (e.g., 'tensorboard').",
     )
     parser.add_argument(
         "--early_stopping_patience",

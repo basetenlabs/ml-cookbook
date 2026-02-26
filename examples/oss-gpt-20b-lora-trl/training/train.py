@@ -55,7 +55,7 @@ training_args = SFTConfig(
     lr_scheduler_type="cosine_with_min_lr",
     lr_scheduler_kwargs={"min_lr_rate": 0.1},
     output_dir=os.getenv("BT_CHECKPOINT_DIR", "gpt-oss-20b-multilingual-reasoner"),
-    # report_to="wandb",  # Comment this out if you don't want to use Weights & Biases
+    report_to="none",
     push_to_hub=False,
 )
 

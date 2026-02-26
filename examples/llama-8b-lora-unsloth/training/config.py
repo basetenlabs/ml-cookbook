@@ -44,5 +44,5 @@ training_job = definitions.TrainingJob(
 # This config will be pushed using the Truss CLI.
 # The association of the job to the project happens at the time of push.
 training_project = definitions.TrainingProject(
-    name="LoRA Training Job - llama-8b", job=training_job
+    name="LoRA Training Job - llama-4-maverick-17b", job=training_job
 )

@@ -1,6 +1,6 @@
-# Llama 3.1 8B LoRA Training with Unsloth
+# Llama 4 Maverick 17B LoRA Training with Unsloth
 
-This example demonstrates how to fine-tune [Llama 3.1 8B](https://huggingface.co/Meta-Llama-3.1-8B-Instruct) using LoRA (Low-Rank Adaptation) with [Unsloth](https://github.com/unslothai/unsloth), which provides significant speedups for training.
+This example demonstrates how to fine-tune [Llama 4 Maverick 17B](https://huggingface.co/meta-llama/Llama-4-Maverick-17B-128E-Instruct) using LoRA (Low-Rank Adaptation) with [Unsloth](https://github.com/unslothai/unsloth), which provides significant speedups for training.
 
 ## Running the example
 

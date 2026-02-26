@@ -16,13 +16,6 @@ training_runtime = definitions.Runtime(
     start_commands=[  # Example: list of commands to run your training script
         "/bin/sh -c 'chmod +x ./run.sh && ./run.sh'"
     ],
-    environment_variables={
-        # Secrets (ensure these are configured in your Baseten workspace)
-        # "HF_TOKEN": definitions.SecretReference(name="hf_access_token"),
-        # "WANDB_API_KEY": definitions.SecretReference(name="wandb_api_key"),
-
-        # Include other environment variables as needed
-    },
     checkpointing_config=definitions.CheckpointingConfig(
         enabled=True,
         checkpoint_path="/workspace/checkpoints"

@@ -3,4 +3,3 @@ peft==0.17.1
 transformers==4.57.1
 Pillow>=9.4.0
 hf_transfer==0.1.9
-wandb==0.22.3

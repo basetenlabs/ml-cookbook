@@ -12,7 +12,7 @@ dtype = (
 )
 
 model, tokenizer = FastLanguageModel.from_pretrained(
-    model_name="unsloth/Meta-Llama-3.1-8B-Instruct",
+    model_name="meta-llama/Llama-4-Maverick-17B-128E-Instruct",
     max_seq_length=max_seq_length,
     dtype=dtype,
     # token = "hf_...", # use one if using gated models like meta-llama/Llama-*
@@ -100,7 +100,7 @@ trainer = SFTTrainer(
         lr_scheduler_type="linear",
         seed=3407,
         output_dir=checkpoint_dir,
-        report_to="none",  # Use this for wandb etc
+        report_to="none",
         push_to_hub=False,
     ),
 )
