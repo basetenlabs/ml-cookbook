@@ -18,7 +18,6 @@ training_runtime = definitions.Runtime(
     environment_variables={
         # Secrets (ensure these are configured in your Baseten workspace)
         "HF_TOKEN": definitions.SecretReference(name="hf_access_token"),
-        # "WANDB_API_KEY": definitions.SecretReference(name="wandb_api_key"),
     },
     checkpointing_config=definitions.CheckpointingConfig(
         enabled=True,
