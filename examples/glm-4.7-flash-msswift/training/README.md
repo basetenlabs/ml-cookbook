@@ -1,6 +1,6 @@
-# Whisper Fine-Tuning with Transformers
+# GLM-4.7 Flash Fine-Tuning with MS-Swift
 
-This example fine-tunes OpenAI's Whisper speech recognition model using the HuggingFace Transformers framework on Baseten.
+This example fine-tunes the GLM-4.7 Flash model using the MS-Swift framework with MegatronLM on Baseten.
 
 **Resources:** 1 node, 8x H100 GPUs
 
@@ -17,8 +17,8 @@ This example fine-tunes OpenAI's Whisper speech recognition model using the Hugg
 Initialize the example, navigate into the directory, and push the training job:
 
 ```bash
-truss train init --examples whisper-transformers
-cd whisper-transformers
+truss train init --examples glm-4.7-flash-msswift
+cd glm-4.7-flash-msswift
 truss train push training/config.py
 ```
 

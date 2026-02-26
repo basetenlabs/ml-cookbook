@@ -1,31 +1,23 @@
-# Llama 3.1 8B LoRA Training with Unsloth
+# Llama 3.1 8B LoRA Fine-Tuning with Unsloth
 
-This example demonstrates how to fine-tune [Llama 3.1 8B](https://huggingface.co/Meta-Llama-3.1-8B-Instruct) using LoRA (Low-Rank Adaptation) with [Unsloth](https://github.com/unslothai/unsloth), which provides significant speedups for training.
+This example fine-tunes Meta's Llama 3.1 8B Instruct model using LoRA with the Unsloth framework on Baseten.
 
-## Running the example
+**Resources:** 1 node, 1x H100 GPU
 
-### Install `truss` 
-Use the appropriate command for your package manager
-```bash
-# pip
-pip install -U truss
-# uv
-uv add truss && uv sync --upgrade-package truss
-```
+## Prerequisites
 
-### Create the workspace for your training project
+1. [Create a Baseten account](https://baseten.co/signup) if you don't already have one.
+2. Install the Truss CLI:
+   ```bash
+   pip install -U truss
+   ```
 
-```bash
-# for the unsloth example
-truss train init --examples llama-8b-lora-unsloth && cd llama-8b-lora-unsloth
-```
+## Getting Started
 
-### Kick off the job
-
-Make sure you've plugged in proper secrets (e.g. wandb api key, huggingface token) via Baseten Secrets and Environment Variables, and kick off your job
+Initialize the example, navigate into the directory, and push the training job:
 
 ```bash
-truss train push config.py
+truss train init --examples llama-8b-lora-unsloth
+cd llama-8b-lora-unsloth
+truss train push training/config.py
 ```
-
-For more details, take a look at the [docs](https://docs.baseten.co/training/overview)

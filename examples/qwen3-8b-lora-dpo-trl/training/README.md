@@ -1,8 +1,8 @@
-# Qwen3 0.6B Classifier with HuggingFace Trainer
+# Qwen3 8B LoRA DPO Fine-Tuning with TRL
 
-This example trains a classifier based on the Qwen3 0.6B model using the HuggingFace Trainer on Baseten.
+This example fine-tunes the Qwen3 8B model using LoRA with Direct Preference Optimization (DPO) via the TRL framework on Baseten.
 
-**Resources:** 1 node, 1x H100 GPU
+**Resources:** 1 node, 2x H100 GPUs
 
 ## Prerequisites
 
@@ -17,7 +17,7 @@ This example trains a classifier based on the Qwen3 0.6B model using the Hugging
 Initialize the example, navigate into the directory, and push the training job:
 
 ```bash
-truss train init --examples qwen3-0.6b-classifier-hf-trainer
-cd qwen3-0.6b-classifier-hf-trainer
+truss train init --examples qwen3-8b-lora-dpo-trl
+cd qwen3-8b-lora-dpo-trl
 truss train push training/config.py
 ```

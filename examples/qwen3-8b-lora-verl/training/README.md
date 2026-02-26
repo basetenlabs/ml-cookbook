@@ -1,6 +1,6 @@
-# Whisper Fine-Tuning with Transformers
+# Qwen3 8B LoRA Fine-Tuning with VeRL
 
-This example fine-tunes OpenAI's Whisper speech recognition model using the HuggingFace Transformers framework on Baseten.
+This example fine-tunes the Qwen3 8B model using LoRA with the VeRL (Verifiable Reinforcement Learning) framework on Baseten.
 
 **Resources:** 1 node, 8x H100 GPUs
 
@@ -17,8 +17,8 @@ This example fine-tunes OpenAI's Whisper speech recognition model using the Hugg
 Initialize the example, navigate into the directory, and push the training job:
 
 ```bash
-truss train init --examples whisper-transformers
-cd whisper-transformers
+truss train init --examples qwen3-8b-lora-verl
+cd qwen3-8b-lora-verl
 truss train push training/config.py
 ```
 

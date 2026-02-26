@@ -1,8 +1,8 @@
-# Whisper Fine-Tuning with Transformers
+# Qwen3 30B Fine-Tuning with MS-Swift (Multi-Node)
 
-This example fine-tunes OpenAI's Whisper speech recognition model using the HuggingFace Transformers framework on Baseten.
+This example fine-tunes the Qwen3 30B model using the MS-Swift framework with MegatronLM across multiple nodes on Baseten.
 
-**Resources:** 1 node, 8x H100 GPUs
+**Resources:** 2 nodes, 8x H100 GPUs each (16 GPUs total)
 
 ## Prerequisites
 
@@ -17,8 +17,8 @@ This example fine-tunes OpenAI's Whisper speech recognition model using the Hugg
 Initialize the example, navigate into the directory, and push the training job:
 
 ```bash
-truss train init --examples whisper-transformers
-cd whisper-transformers
+truss train init --examples qwen3-30b-mswift-multinode
+cd qwen3-30b-mswift-multinode
 truss train push training/config.py
 ```
 

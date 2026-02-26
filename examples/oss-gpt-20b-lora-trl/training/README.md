@@ -1,31 +1,23 @@
-# GPT-OSS 20B LoRA Training with TRL
+# OSS GPT 20B LoRA Fine-Tuning with TRL
 
-This example demonstrates how to fine-tune [GPT-OSS 20B](https://huggingface.co/openai/gpt-oss-20b) using LoRA (Low-Rank Adaptation) with [TRL](https://github.com/huggingface/trl) and [PEFT](https://github.com/huggingface/peft).
+This example fine-tunes the OSS GPT 20B model using LoRA with the TRL framework on Baseten.
 
-## Running the example
+**Resources:** 1 node, 2x H100 GPUs
 
-### Install `truss` 
-Use the appropriate command for your package manager
-```bash
-# pip
-pip install -U truss
-# uv
-uv add truss && uv sync --upgrade-package truss
-```
+## Prerequisites
 
-### Create the workspace for your training project
+1. [Create a Baseten account](https://baseten.co/signup) if you don't already have one.
+2. Install the Truss CLI:
+   ```bash
+   pip install -U truss
+   ```
 
-```bash
-# for the oss-gpt lora example
-truss train init --examples oss-gpt-20b-lora-trl && cd oss-gpt-20b-lora-trl
-```
+## Getting Started
 
-### Kick off the job
-
-Make sure you've plugged in proper secrets (e.g. wandb api key, huggingface token) via Baseten Secrets and Environment Variables, and kick off your job
+Initialize the example, navigate into the directory, and push the training job:
 
 ```bash
-truss train push config.py
+truss train init --examples oss-gpt-20b-lora-trl
+cd oss-gpt-20b-lora-trl
+truss train push training/config.py
 ```
-
-For more details, take a look at the [docs](https://docs.baseten.co/training/overview)

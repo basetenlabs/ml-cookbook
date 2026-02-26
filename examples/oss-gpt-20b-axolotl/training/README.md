@@ -1,14 +1,23 @@
-## Run instructions
+# OSS GPT 20B Fine-Tuning with Axolotl
 
-### Update config.yaml 
-- If pushing your checkpoints to Huggingface, make sure to update the `hub_model_id` in `config.yaml`, else comment out the lines with `hub_model_id` and `hub_strategy`. 
-- If using Weights&Biases to track your run, update `use_wandb`, `wandb_project` and `wandb_entity` accordingly. 
-- Hyper parameters, dataset processing and other important fields are defined in this yaml. Please go over all fields to make sure they work for your training use-case. 
+This example fine-tunes the OSS GPT 20B model using the Axolotl framework on Baseten.
 
-### Launch run 
+**Resources:** 1 node, 4x H100 GPUs
 
+## Prerequisites
+
+1. [Create a Baseten account](https://baseten.co/signup) if you don't already have one.
+2. Install the Truss CLI:
+   ```bash
+   pip install -U truss
+   ```
+
+## Getting Started
+
+Initialize the example, navigate into the directory, and push the training job:
+
+```bash
+truss train init --examples oss-gpt-20b-axolotl
+cd oss-gpt-20b-axolotl
+truss train push training/config.py
 ```
-truss train push config.py
-```
-
-Upon successful submission, the CLI will output helpful information about your job, including the job-id to track your run.
