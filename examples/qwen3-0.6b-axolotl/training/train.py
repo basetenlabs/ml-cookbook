@@ -1,82 +1,79 @@
-from pathlib import Path
 import os
-
-from axolotl.utils.dict import DictDefault
-from axolotl.cli.config import load_cfg
-from axolotl.common.datasets import load_datasets
-from axolotl.train import train
+import torch
+from datasets import load_dataset
+from transformers import AutoModelForCausalLM, AutoTokenizer
+from peft import LoraConfig
+from trl import SFTTrainer, SFTConfig
 
 OUTPUT_DIR = os.environ.get("BT_CHECKPOINT_DIR", "outputs/qwen3-0.6b")
+MODEL_NAME = "Qwen/Qwen3-0.6B"
+
 
 def main():
-    config = DictDefault(
-        adapter="qlora",
-        base_model="Qwen/Qwen3-0.6B",
-        bf16=True,
-        # chat_template="tokenizer_default_fallback_chatml",
-
-        # Data loader tweaks
-        dataloader_num_workers=2,
-        dataloader_pin_memory=True,
-        dataloader_prefetch_factor=8,
-
-        datasets=[
-            {
-                "path": "winglian/pirate-ultrachat-10k",
-                "type": "chat_template",
-                "field_messages": "messages",
-            }
-        ],
-
-        # Eval/val
-        val_set_size=0.05,
-        eval_steps=10,
-
-        # LoRA / QLoRA
-        load_in_4bit=True,
-        lora_alpha=32,
-        lora_r=64,
-        lora_mlp_kernel=True,
-        lora_target_modules="all-linear",
-
-        # Optim & schedule
-        optimizer="adamw_torch",
-        learning_rate=1e-3,
-        lr_scheduler="cosine",
-        warmup_steps=5,
-        max_grad_norm=0.1,
-
-        # Training loop
-        micro_batch_size=1,
-        gradient_accumulation_steps=1,
-        gradient_checkpointing=True,
-        gradient_checkpointing_kwargs={"use_reentrant": False},
-        num_epochs=1,
-        max_steps=20,
-        sequence_len=2048,
-
-        # Misc
-        embeddings_skip_upcast=True,
-        logging_steps=1,
-        output_dir=OUTPUT_DIR,
-        saves_per_epoch=2,
-        sample_packing=True,
-        attn_implementation="flash_attention_2",
-
-        # Plugins
-        plugins=[
-            "axolotl.integrations.cut_cross_entropy.CutCrossEntropyPlugin",
-        ],
-
-        # DeepSpeed (path can be relative)
-        deepspeed=str(Path("deepspeed_configs/zero1.json")),
+    # Load model — 0.6B fits easily on H200 without quantization
+    print("Loading model...")
+    model = AutoModelForCausalLM.from_pretrained(
+        MODEL_NAME,
+        torch_dtype=torch.bfloat16,
+        device_map="auto",
+        use_cache=False,
     )
 
-    cfg = load_cfg(config)
+    # Load tokenizer
+    print("Loading tokenizer...")
+    tokenizer = AutoTokenizer.from_pretrained(MODEL_NAME)
+    if tokenizer.pad_token is None:
+        tokenizer.pad_token = tokenizer.eos_token
 
-    dataset_meta = load_datasets(cfg=cfg)
+    # LoRA config
+    lora_config = LoraConfig(
+        r=64,
+        lora_alpha=32,
+        target_modules="all-linear",
+        lora_dropout=0.05,
+        bias="none",
+        task_type="CAUSAL_LM",
+    )
 
-    model, tokenizer, trainer = train(cfg=cfg, dataset_meta=dataset_meta)
+    # Load dataset
+    print("Loading dataset...")
+    dataset = load_dataset("winglian/pirate-ultrachat-10k", split="train")
+
+    # SFT config
+    training_args = SFTConfig(
+        output_dir=OUTPUT_DIR,
+        max_steps=20,
+        save_steps=5,
+        per_device_train_batch_size=1,
+        gradient_accumulation_steps=1,
+        gradient_checkpointing=True,
+        learning_rate=1e-3,
+        lr_scheduler_type="cosine",
+        warmup_steps=5,
+        bf16=True,
+        logging_steps=1,
+        max_length=2048,
+        packing=True,
+        report_to="none",
+    )
+
+    # Train
+    print("Starting training...")
+    trainer = SFTTrainer(
+        model=model,
+        args=training_args,
+        train_dataset=dataset,
+        peft_config=lora_config,
+        processing_class=tokenizer,
+    )
+
+    trainer.train()
+
+    print("Saving final model...")
+    trainer.save_model(os.path.join(OUTPUT_DIR, "final_model"))
+    tokenizer.save_pretrained(os.path.join(OUTPUT_DIR, "final_model"))
+    print("Training complete!")
+
 
 if __name__ == "__main__":
     main()
