@@ -1,28 +1,26 @@
-## Qwen3-0.6B Sequence Classification with HuggingFace Trainer
+# Qwen3 0.6B Classifier with HuggingFace Trainer
 
-This example demonstrates how to fine-tune Qwen3-0.6B for binary text classification (IMDB sentiment analysis) using HuggingFace's `AutoModelForSequenceClassification` and `Trainer` API.
+This example trains a classifier based on the Qwen3 0.6B model using the HuggingFace Trainer on Baseten.
 
-### Key Features
+**Resources:** 1 node, 1x H100 GPU
 
-- Uses `AutoModelForSequenceClassification` instead of custom model architecture
-- Leverages HuggingFace `Trainer` for simplified training loop
-- Automatic handling of data collation, evaluation, and checkpointing
-- Built-in metrics computation and evaluation
+## Prerequisites
 
-### Differences from the PyTorch version
+1. [Create a Baseten account](https://baseten.co/signup) if you don't already have one.
+2. Install the Truss CLI:
+   ```bash
+   # pip
+   pip install -U truss
+   # or uv
+   uv add truss
+   ```
 
-- **Model**: Uses `AutoModelForSequenceClassification` which automatically adds a classification head
-- **Training**: Uses HuggingFace `Trainer` instead of manual PyTorch training loop
-- **Data Handling**: Uses `DataCollatorWithPadding` for efficient batching
-- **Evaluation**: Built-in evaluation with automatic metric computation
+## Getting Started
 
-## Run instructions
+Initialize the example, navigate into the directory, and push the training job:
 
-### Launch run 
-
-```
+```bash
+truss train init --examples qwen3-0.6b-classifier-hf-trainer
+cd qwen3-0.6b-classifier-hf-trainer
 truss train push config.py
 ```
-
-Upon successful submission, the CLI will output helpful information about your job, including the job-id to track your run.
-

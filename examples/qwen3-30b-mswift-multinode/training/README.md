@@ -1,6 +1,6 @@
-# Gemma 27B Fine-Tuning with Axolotl
+# Qwen3 30B Fine-Tuning with MS-Swift (Multi-Node)
 
-This example fine-tunes Google's Gemma 27B model using the Axolotl framework on Baseten.
+This example fine-tunes the Qwen3 30B model using the MS-Swift framework with MegatronLM across multiple nodes on Baseten.
 
 **Resources:** 2 nodes, 8x H100 GPUs each (16 GPUs total)
 
@@ -20,8 +20,8 @@ This example fine-tunes Google's Gemma 27B model using the Axolotl framework on 
 Initialize the example, navigate into the directory, and push the training job:
 
 ```bash
-truss train init --examples gemma-27b-axolotl
-cd gemma-27b-axolotl
+truss train init --examples qwen3-30b-mswift-multinode
+cd qwen3-30b-mswift-multinode
 truss train push config.py
 ```
 
