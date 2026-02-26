@@ -19,5 +19,5 @@ Initialize the example, navigate into the directory, and push the training job:
 ```bash
 truss train init --examples qwen3-0.6b-pytorch
 cd qwen3-0.6b-pytorch
-truss train push training/config.py
+truss train push config.py
 ```

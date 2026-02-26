@@ -19,5 +19,5 @@ Initialize the example, navigate into the directory, and push the training job:
 ```bash
 truss train init --examples mnist-pytorch
 cd mnist-pytorch
-truss train push training/config.py
+truss train push config.py
 ```

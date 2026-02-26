@@ -19,5 +19,5 @@ Initialize the example, navigate into the directory, and push the training job:
 ```bash
 truss train init --examples llama-8b-lora-unsloth
 cd llama-8b-lora-unsloth
-truss train push training/config.py
+truss train push config.py
 ```

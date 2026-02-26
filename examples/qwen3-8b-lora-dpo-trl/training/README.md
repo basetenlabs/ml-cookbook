@@ -19,5 +19,5 @@ Initialize the example, navigate into the directory, and push the training job:
 ```bash
 truss train init --examples qwen3-8b-lora-dpo-trl
 cd qwen3-8b-lora-dpo-trl
-truss train push training/config.py
+truss train push config.py
 ```

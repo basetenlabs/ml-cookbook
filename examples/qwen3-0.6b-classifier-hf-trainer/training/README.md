@@ -19,5 +19,5 @@ Initialize the example, navigate into the directory, and push the training job:
 ```bash
 truss train init --examples qwen3-0.6b-classifier-hf-trainer
 cd qwen3-0.6b-classifier-hf-trainer
-truss train push training/config.py
+truss train push config.py
 ```

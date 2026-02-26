@@ -19,7 +19,7 @@ Initialize the example, navigate into the directory, and push the training job:
 ```bash
 truss train init --examples qwen3-32b-fft-verl-multinode
 cd qwen3-32b-fft-verl-multinode
-truss train push training/config.py
+truss train push config.py
 ```
 
 > **Note:** This example requires H200 GPUs. You may need to [contact Baseten](https://www.baseten.co/contact) to get approval for this instance type before running the job.

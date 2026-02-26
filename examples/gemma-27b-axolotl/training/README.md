@@ -19,7 +19,7 @@ Initialize the example, navigate into the directory, and push the training job:
 ```bash
 truss train init --examples gemma-27b-axolotl
 cd gemma-27b-axolotl
-truss train push training/config.py
+truss train push config.py
 ```
 
 > **Note:** This example requires more than 4x H100 GPUs. You may need to [contact Baseten](https://www.baseten.co/contact) to get approval for this instance type before running the job.
