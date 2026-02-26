@@ -9,7 +9,10 @@ This example fine-tunes OpenAI's Whisper speech recognition model using the Hugg
 1. [Create a Baseten account](https://baseten.co/signup) if you don't already have one.
 2. Install the Truss CLI:
    ```bash
+   # pip
    pip install -U truss
+   # or uv
+   uv add truss
    ```
 
 ## Getting Started

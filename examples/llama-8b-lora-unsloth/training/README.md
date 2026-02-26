@@ -9,7 +9,10 @@ This example fine-tunes Meta's Llama 3.1 8B Instruct model using LoRA with the U
 1. [Create a Baseten account](https://baseten.co/signup) if you don't already have one.
 2. Install the Truss CLI:
    ```bash
+   # pip
    pip install -U truss
+   # or uv
+   uv add truss
    ```
 
 ## Getting Started

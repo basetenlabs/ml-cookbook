@@ -9,7 +9,10 @@ This example trains a classifier based on the Qwen3 0.6B model using PyTorch on 
 1. [Create a Baseten account](https://baseten.co/signup) if you don't already have one.
 2. Install the Truss CLI:
    ```bash
+   # pip
    pip install -U truss
+   # or uv
+   uv add truss
    ```
 
 ## Getting Started
