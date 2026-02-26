@@ -7,9 +7,6 @@ PROJECT_NAME = "Qwen3-8b-lora-dpo-trl 2GPU"
 training_runtime = definitions.Runtime(
     start_commands=["/bin/sh -c 'chmod +x ./run.sh && ./run.sh'"],
     environment_variables={
-        "HF_TOKEN": definitions.SecretReference(
-            name="hf_access_token"
-        ),  # The name of the HF Access Token secret in your B10 account
         "WANDB_API_KEY": definitions.SecretReference(
             name="wandb_api_key"
         ),  # comment this out if you don't want to use wandb
