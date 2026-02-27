@@ -17,10 +17,6 @@ runtime = definitions.Runtime(
     checkpointing_config=definitions.CheckpointingConfig(
         enabled=True,
     ),
-    environment_variables={
-        "HF_TOKEN": definitions.SecretReference(name="hf_access_token"),
-        "WANDB_API_KEY": definitions.SecretReference(name="wandb_api_key"),
-    },
 )
 
 training_compute = definitions.Compute(

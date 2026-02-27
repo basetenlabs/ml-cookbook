@@ -165,7 +165,7 @@ def parse_args():
         "--report_to",
         type=str,
         default=None,
-        help="Reporting tool to use (e.g., 'wandb', 'tensorboard').",
+        help="Reporting tool to use (e.g., 'tensorboard').",
     )
     return parser.parse_args()
 
@@ -260,7 +260,7 @@ def main(args):
             # lr_scheduler_type = "linear",
             seed=args.random_state,
             output_dir=args.output_dir,
-            report_to=args.report_to,  # Use this for WandB etc
+            report_to=args.report_to,
         ),
     )
 

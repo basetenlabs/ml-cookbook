@@ -1,8 +1,6 @@
 #!/bin/bash
 set -eux
 
-pip install -U wandb
-
 # cloning megatron-LM separately because in swift, while a subprocess 
 # is cloning the repo, another starts trying to install it. This ensures 
 # when the repo exists when installation is being attempted.
@@ -66,9 +64,7 @@ PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True NPROC_PER_NODE=$BT_NUM_GPUS NNO
     --attention_backend flash \
     --optimizer_cpu_offload true \
     --use_precision_aware_optimizer true \
-    --use_hf 1 \
-    --wandb_project qwen3_moe_megatron \
-    --wandb_exp_name $BT_TRAINING_JOB_NAME 
+    --use_hf 1
 
 # Checkpoints will be persisted to the Basten cache. 
 # You can then sync these checkpoint files into the checkpointing 

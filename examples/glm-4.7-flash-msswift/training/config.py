@@ -21,11 +21,7 @@ training_runtime = definitions.Runtime(
     ),
     cache_config=definitions.CacheConfig(
         enabled=True,
-    ),
-    environment_variables={
-        "HF_TOKEN": definitions.SecretReference(name="hf_access_token"),
-        "WANDB_API_KEY": definitions.SecretReference(name="wandb_api_key"),
-    }
+    )
 )
 
 # 3. Define the Compute Resources for the Training Job

@@ -1,14 +1,28 @@
-## Run instructions
+# Whisper Fine-Tuning with Transformers
 
-### Update config.py 
-- Make sure the environment variables in `config.py` is updated with the same name of secrets as saved in Baseten secrets.
-- In `train.py`, where all the data processing and training code is present, make sure the data processing function `load_and_process_common_accent_dataset` or `load_and_process_dataset` processes your dataset as desired. This file has 2 examples - `load_and_process_common_accent_dataset` or `load_and_process_dataset`
-    - This is also where hyper parameters for training are defined. Refer to `run.sh` to change them. 
+This example fine-tunes OpenAI's Whisper speech recognition model using the HuggingFace Transformers framework on Baseten.
 
-### Launch run 
+**Resources:** 1 node, 8x H100 GPUs
 
-```
+## Prerequisites
+
+1. [Create a Baseten account](https://baseten.co/signup) if you don't already have one.
+2. Install the Truss CLI:
+   ```bash
+   # pip
+   pip install -U truss
+   # or uv
+   uv add truss
+   ```
+
+## Getting Started
+
+Initialize the example, navigate into the directory, and push the training job:
+
+```bash
+truss train init --examples whisper-transformers
+cd whisper-transformers
 truss train push config.py
 ```
 
-Upon successful submission, the CLI will output helpful information about your job, including the job-id to track your run.
+> **Note:** This example requires more than 4x H100 GPUs. You may need to [contact Baseten](https://www.baseten.co/contact) to get approval for this instance type before running the job.

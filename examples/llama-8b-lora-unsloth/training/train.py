@@ -100,7 +100,7 @@ trainer = SFTTrainer(
         lr_scheduler_type="linear",
         seed=3407,
         output_dir=checkpoint_dir,
-        report_to="none",  # Use this for wandb etc
+        report_to="none",
         push_to_hub=False,
     ),
 )

@@ -2,7 +2,7 @@
 set -eux
 
 # --- Install prerequisites ---
-pip install -U ms-swift wandb
+pip install -U ms-swift
 
 # --- Cache & repo setup ---
 export MS_CACHE_HOME=/app/.cache/modelscope
@@ -95,9 +95,7 @@ megatron sft \
     --attention_backend flash \
     --optimizer_cpu_offload true \
     --use_precision_aware_optimizer true \
-    --use_hf 1 \
-    --wandb_project qwen3_moe_megatron \
-    --wandb_exp_name "${BT_TRAINING_JOB_NAME:-qwen3_sft_run}"
+    --use_hf 1
 
 echo "Training completed successfully."
 echo "Checkpoints saved under: $CKPT_DIR"

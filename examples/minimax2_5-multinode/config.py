@@ -1,18 +1,17 @@
 from truss_train import definitions
 from truss.base import truss_config
 
-project_name = "minimax-2-5-ori-new2"
+project_name = "minimax-2-5"
 
 # Prebuilt image with Megatron + ms-swift.
 BASE_IMAGE = "baseten/megatron:py3.11.11-cuda12.8.1-torch2.8.0-fa2.8.1-megatron0.14.1-msswift3.10.3"
 
 training_runtime = definitions.Runtime(
     start_commands=[
-        "/bin/bash -c 'chmod +x ./run_msswift.sh && ./run_msswift.sh'",
+        "/bin/bash -c 'chmod +x ./run_megatron.sh && ./run_megatron.sh'",
     ],
     environment_variables={
         "HF_TOKEN": definitions.SecretReference(name="hf_access_token"),
-        "WANDB_API_KEY": definitions.SecretReference(name="wandb_api_key"),
     },
     cache_config=definitions.CacheConfig(
         enabled=True,
