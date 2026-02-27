@@ -1,0 +1,167 @@
+name: Training Platform Smoke Tests
+
+# SECURITY: This workflow runs on schedule and manual dispatch ONLY.
+# NEVER add pull_request or pull_request_target triggers — this is a
+# public repo and those triggers would expose secrets to fork PRs.
+on:
+  schedule:
+    - cron: "0 6 * * *" # Daily at 6am UTC
+  workflow_dispatch: {}
+
+concurrency:
+  group: smoke-tests
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+env:
+  HF_TOKEN: ${{ secrets.HF_TOKEN }}
+
+jobs:
+  # --------------------------------------------------------------------------
+  # Smoke Test: Submit qwen3-0.6b-axolotl, validate lifecycle + checkpoints + cache
+  # --------------------------------------------------------------------------
+  smoke-test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    outputs:
+      project_name: ${{ steps.summary.outputs.project_name }}
+      project_id: ${{ steps.summary.outputs.project_id }}
+      job_id: ${{ steps.summary.outputs.job_id }}
+      status: ${{ steps.summary.outputs.status }}
+      error: ${{ steps.summary.outputs.error }}
+      passed: ${{ steps.summary.outputs.passed }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v4
+      - run: uv sync
+
+      - name: Configure truss remote
+        run: |
+          cat > ~/.trussrc <<EOF
+          [smoke-tests]
+          remote_provider = baseten
+          remote_url = ${{ secrets.SMOKE_TESTS_REMOTE_URL }}
+          api_key = ${{ secrets.SMOKE_TESTS_API_KEY }}
+          EOF
+
+      - name: Run smoke test
+        run: |
+          uv run bin/test_example.py \
+            examples/qwen3-0.6b-axolotl/training/config.py \
+            --timeout 1200 \
+            --assert-status TRAINING_JOB_COMPLETED \
+            --check-checkpoints \
+            --check-cache \
+            --deploy-and-infer \
+            --project smoke-test-${{ github.run_id }} \
+            --remote smoke-tests \
+            --summary-file /tmp/smoke-test-summary.json
+
+      - name: Read summary
+        id: summary
+        if: always()
+        run: |
+          if [ -f /tmp/smoke-test-summary.json ]; then
+            echo "project_name=$(jq -r .project_name /tmp/smoke-test-summary.json)" >> "$GITHUB_OUTPUT"
+            echo "project_id=$(jq -r .project_id /tmp/smoke-test-summary.json)" >> "$GITHUB_OUTPUT"
+            echo "job_id=$(jq -r .job_id /tmp/smoke-test-summary.json)" >> "$GITHUB_OUTPUT"
+            echo "status=$(jq -r .status /tmp/smoke-test-summary.json)" >> "$GITHUB_OUTPUT"
+            {
+              echo "error<<GHEOF"
+              jq -r .error /tmp/smoke-test-summary.json
+              echo "GHEOF"
+            } >> "$GITHUB_OUTPUT"
+            echo "passed=$(jq -r .passed /tmp/smoke-test-summary.json)" >> "$GITHUB_OUTPUT"
+          else
+            echo "project_name=smoke-test-${{ github.run_id }}" >> "$GITHUB_OUTPUT"
+            echo "project_id=" >> "$GITHUB_OUTPUT"
+            echo "job_id=" >> "$GITHUB_OUTPUT"
+            echo "status=UNKNOWN" >> "$GITHUB_OUTPUT"
+            echo "error=Summary file not written (crash before job submission?)" >> "$GITHUB_OUTPUT"
+            echo "passed=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Cleanup
+        if: always()
+        run: |
+          # On success the tracker already deleted the project; on failure just stop jobs
+          uv run bin/test_example.py --teardown \
+            --project smoke-test-${{ github.run_id }} \
+            --remote smoke-tests
+
+  # --------------------------------------------------------------------------
+  # Sweep: Clean up any orphaned smoke test resources
+  # --------------------------------------------------------------------------
+  sweep:
+    needs: [smoke-test]
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v4
+      - run: uv sync
+
+      - name: Configure truss remote
+        run: |
+          cat > ~/.trussrc <<EOF
+          [smoke-tests]
+          remote_provider = baseten
+          remote_url = ${{ secrets.SMOKE_TESTS_REMOTE_URL }}
+          api_key = ${{ secrets.SMOKE_TESTS_API_KEY }}
+          EOF
+
+      - name: Sweep orphaned resources
+        run: |
+          uv run bin/test_example.py --sweep \
+            --prefix smoke-test- \
+            --older-than 2h \
+            --remote smoke-tests
+
+  # --------------------------------------------------------------------------
+  # Notify on failure
+  # --------------------------------------------------------------------------
+  notify-on-failure:
+    needs: [smoke-test]
+    if: failure()
+    runs-on: ubuntu-latest
+    steps:
+      - uses: slackapi/slack-github-action@v2
+        with:
+          webhook: ${{ secrets.SLACK_WEBHOOK }}
+          payload: |
+            {
+              "blocks": [
+                {
+                  "type": "header",
+                  "text": {
+                    "type": "plain_text",
+                    "text": "Training Smoke Test Failed"
+                  }
+                },
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": "*Status:* `${{ needs.smoke-test.outputs.status || 'N/A' }}`\n*Project:* `${{ needs.smoke-test.outputs.project_name || 'N/A' }}`\n*Project ID:* `${{ needs.smoke-test.outputs.project_id || 'N/A' }}`\n*Job ID:* `${{ needs.smoke-test.outputs.job_id || 'N/A' }}`\n*Error:* ${{ needs.smoke-test.outputs.error || 'N/A' }}"
+                  }
+                },
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": "<${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}|View workflow run>"
+                  }
+                },
+                {
+                  "type": "context",
+                  "elements": [
+                    {
+                      "type": "mrkdwn",
+                      "text": "Failed projects are preserved for investigation."
+                    }
+                  ]
+                }
+              ]
+            }
