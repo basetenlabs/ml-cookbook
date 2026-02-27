@@ -1,0 +1,106 @@
+name: Training Platform Smoke Tests
+
+# SECURITY: This workflow runs on schedule and manual dispatch ONLY.
+# NEVER add pull_request or pull_request_target triggers — this is a
+# public repo and those triggers would expose secrets to fork PRs.
+on:
+  schedule:
+    - cron: "0 6 * * *" # Daily at 6am UTC
+  workflow_dispatch: {}
+
+concurrency:
+  group: smoke-tests
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+env:
+  BASETEN_API_KEY: ${{ secrets.BASETEN_API_KEY }}
+  HF_TOKEN: ${{ secrets.HF_TOKEN }}
+
+jobs:
+  # --------------------------------------------------------------------------
+  # Smoke Test: Submit qwen3-0.6b-axolotl, validate lifecycle + checkpoints + cache
+  # --------------------------------------------------------------------------
+  smoke-test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v4
+      - run: uv sync
+
+      - name: Run smoke test
+        run: |
+          uv run bin/test_example.py \
+            examples/qwen3-0.6b-axolotl/training/config.py \
+            --timeout 1200 \
+            --assert-status TRAINING_JOB_COMPLETED \
+            --check-checkpoints \
+            --check-cache \
+            --project smoke-test-${{ github.run_id }}
+
+      - name: Cleanup
+        if: always()
+        run: |
+          uv run bin/test_example.py --teardown \
+            --project smoke-test-${{ github.run_id }}
+
+  # --------------------------------------------------------------------------
+  # Deploy: Deploy checkpoint from smoke test, run inference
+  # --------------------------------------------------------------------------
+  deploy-checkpoint:
+    needs: smoke-test
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v4
+      - run: uv sync
+
+      - name: Run smoke test
+        run: |
+          uv run bin/test_example.py \
+            examples/qwen3-0.6b-axolotl/training/config.py \
+            --timeout 1200 \
+            --deploy-and-infer \
+            --project smoke-test-deploy-${{ github.run_id }}
+
+      - name: Cleanup
+        if: always()
+        run: |
+          uv run bin/test_example.py --teardown \
+            --project smoke-test-deploy-${{ github.run_id }}
+
+  # --------------------------------------------------------------------------
+  # Sweep: Clean up any orphaned smoke test resources
+  # --------------------------------------------------------------------------
+  sweep:
+    needs: [smoke-test, deploy-checkpoint]
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v4
+      - run: uv sync
+
+      - name: Sweep orphaned resources
+        run: |
+          uv run bin/test_example.py --sweep \
+            --prefix smoke-test- \
+            --older-than 2h
+
+  # --------------------------------------------------------------------------
+  # Notify on failure
+  # --------------------------------------------------------------------------
+  notify-on-failure:
+    needs: [smoke-test, deploy-checkpoint]
+    if: failure()
+    runs-on: ubuntu-latest
+    steps:
+      - uses: slackapi/slack-github-action@v2
+        with:
+          webhook: ${{ secrets.SLACK_WEBHOOK }}
+          payload: |
+            {"text": "Training platform smoke test FAILED: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"}

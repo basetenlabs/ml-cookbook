@@ -18,13 +18,9 @@ training_runtime = definitions.Runtime(
     start_commands=[
         f"axolotl fetch deepspeed_configs && torchrun --nproc-per-node={NUM_GPUS} train.py",
     ],
-    environment_variables={
-        # Secrets (ensure these are configured in your Baseten workspace)
-        # Include other environment variables as needed
-    },
+    environment_variables={},
     cache_config=definitions.CacheConfig(
         enabled=True,
-        enable_legacy_hf_mount=True,
     ),
     checkpointing_config=definitions.CheckpointingConfig(
         enabled=True,

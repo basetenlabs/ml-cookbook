@@ -7,11 +7,26 @@ from axolotl.common.datasets import load_datasets
 from axolotl.train import train
 
 OUTPUT_DIR = os.environ.get("BT_CHECKPOINT_DIR", "outputs/qwen3-0.6b")
+BASE_MODEL = "Qwen/Qwen3-0.6B"
+CACHE_DIR = os.environ.get("BT_PROJECT_CACHE_DIR")
+
+
+def download_model_to_cache():
+    """Download model and tokenizer to the project cache if available."""
+    if not CACHE_DIR:
+        return None
+    from huggingface_hub import snapshot_download
+    local_path = snapshot_download(BASE_MODEL, cache_dir=os.path.join(CACHE_DIR, "huggingface"))
+    print(f"Model cached at: {local_path}")
+    return local_path
+
 
 def main():
+    model_path = download_model_to_cache() or BASE_MODEL
+
     config = DictDefault(
         adapter="qlora",
-        base_model="Qwen/Qwen3-0.6B",
+        base_model=model_path,
         bf16=True,
         # chat_template="tokenizer_default_fallback_chatml",
 
