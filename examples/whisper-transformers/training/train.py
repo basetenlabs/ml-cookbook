@@ -347,7 +347,6 @@ def main(args):
         save_steps=args.save_steps,
         eval_steps=args.eval_steps,
         logging_steps=args.logging_steps,
-        report_to=[args.report_to],
         load_best_model_at_end=True,
         metric_for_best_model="wer",
         greater_is_better=False,
