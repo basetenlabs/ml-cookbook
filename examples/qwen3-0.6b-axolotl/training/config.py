@@ -5,7 +5,7 @@ from truss.base import truss_config
 project_name = "demo/qwen3-0.6b"
 
 # 1. Define a base image for your training job
-BASE_IMAGE = "axolotlai/axolotl:main-20250811-py3.11-cu126-2.7.1"
+BASE_IMAGE = "pytorch/pytorch:2.7.0-cuda12.8-cudnn9-runtime"
 
 # 2. Define the Runtime Environment for the Training Job
 # This includes start commands and environment variables
@@ -16,7 +16,7 @@ NUM_GPUS = 1
 
 training_runtime = definitions.Runtime(
     start_commands=[
-        f"axolotl fetch deepspeed_configs && torchrun --nproc-per-node={NUM_GPUS} train.py",
+        "/bin/sh -c 'chmod +x ./run.sh && ./run.sh'",
     ],
     environment_variables={
         # Secrets (ensure these are configured in your Baseten workspace)
@@ -35,7 +35,7 @@ training_runtime = definitions.Runtime(
 training_compute = definitions.Compute(
     node_count=1,
     accelerator=truss_config.AcceleratorSpec(
-        accelerator=truss_config.Accelerator.H100,
+        accelerator=truss_config.Accelerator.H200,
         count=1,
     ),
 )
