@@ -1,0 +1,83 @@
+# Base Model Configuration
+base_model: Qwen/Qwen3-32B #HF Repo of base model
+model_type: AutoModelForCausalLM
+tokenizer_type: AutoTokenizer
+
+plugins:
+  - axolotl.integrations.liger.LigerPlugin
+  - axolotl.integrations.cut_cross_entropy.CutCrossEntropyPlugin
+liger_rope: true
+liger_rms_norm: true
+liger_glu_activation: true
+liger_layer_norm: true
+liger_fused_linear_cross_entropy: false
+liger_cross_entropy: false
+
+val_set_size: 0.05
+
+dataset_prepared_path: ./outputs/last_run_prepared
+sample_packing: true
+pad_to_sequence_len: true
+
+chat_template: qwen3
+datasets:
+  - path: mlabonne/FineTome-100k
+    type: chat_template
+    split: train[:10%]
+    field_messages: conversations
+    message_property_mappings:
+      role: from
+      content: value
+
+logging_steps: 1
+num_epochs: 10
+micro_batch_size: 1
+gradient_accumulation_steps: 4
+# evals_per_epoch: 1
+max_grad_norm: 1.0
+
+optimizer: adamw_torch_fused
+sequence_len: 20000
+learning_rate: 1e-6
+adam_beta1: 0.9              # Standard, well-tested value
+adam_beta2: 0.999            # Higher beta2 for more stability
+adam_epsilon: 1e-8           # Standard epsilon works well with regular AdamW
+warmup_ratio: 0.1
+weight_decay: 0.01
+
+bf16: true
+fp16: false
+tf32: false
+
+# FSDP Configuration
+fsdp:
+  - full_shard
+  - auto_wrap
+
+fsdp_config:
+  fsdp_auto_wrap_policy: TRANSFORMER_BASED_WRAP
+  fsdp_offload_params: true
+  fsdp_state_dict_type: SHARDED_STATE_DICT
+  fsdp_transformer_layer_cls_to_wrap: Qwen3DecoderLayer
+  fsdp_sharding_strategy: FULL_SHARD
+  fsdp_sync_module_states: true
+  fsdp_cpu_ram_efficient_loading: true
+  fsdp_use_orig_params: true
+
+gradient_checkpointing: offload
+
+# save_strategy: epoch
+# hub_model_id: baseten-admin/test #Where to store the model, need to make one in your account first if your API key has finegrained permissions
+# hub_strategy: all_checkpoints #How often to store to HF
+
+# use_wandb: true
+# wandb_project: Sample Test #Name of the wandb project
+# wandb_entity: philipkiely-baseten
+
+flash_attention: true
+# eval_sample_packing: false
+sequence_parallel_degree: 16
+
+save_safetensors: false
+
+# max_steps: 5
