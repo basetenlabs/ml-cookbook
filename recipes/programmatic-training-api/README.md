@@ -2,7 +2,7 @@
 
 This recipe demonstrates how to programmatically kick off training jobs on Baseten. This is useful when you want to:
 
-- Build an API endpoint that receives training requests (e.g. pearametrized on data or a model)
+- Build an API endpoint that receives training requests (e.g. parameterized on data or a model)
 - Dynamically configure training jobs based on user input
 - Integrate training into your application workflow
 
