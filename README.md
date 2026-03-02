@@ -19,6 +19,9 @@ From data preprocessing to checkpointed and trained models, these recipes cover 
 ### Table of contents
 
 - [Usage](#usage)
+  - [Examples vs Recipes](#examples-vs-recipes)
+  - [Recipe: Programmatic Training API](#recipe-programmatic-training-api)
+  - [Recipe: Long-context SFT](#recipe-long-context-sft)
   - [Fine-tune GPT OSS 20B with LoRa and trl](#fine-tune-gpt-oss-20b-with-lora-and-trl)
     - [Training](#training)
   - [Fine-tune Qwen3 8B with LoRa and trl](#fine-tune-qwen3-8b-with-lora-and-trl)
@@ -72,6 +75,24 @@ git clone https://github.com/basetenlabs/ml-cookbook.git
 ```
 
 ## Usage
+
+### Examples vs Recipes
+
+`examples/` are runnable, model/framework-specific projects you can launch directly with `truss train push config.py`.
+
+`recipes/` are reusable implementation guides and patterns that help you choose an approach and adapt it to your own project.
+
+### Recipe: Programmatic Training API
+
+#### Readme
+
+[`recipes/programmatic-training-api/README.md`](recipes/programmatic-training-api/README.md)
+
+### Recipe: Long-context SFT
+
+#### Readme
+
+[`recipes/sft/long_context/README.md`](recipes/sft/long_context/README.md)
 
 ### Fine-tune GPT OSS 20B with LoRa and [trl](https://github.com/huggingface/trl)
 
