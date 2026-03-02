@@ -20,8 +20,8 @@ From data preprocessing to checkpointed and trained models, these recipes cover 
 
 - [Usage](#usage)
   - [Examples vs Recipes](#examples-vs-recipes)
-  - [Recipe: Programmatic Training API](#recipe-programmatic-training-api)
-  - [Recipe: Long-context SFT](#recipe-long-context-sft)
+  - [Programmatic Training API](#programmatic-training-api)
+  - [Long-context SFT](#long-context-sft)
   - [Fine-tune GPT OSS 20B with LoRa and trl](#fine-tune-gpt-oss-20b-with-lora-and-trl)
     - [Training](#training)
   - [Fine-tune Qwen3 8B with LoRa and trl](#fine-tune-qwen3-8b-with-lora-and-trl)
@@ -82,13 +82,13 @@ git clone https://github.com/basetenlabs/ml-cookbook.git
 
 `recipes/` are reusable implementation guides and patterns that help you choose an approach and adapt it to your own project.
 
-### Recipe: Programmatic Training API
+### Programmatic Training API
 
-#### Readme
+The Programmatic Training API lets you launch and manage machine learning training jobs directly from your Python code, rather than relying solely on CLI commands or configuration files.
 
 [`recipes/programmatic-training-api/README.md`](recipes/programmatic-training-api/README.md)
 
-### Recipe: Long-context SFT
+### Long-context SFT
 
 #### Readme
 
