@@ -90,7 +90,11 @@ The Programmatic Training API lets you launch and manage machine learning traini
 
 ### Long-context SFT
 
-#### Readme
+"Long-context supervised fine-tuning (SFT)" refers to adapting large language models to handle and learn from sequences with a much greater length than standard context windows. This enables models to process, reason about, and generate long-form documents, conversations, or codebases in a single pass.
+
+This example demonstrates how to set up a supervised fine-tuning project targeting long-context models.
+
+For detailed instructions and code, see [`recipes/sft/long_context/README.md`](recipes/sft/long_context/README.md).
 
 [`recipes/sft/long_context/README.md`](recipes/sft/long_context/README.md)
 
