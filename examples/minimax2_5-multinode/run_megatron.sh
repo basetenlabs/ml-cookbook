@@ -9,6 +9,11 @@ exec > >(tee -a "${LOG_FILE}") 2>&1
 echo "==== run_megatron.sh start node=${BT_NODE_RANK:-0} $(date -Is) ===="
 echo "log_file=${LOG_FILE}"
 
+if [[ -z "${HF_TOKEN:-}" && -z "${HUGGING_FACE_HUB_TOKEN:-}" && -z "${HUGGINGFACE_HUB_TOKEN:-}" ]]; then
+  echo "ERROR: HF token is not set. Configure Baseten secret 'hf_access_token' and map it to HF_TOKEN in config.py."
+  exit 1
+fi
+
 CACHE_ROOT="/tmp"
 export HF_HOME="${CACHE_ROOT}/huggingface"
 export HUGGINGFACE_HUB_CACHE="${HF_HOME}/hub"

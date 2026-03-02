@@ -9,7 +9,11 @@ export NCCL_SOCKET_IFNAME="^docker0,lo"
 export NCCL_IB_DISABLE=0
 export NCCL_TIMEOUT=1800000
 
-huggingface-cli login --token=$HF_TOKEN
+if [[ -z "${HF_TOKEN:-}" ]]; then
+  echo "ERROR: HF_TOKEN is not set. Configure Baseten secret 'hf_access_token' and map it to HF_TOKEN in config.py."
+  exit 1
+fi
+huggingface-cli login --token="${HF_TOKEN}"
 
 export AXOLOTL_CONFIG_FILE=config.yaml
 
