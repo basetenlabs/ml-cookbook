@@ -20,22 +20,6 @@ export AXOLOTL_CONFIG_FILE=config.yaml
 axolotl preprocess $AXOLOTL_CONFIG_FILE
 
 # Ensure output_dir is valid YAML even if path has special characters.
-python3 - <<'PY'
-import os
-import yaml
-
-cfg_path = os.environ["AXOLOTL_CONFIG_FILE"]
-checkpoint_dir = os.environ["BT_CHECKPOINT_DIR"]
-
-with open(cfg_path, "r", encoding="utf-8") as f:
-    cfg = yaml.safe_load(f) or {}
-
-cfg["output_dir"] = checkpoint_dir
-
-with open(cfg_path, "w", encoding="utf-8") as f:
-    yaml.safe_dump(cfg, f, sort_keys=False)
-
-print(f"Set output_dir to: {checkpoint_dir}")
-PY
+python3 set_axolotl_output_dir.py
 
 torchrun --nnodes=$BT_GROUP_SIZE --nproc-per-node=$BT_NUM_GPUS --node-rank=$BT_NODE_RANK --rdzv-backend=c10d --rdzv-id=$BT_TRAINING_JOB_ID --rdzv-endpoint=$BT_LEADER_ADDR:29400  -m axolotl.cli.train $AXOLOTL_CONFIG_FILE
