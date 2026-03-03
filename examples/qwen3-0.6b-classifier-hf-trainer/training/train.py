@@ -119,7 +119,6 @@ def main():
         fp16=False,  # Use bfloat16 via model dtype instead
         bf16=True,
         dataloader_pin_memory=True,
-        report_to=None,
         save_total_limit=2,
     )
 

@@ -5,6 +5,7 @@ import torchvision
 import torchvision.transforms as transforms
 from torch.utils.data import DataLoader
 import os
+import shutil
 
 # Setup
 if torch.cuda.is_available():
@@ -18,18 +19,37 @@ transform = transforms.ToTensor()
 # Data directory
 data_dir = os.path.join(os.environ["BT_RW_CACHE_DIR"], "mnist")
 
+# Use HTTPS mirrors that are reliable in hosted environments.
+torchvision.datasets.MNIST.mirrors = [
+    "https://ossci-datasets.s3.amazonaws.com/mnist/",
+    "https://storage.googleapis.com/cvdf-datasets/mnist/",
+]
+
+
+def load_mnist_dataset(train: bool):
+    try:
+        return torchvision.datasets.MNIST(
+            data_dir, train=train, download=True, transform=transform
+        )
+    except RuntimeError as exc:
+        if "File not found or corrupted" not in str(exc):
+            raise
+        # Clean partial files and retry once against configured mirrors.
+        raw_dir = os.path.join(data_dir, "MNIST", "raw")
+        if os.path.isdir(raw_dir):
+            shutil.rmtree(raw_dir)
+        return torchvision.datasets.MNIST(
+            data_dir, train=train, download=True, transform=transform
+        )
+
 # Data
 train_loader = DataLoader(
-    torchvision.datasets.MNIST(
-        data_dir, train=True, download=True, transform=transform
-    ),
+    load_mnist_dataset(train=True),
     batch_size=512,
     shuffle=True,
 )
 test_loader = DataLoader(
-    torchvision.datasets.MNIST(
-        data_dir, train=False, download=True, transform=transform
-    ),
+    load_mnist_dataset(train=False),
     batch_size=512,
     shuffle=False,
 )

@@ -1,8 +1,5 @@
 base_model: axolotl-ai-co/gpt-oss-120b-dequantized
 
-hub_model_id: baseten-admin/multilingual-sft-gpt-oss-120b-longcontext
-hub_strategy: end  # only push the final model, don't push intermediate checkpoints
-
 use_kernels: false
 
 dp_shard_size: 8

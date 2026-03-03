@@ -19,6 +19,9 @@ From data preprocessing to checkpointed and trained models, these recipes cover 
 ### Table of contents
 
 - [Usage](#usage)
+  - [Examples vs Recipes](#examples-vs-recipes)
+  - [Programmatic Training API](#programmatic-training-api)
+  - [Long-context SFT](#long-context-sft)
   - [Fine-tune GPT OSS 20B with LoRa and trl](#fine-tune-gpt-oss-20b-with-lora-and-trl)
     - [Training](#training)
   - [Fine-tune Qwen3 8B with LoRa and trl](#fine-tune-qwen3-8b-with-lora-and-trl)
@@ -72,6 +75,28 @@ git clone https://github.com/basetenlabs/ml-cookbook.git
 ```
 
 ## Usage
+
+### Examples vs Recipes
+
+`examples/` are runnable, model/framework-specific projects you can launch directly with `truss train push config.py`.
+
+`recipes/` are reusable implementation guides and patterns that help you choose an approach and adapt it to your own project.
+
+### Programmatic Training API
+
+The Programmatic Training API lets you launch and manage machine learning training jobs directly from your Python code, rather than relying solely on CLI commands or configuration files.
+
+[`recipes/programmatic-training-api/README.md`](recipes/programmatic-training-api/README.md)
+
+### Long-context SFT
+
+"Long-context supervised fine-tuning (SFT)" refers to adapting large language models to handle and learn from sequences with a much greater length than standard context windows. This enables models to process, reason about, and generate long-form documents, conversations, or codebases in a single pass.
+
+This example demonstrates how to set up a supervised fine-tuning project targeting long-context models.
+
+For detailed instructions and code, see [`recipes/sft/long_context/README.md`](recipes/sft/long_context/README.md).
+
+[`recipes/sft/long_context/README.md`](recipes/sft/long_context/README.md)
 
 ### Fine-tune GPT OSS 20B with LoRa and [trl](https://github.com/huggingface/trl)
 

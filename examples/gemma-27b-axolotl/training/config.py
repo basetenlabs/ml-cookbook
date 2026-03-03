@@ -13,7 +13,7 @@ training_runtime = definitions.Runtime(
         ),  # The name of the HF Access Token secret in your B10 account
     },
     checkpointing_config=definitions.CheckpointingConfig(  # this defines BT_CHECKPOINT_DIR
-        enabled=False,
+        enabled=True,
     ),
     cache_config=definitions.CacheConfig(  # this defines BT_RW_CACHE_DIR
         enabled=True,
