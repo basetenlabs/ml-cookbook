@@ -5,5 +5,6 @@ description = "ML Cookbook by the Baseten Training Team"
 readme = "README.md"
 requires-python = ">=3.12.2"
 dependencies = [
-    "truss>=0.9.119",
+    "truss>=0.14.1",
+    "requests>=2.28",
 ]

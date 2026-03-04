@@ -24,7 +24,6 @@ training_runtime = definitions.Runtime(
     },
     cache_config=definitions.CacheConfig(
         enabled=True,
-        enable_legacy_hf_mount=True,
     ),
     checkpointing_config=definitions.CheckpointingConfig(
         enabled=True,

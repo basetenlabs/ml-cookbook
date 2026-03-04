@@ -7,6 +7,10 @@ from axolotl.common.datasets import load_datasets
 from axolotl.train import train
 
 OUTPUT_DIR = os.environ.get("BT_CHECKPOINT_DIR", "outputs/qwen3-0.6b")
+CACHE_DIR = os.environ.get("BT_PROJECT_CACHE_DIR")
+
+if CACHE_DIR:
+    os.environ["HF_HOME"] = CACHE_DIR
 
 def main():
     config = DictDefault(
