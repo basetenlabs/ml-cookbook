@@ -120,19 +120,57 @@ jobs:
             --remote smoke-tests
 
   # --------------------------------------------------------------------------
-  # Notify on failure
+  # Notify
   # --------------------------------------------------------------------------
-  notify-on-failure:
+  notify:
     needs: [smoke-test]
-    if: failure()
+    if: always()
     runs-on: ubuntu-latest
     steps:
-      - uses: slackapi/slack-github-action@v2
+      - name: Notify success
+        if: needs.smoke-test.result == 'success'
+        uses: slackapi/slack-github-action@v2
         with:
-          webhook: ${{ secrets.SLACK_WEBHOOK }}
-          webhook-type: incoming-webhook
+          method: chat.postMessage
+          token: ${{ secrets.SLACK_BOT_TOKEN }}
           payload: |
             {
+              "channel": "${{ secrets.SLACK_CHANNEL_ID }}",
+              "blocks": [
+                {
+                  "type": "header",
+                  "text": {
+                    "type": "plain_text",
+                    "text": "Training Smoke Test Passed"
+                  }
+                },
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": "*Status:* `${{ needs.smoke-test.outputs.status }}`\n*Project:* `${{ needs.smoke-test.outputs.project_name }}`\n*Job ID:* `${{ needs.smoke-test.outputs.job_id }}`"
+                  }
+                },
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": "<${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}|View workflow run>"
+                  }
+                }
+              ]
+            }
+
+      - name: Notify failure
+        if: needs.smoke-test.result == 'failure'
+        uses: slackapi/slack-github-action@v2
+        with:
+          method: chat.postMessage
+          token: ${{ secrets.SLACK_BOT_TOKEN }}
+          payload: |
+            {
+              "channel": "${{ secrets.SLACK_CHANNEL_ID }}",
+              "text": "<!here> Training Smoke Test Failed",
               "blocks": [
                 {
                   "type": "header",
@@ -145,7 +183,7 @@ jobs:
                   "type": "section",
                   "text": {
                     "type": "mrkdwn",
-                    "text": "*Status:* `${{ needs.smoke-test.outputs.status || 'N/A' }}`\n*Project:* `${{ needs.smoke-test.outputs.project_name || 'N/A' }}`\n*Project ID:* `${{ needs.smoke-test.outputs.project_id || 'N/A' }}`\n*Job ID:* `${{ needs.smoke-test.outputs.job_id || 'N/A' }}`\n*Error:* ${{ needs.smoke-test.outputs.error || 'N/A' }}"
+                    "text": "<!here> *Status:* `${{ needs.smoke-test.outputs.status || 'N/A' }}`\n*Project:* `${{ needs.smoke-test.outputs.project_name || 'N/A' }}`\n*Project ID:* `${{ needs.smoke-test.outputs.project_id || 'N/A' }}`\n*Job ID:* `${{ needs.smoke-test.outputs.job_id || 'N/A' }}`\n*Error:* ${{ needs.smoke-test.outputs.error || 'N/A' }}"
                   }
                 },
                 {
