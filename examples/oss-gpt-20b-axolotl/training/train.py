@@ -1,4 +1,6 @@
+import json
 import os
+from pathlib import Path
 
 from axolotl.utils.dict import DictDefault
 from axolotl.cli.config import load_cfg
@@ -6,6 +8,36 @@ from axolotl.common.datasets import load_datasets
 from axolotl.train import train
 
 OUTPUT_DIR = os.environ.get("BT_CHECKPOINT_DIR", "/workspace/checkpoints")
+
+
+def patch_checkpoints(output_dir: str):
+    """Patch FSDP architecture names in checkpoints for vLLM compatibility."""
+    output_path = Path(output_dir)
+    print(f"Patching checkpoints in: {output_path}")
+
+    for config_path in output_path.rglob("config.json"):
+        with open(config_path) as f:
+            config = json.load(f)
+
+        modified = False
+
+        if "architectures" in config:
+            new_archs = [a.replace("FSDP", "") for a in config["architectures"]]
+            if new_archs != config["architectures"]:
+                print(f"  {config_path}: {config['architectures']} -> {new_archs}")
+                config["architectures"] = new_archs
+                modified = True
+
+        if "auto_map" in config:
+            print(f"  {config_path}: removing auto_map")
+            del config["auto_map"]
+            modified = True
+
+        if modified:
+            with open(config_path, "w") as f:
+                json.dump(config, f, indent=2)
+
+    print("Done patching checkpoints.")
 
 
 def main():
@@ -95,6 +127,9 @@ def main():
     dataset_meta = load_datasets(cfg=cfg)
 
     model, tokenizer, trainer = train(cfg=cfg, dataset_meta=dataset_meta)
+
+    # Patch checkpoint names for vLLM compatibility
+    patch_checkpoints(OUTPUT_DIR)
 
 
 if __name__ == "__main__":
