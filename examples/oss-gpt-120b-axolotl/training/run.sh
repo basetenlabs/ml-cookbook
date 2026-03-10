@@ -37,3 +37,8 @@ axolotl train $AXOLOTL_CONFIG_FILE \
     --launcher torchrun -- --nnodes=$BT_GROUP_SIZE --nproc-per-node=$BT_NUM_GPUS --node-rank=$BT_NODE_RANK \
     --rdzv-backend=c10d --rdzv-id=axolotl-${BT_TRAINING_JOB_ID} --rdzv-endpoint=${BT_LEADER_ADDR}:${RDZV_PORT} \
     --rdzv-conf="join_timeout=${RDZV_TIMEOUT}"
+
+# Patch checkpoint names for vLLM compatibility (only on rank 0)
+if [[ "${BT_NODE_RANK}" == "0" ]]; then
+    python3 patch_checkpoint_names.py
+fi
