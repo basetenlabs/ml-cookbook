@@ -25,13 +25,14 @@ jobs:
   smoke-test:
     runs-on: ubuntu-latest
     timeout-minutes: 45
-    outputs:
-      project_name: ${{ steps.summary.outputs.project_name }}
-      project_id: ${{ steps.summary.outputs.project_id }}
-      job_id: ${{ steps.summary.outputs.job_id }}
-      status: ${{ steps.summary.outputs.status }}
-      error: ${{ steps.summary.outputs.error }}
-      passed: ${{ steps.summary.outputs.passed }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - accelerator: H100
+            deploy-and-infer: true
+          - accelerator: H200
+            deploy-and-infer: false
     steps:
       - uses: actions/checkout@v4
       - uses: astral-sh/setup-uv@v4
@@ -46,7 +47,7 @@ jobs:
           api_key = ${{ secrets.SMOKE_TESTS_API_KEY }}
           EOF
 
-      - name: Run smoke test
+      - name: Run smoke test (${{ matrix.accelerator }})
         run: |
           uv run bin/test_example.py \
             examples/qwen3-0.6b-axolotl/training/config.py \
@@ -54,8 +55,9 @@ jobs:
             --assert-status TRAINING_JOB_COMPLETED \
             --check-checkpoints \
             --check-cache \
-            --deploy-and-infer \
-            --project smoke-test-${{ github.run_id }} \
+            --accelerator ${{ matrix.accelerator }} \
+            ${{ matrix.deploy-and-infer && '--deploy-and-infer' || '' }} \
+            --project smoke-test-${{ matrix.accelerator }}-${{ github.run_id }} \
             --remote smoke-tests \
             --summary-file /tmp/smoke-test-summary.json
 
@@ -63,32 +65,25 @@ jobs:
         id: summary
         if: always()
         run: |
-          if [ -f /tmp/smoke-test-summary.json ]; then
-            echo "project_name=$(jq -r .project_name /tmp/smoke-test-summary.json)" >> "$GITHUB_OUTPUT"
-            echo "project_id=$(jq -r .project_id /tmp/smoke-test-summary.json)" >> "$GITHUB_OUTPUT"
-            echo "job_id=$(jq -r .job_id /tmp/smoke-test-summary.json)" >> "$GITHUB_OUTPUT"
-            echo "status=$(jq -r .status /tmp/smoke-test-summary.json)" >> "$GITHUB_OUTPUT"
-            {
-              echo "error<<GHEOF"
-              jq -r .error /tmp/smoke-test-summary.json
-              echo "GHEOF"
-            } >> "$GITHUB_OUTPUT"
-            echo "passed=$(jq -r .passed /tmp/smoke-test-summary.json)" >> "$GITHUB_OUTPUT"
-          else
-            echo "project_name=smoke-test-${{ github.run_id }}" >> "$GITHUB_OUTPUT"
-            echo "project_id=" >> "$GITHUB_OUTPUT"
-            echo "job_id=" >> "$GITHUB_OUTPUT"
-            echo "status=UNKNOWN" >> "$GITHUB_OUTPUT"
-            echo "error=Summary file not written (crash before job submission?)" >> "$GITHUB_OUTPUT"
-            echo "passed=false" >> "$GITHUB_OUTPUT"
+          if [ ! -f /tmp/smoke-test-summary.json ]; then
+            echo '{"project_name":"smoke-test-${{ matrix.accelerator }}-${{ github.run_id }}","project_id":"","job_id":"","status":"UNKNOWN","error":"Summary file not written (crash before job submission?)","passed":false}' > /tmp/smoke-test-summary.json
           fi
+          # Tag the summary with which accelerator it came from
+          jq --arg acc "${{ matrix.accelerator }}" '. + {accelerator: $acc}' /tmp/smoke-test-summary.json > /tmp/smoke-test-summary-tagged.json
+
+      - name: Upload summary
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: smoke-test-summary-${{ matrix.accelerator }}
+          path: /tmp/smoke-test-summary-tagged.json
 
       - name: Cleanup
         if: always()
         run: |
           # On success the tracker already deleted the project; on failure just stop jobs
           uv run bin/test_example.py --teardown \
-            --project smoke-test-${{ github.run_id }} \
+            --project smoke-test-${{ matrix.accelerator }}-${{ github.run_id }} \
             --remote smoke-tests
 
   # --------------------------------------------------------------------------
@@ -127,80 +122,69 @@ jobs:
     if: always()
     runs-on: ubuntu-latest
     steps:
-      - name: Notify success
-        if: needs.smoke-test.result == 'success'
-        uses: slackapi/slack-github-action@v2
+      - name: Download all summaries
+        uses: actions/download-artifact@v4
         with:
-          method: chat.postMessage
-          token: ${{ secrets.SLACK_BOT_TOKEN }}
-          payload: |
-            {
-              "channel": "${{ secrets.SLACK_CHANNEL_ID }}",
-              "blocks": [
-                {
-                  "type": "header",
-                  "text": {
-                    "type": "plain_text",
-                    "text": "Training Smoke Test Passed"
-                  }
-                },
-                {
-                  "type": "section",
-                  "text": {
-                    "type": "mrkdwn",
-                    "text": "*Status:* `${{ needs.smoke-test.outputs.status }}`\n*Project:* `${{ needs.smoke-test.outputs.project_name }}`\n*Job ID:* `${{ needs.smoke-test.outputs.job_id }}`"
-                  }
-                },
-                {
-                  "type": "section",
-                  "text": {
-                    "type": "mrkdwn",
-                    "text": "<${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}|View workflow run>"
-                  }
-                }
-              ]
-            }
+          pattern: smoke-test-summary-*
+          path: /tmp/summaries
 
-      - name: Notify failure
-        if: needs.smoke-test.result == 'failure'
+      - name: Build Slack message
+        id: slack
+        run: |
+          all_passed=true
+          blocks='[{"type":"header","text":{"type":"plain_text","text":"Training Smoke Test Results"}}]'
+
+          for dir in /tmp/summaries/smoke-test-summary-*/; do
+            summary=$(cat "$dir"/*.json)
+            acc=$(echo "$summary" | jq -r .accelerator)
+            passed=$(echo "$summary" | jq -r .passed)
+            status=$(echo "$summary" | jq -r .status)
+            job_id=$(echo "$summary" | jq -r .job_id)
+            project=$(echo "$summary" | jq -r .project_name)
+            error=$(echo "$summary" | jq -r .error)
+
+            if [ "$passed" = "true" ]; then
+              icon="white_check_mark"
+            else
+              icon="x"
+              all_passed=false
+            fi
+
+            detail="*Status:* \`$status\`  *Job:* \`$job_id\`  *Project:* \`$project\`"
+            if [ "$passed" != "true" ] && [ -n "$error" ] && [ "$error" != "null" ] && [ "$error" != "" ]; then
+              detail="$detail\n*Error:* $error"
+            fi
+
+            blocks=$(echo "$blocks" | jq \
+              --arg acc "$acc" \
+              --arg icon "$icon" \
+              --arg detail "$detail" \
+              '. + [
+                {"type":"section","text":{"type":"mrkdwn","text":(":" + $icon + ": *" + $acc + "*\n" + $detail)}}
+              ]')
+          done
+
+          # Add workflow link
+          blocks=$(echo "$blocks" | jq \
+            --arg url "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}" \
+            '. + [{"type":"section","text":{"type":"mrkdwn","text":("<" + $url + "|View workflow run>")}}]')
+
+          if [ "$all_passed" != "true" ]; then
+            blocks=$(echo "$blocks" | jq '. + [{"type":"context","elements":[{"type":"mrkdwn","text":"Failed projects are preserved for investigation."}]}]')
+          fi
+
+          echo "all_passed=$all_passed" >> "$GITHUB_OUTPUT"
+
+          # Write payload to file to avoid shell escaping issues
+          jq -n --argjson blocks "$blocks" \
+            --arg channel "${{ secrets.SLACK_CHANNEL_ID }}" \
+            --arg all_passed "$all_passed" \
+            '{channel: $channel, blocks: $blocks} + (if $all_passed == "false" then {text: "<!here> Training Smoke Test Failed"} else {} end)' \
+            > /tmp/slack-payload.json
+
+      - name: Notify Slack
         uses: slackapi/slack-github-action@v2
         with:
           method: chat.postMessage
           token: ${{ secrets.SLACK_BOT_TOKEN }}
-          payload: |
-            {
-              "channel": "${{ secrets.SLACK_CHANNEL_ID }}",
-              "text": "<!here> Training Smoke Test Failed",
-              "blocks": [
-                {
-                  "type": "header",
-                  "text": {
-                    "type": "plain_text",
-                    "text": "Training Smoke Test Failed"
-                  }
-                },
-                {
-                  "type": "section",
-                  "text": {
-                    "type": "mrkdwn",
-                    "text": "<!here> *Status:* `${{ needs.smoke-test.outputs.status || 'N/A' }}`\n*Project:* `${{ needs.smoke-test.outputs.project_name || 'N/A' }}`\n*Project ID:* `${{ needs.smoke-test.outputs.project_id || 'N/A' }}`\n*Job ID:* `${{ needs.smoke-test.outputs.job_id || 'N/A' }}`\n*Error:* ${{ needs.smoke-test.outputs.error || 'N/A' }}"
-                  }
-                },
-                {
-                  "type": "section",
-                  "text": {
-                    "type": "mrkdwn",
-                    "text": "<${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}|View workflow run>"
-                  }
-                },
-                {
-                  "type": "context",
-                  "elements": [
-                    {
-                      "type": "mrkdwn",
-                      "text": "Failed projects are preserved for investigation."
-                    }
-                  ]
-                }
-              ]
-            }
+          payload-file-path: /tmp/slack-payload.json

@@ -233,12 +233,23 @@ def load_training_project(config_path: Path):
 # ---------------------------------------------------------------------------
 
 
-def submit_job(config_path: Path, project_name: str, remote: str = "baseten") -> dict:
+def submit_job(
+    config_path: Path,
+    project_name: str,
+    remote: str = "baseten",
+    accelerator: str | None = None,
+) -> dict:
     """Submit a training job with a custom project name."""
+    from truss.base.truss_config import AcceleratorSpec
     from truss_train import definitions
     from truss_train.public_api import push
 
     project = load_training_project(config_path)
+
+    # Override accelerator if requested
+    if accelerator:
+        project.job.compute.accelerator = AcceleratorSpec.model_validate(accelerator)
+        print(f"  Accelerator overridden to: {project.job.compute.accelerator}")
 
     # Override the project name with our smoke-test-prefixed name
     custom_project = definitions.TrainingProject(
@@ -772,6 +783,11 @@ def main():
         help="Age threshold for sweep (default: 2h)",
     )
     parser.add_argument(
+        "--accelerator",
+        type=str,
+        help="Override accelerator type and count (e.g., H200, H200:8)",
+    )
+    parser.add_argument(
         "--remote",
         default="smoke-tests",
         help="Truss remote name from .trussrc (default: smoke-tests)",
@@ -823,7 +839,7 @@ def main():
 
     try:
         # 1. Submit job (SDK — need structured IDs)
-        result = submit_job(config_path, project_name, remote=args.remote)
+        result = submit_job(config_path, project_name, remote=args.remote, accelerator=args.accelerator)
         project_id = result["training_project"]["id"]
         job_id = result["training_job"]["id"]
         summary["project_id"] = project_id
