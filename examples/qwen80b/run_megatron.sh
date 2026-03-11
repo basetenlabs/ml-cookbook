@@ -72,7 +72,7 @@ megatron sft \
   --lr 2e-4 \
   --lr_warmup_fraction 0.05 \
   --min_lr 1e-5 \
-  --max_length 2048 \
+  --max_length 16384 \
   --save_interval 5 \
   --log_interval 1 \
   --num_workers 8 \
