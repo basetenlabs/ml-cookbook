@@ -1,80 +1,49 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-if [[ -z "${HF_TOKEN:-}" && -z "${HUGGING_FACE_HUB_TOKEN:-}" && -z "${HUGGINGFACE_HUB_TOKEN:-}" ]]; then
-  echo "ERROR: HF token is not set. An HF token is required to upload final checkpoints to Hugging Face. Configure Baseten secret 'hf_access_token' and map it to HF_TOKEN in config.py."
-  exit 1
-fi
+# Validate HF token
+[[ -n "${HF_TOKEN:-}${HUGGING_FACE_HUB_TOKEN:-}${HUGGINGFACE_HUB_TOKEN:-}" ]] || {
+  echo "ERROR: HF token required for checkpoint upload"; exit 1
+}
 
-CACHE_ROOT="/tmp"
-export HF_HOME="${CACHE_ROOT}/huggingface"
-export HUGGINGFACE_HUB_CACHE="${HF_HOME}/hub"
-export TRANSFORMERS_CACHE="${HF_HOME}/transformers"
-export HF_DATASETS_CACHE="${HF_HOME}/datasets"
-export PIP_CACHE_DIR="${CACHE_ROOT}/pip"
-export TRITON_CACHE_DIR="${CACHE_ROOT}/triton-cache"
-export TORCH_EXTENSIONS_DIR="${CACHE_ROOT}/torch-extensions"
+# Environment
+export HF_HOME="/tmp/huggingface"
+export PYTORCH_CUDA_ALLOC_CONF="expandable_segments:True"
 export TORCH_NCCL_ASYNC_ERROR_HANDLING="1"
 export NCCL_SOCKET_IFNAME="^docker0,lo"
-export OMP_NUM_THREADS="4"
-export PYTORCH_CUDA_ALLOC_CONF="expandable_segments:True"
-export TORCHINDUCTOR_COMPILE_THREADS="1"
-export TORCH_DISABLE_ADDR2LINE=1
 export MASTER_PORT="29500"
+mkdir -p "$HF_HOME"
 
-mkdir -p "${HF_HOME}" "${PIP_CACHE_DIR}" "${TRITON_CACHE_DIR}" "${TORCH_EXTENSIONS_DIR}"
+# Install dependencies
+pip install -q --upgrade pip
+pip install -q "ms-swift[llm]==3.12.5" datasets huggingface_hub "transformers==4.57.1"
 
-SWIFT_VERSION="3.12.5"
-python -m pip install --upgrade pip
-python -m pip install "ms-swift[llm]==${SWIFT_VERSION}" datasets huggingface_hub
-python -m pip install "transformers==4.57.1" -U
+# Checkpoint directory
+checkpoint_dir="${BT_CHECKPOINT_DIR:-/mnt/ckpts}/qwen80b-instruct-megatron-lora"
+mkdir -p "$checkpoint_dir"
+printf '{}' > "$checkpoint_dir/args.json"
 
-MODEL_ID="Qwen/Qwen3-Next-80B-A3B-Instruct"
-CHECKPOINT_NAME="qwen80b-instruct-megatron-lora"
-
-checkpoint_dir="${BT_CHECKPOINT_DIR:-/mnt/ckpts}/${CHECKPOINT_NAME}"
-mkdir -p "${checkpoint_dir}"
-printf '{}' > "${checkpoint_dir}/args.json"
-
-echo "Launching ms-swift Megatron SFT for ${MODEL_ID}"
-echo "checkpoint_dir=${checkpoint_dir}"
-echo "BT_GROUP_SIZE=${BT_GROUP_SIZE} BT_NUM_GPUS=${BT_NUM_GPUS} BT_NODE_RANK=${BT_NODE_RANK}"
-echo "MASTER_ADDR=${BT_LEADER_ADDR} MASTER_PORT=${MASTER_PORT}"
-
-# ms-swift may write checkpoints into timestamped subdirs (e.g., v0-YYYYMMDD-HHMMSS).
-# Keep args.json mirrored there to avoid checkpoint save failures.
-ARGS_SYNC_PID=""
-sync_args_json_loop() {
-  while true; do
-    for run_dir in "${checkpoint_dir}"/v*-*; do
-      if [[ -d "${run_dir}" ]] && [[ ! -f "${run_dir}/args.json" ]]; then
-        cp "${checkpoint_dir}/args.json" "${run_dir}/args.json" || true
-      fi
-    done
-    sleep 1
+# Workaround: sync args.json to timestamped subdirs created by ms-swift
+(while true; do
+  for d in "$checkpoint_dir"/v*-*; do
+    [[ -d "$d" && ! -f "$d/args.json" ]] && cp "$checkpoint_dir/args.json" "$d/args.json" 2>/dev/null || true
   done
-}
+  sleep 1
+done) &
+trap "kill $! 2>/dev/null" EXIT
 
-sync_args_json_loop &
-ARGS_SYNC_PID=$!
-cleanup_args_sync() {
-  if [[ -n "${ARGS_SYNC_PID}" ]]; then
-    kill "${ARGS_SYNC_PID}" 2>/dev/null || true
-  fi
-}
-trap cleanup_args_sync EXIT
-
-set +e
-PYTORCH_CUDA_ALLOC_CONF="${PYTORCH_CUDA_ALLOC_CONF}" \
-NPROC_PER_NODE="${BT_NUM_GPUS}" \
-NNODES="${BT_GROUP_SIZE}" \
-NODE_RANK="${BT_NODE_RANK}" \
-MASTER_ADDR="${BT_LEADER_ADDR}" \
-MASTER_PORT="${MASTER_PORT}" \
+# Run training
+echo "Starting training: model=Qwen/Qwen3-Next-80B-A3B-Instruct nodes=${BT_GROUP_SIZE}x${BT_NUM_GPUS}gpu"
+train_exit=0
+NPROC_PER_NODE="$BT_NUM_GPUS" \
+NNODES="$BT_GROUP_SIZE" \
+NODE_RANK="$BT_NODE_RANK" \
+MASTER_ADDR="$BT_LEADER_ADDR" \
+MASTER_PORT="$MASTER_PORT" \
 megatron sft \
   --model Qwen/Qwen3-Next-80B-A3B-Instruct \
   --model_type qwen3_next \
-  --save "${checkpoint_dir}" \
+  --save "$checkpoint_dir" \
   --dataset winglian/pirate-ultrachat-10k \
   --template minimax_m2 \
   --check_model false \
@@ -117,59 +86,24 @@ megatron sft \
   --overlap_grad_reduce false \
   --overlap_param_gather false \
   --use_distributed_optimizer false \
-  --use_hf 1
-TRAIN_EXIT_CODE=$?
-set -e
+  --use_hf 1 || train_exit=$?
 
-export CHECKPOINT_DIR="${checkpoint_dir}"
-export HUB_MODEL_ID="baseten-admin/qwen80b-instruct-megatron-lora"
-NODE1_UPLOAD_DONE_MARKER="${CHECKPOINT_DIR}/.node1_upload_done"
-# Final checkpoint upload to Hugging Face Hub from rank 0.
-if [[ "${BT_NODE_RANK}" == "1" ]]; then
-  echo "Starting final HF Hub upload from ${CHECKPOINT_DIR} to ${HUB_MODEL_ID}..."
-  "${PY_BIN}" - <<'PY'
-import datetime
-import os
-from huggingface_hub import HfApi
+# Upload checkpoint (node 1 uploads, node 0 waits)
+hub_repo="baseten-admin/qwen80b-instruct-megatron-lora"
+upload_marker="$checkpoint_dir/.upload_done"
+script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
-checkpoint_dir = os.environ["CHECKPOINT_DIR"]
-repo_id = os.environ["HUB_MODEL_ID"]
-token = os.environ.get("HF_TOKEN") or os.environ.get("HUGGING_FACE_HUB_TOKEN") or os.environ.get("HUGGINGFACE_HUB_TOKEN")
-
-api = HfApi(token=token)
-api.create_repo(repo_id=repo_id, repo_type="model", private=True, exist_ok=True)
-api.upload_folder(
-    repo_id=repo_id,
-    repo_type="model",
-    folder_path=checkpoint_dir,
-    commit_message=f"Final checkpoint upload {datetime.datetime.utcnow().isoformat()}Z",
-)
-print(f"hf_upload_complete repo={repo_id} folder={checkpoint_dir}")
-PY
-  touch "${NODE1_UPLOAD_DONE_MARKER}"
-fi
-
-if [[ "${BT_NODE_RANK}" == "0" ]]; then
-  NODE0_WAIT_TIMEOUT_SECONDS="${NODE0_WAIT_TIMEOUT_SECONDS:-3600}"
-  NODE0_WAIT_POLL_SECONDS="${NODE0_WAIT_POLL_SECONDS:-5}"
-  echo "Node 0 waiting for node 1 upload marker: ${NODE1_UPLOAD_DONE_MARKER} (timeout ${NODE0_WAIT_TIMEOUT_SECONDS}s)"
+if [[ "$BT_NODE_RANK" == "1" ]]; then
+  python "$script_dir/upload_checkpoint.py" "$checkpoint_dir" "$hub_repo"
+  touch "$upload_marker"
+elif [[ "$BT_NODE_RANK" == "0" ]]; then
   waited=0
-  while [[ ! -f "${NODE1_UPLOAD_DONE_MARKER}" ]]; do
-    sleep "${NODE0_WAIT_POLL_SECONDS}"
-    waited=$(( waited + NODE0_WAIT_POLL_SECONDS ))
-    if (( waited >= NODE0_WAIT_TIMEOUT_SECONDS )); then
-      echo "Timed out waiting for node 1 upload completion marker."
-      exit 1
-    fi
-  done
-  echo "Node 1 upload marker found."
+  while [[ ! -f "$upload_marker" && $waited -lt 3600 ]]; do sleep 5; ((waited+=5)); done
+  [[ -f "$upload_marker" ]] || { echo "Upload timeout"; exit 1; }
 fi
 
-echo "[rank ${BT_NODE_RANK}] megatron exit code=${TRAIN_EXIT_CODE}"
-if [[ "${TRAIN_EXIT_CODE}" -ne 0 ]]; then
-  if [[ -d "${checkpoint_dir}" ]] && find "${checkpoint_dir}" -name "*.safetensors" -type f | grep -q .; then
-    echo "Training exited ${TRAIN_EXIT_CODE}, but safetensors exist in ${checkpoint_dir}; treating as success."
-    exit 0
-  fi
-  exit "${TRAIN_EXIT_CODE}"
+# Exit with training status (success if checkpoints exist despite non-zero exit)
+if [[ $train_exit -ne 0 ]]; then
+  find "$checkpoint_dir" -name "*.safetensors" -type f | grep -q . && exit 0
+  exit $train_exit
 fi
