@@ -45,7 +45,7 @@ megatron sft \
   --model_type qwen3_next \
   --save "$checkpoint_dir" \
   --dataset winglian/pirate-ultrachat-10k \
-  --template minimax_m2 \
+  --template qwen3_nothinking \
   --check_model false \
   --load_safetensors true \
   --train_type lora \
