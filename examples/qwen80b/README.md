@@ -1,13 +1,13 @@
-## Baseten MiniMax 2.5 Training (Multi-Node, Megatron)
+## Baseten Qwen 80b 2.5 Training
 
 ### Prerequisites
 https://github.com/basetenlabs/ml-cookbook/tree/main?tab=readme-ov-file#prerequisites
 
 This example uses megatron training
-- `run_megatron.sh` (Megatron path with TP/EP and FP8 training flags).
+- `run_megatron.sh`
 
 Current files:
-- `config.py`: Baseten training job config (2 nodes x 8 GPUs, H200 in current config).
+- `config.py`: Baseten training job config
 - `run_megatron.sh`: Megatron SFT launcher.
 
 ### Required Baseten secrets
