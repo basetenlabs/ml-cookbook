@@ -88,15 +88,17 @@ megatron sft \
   --use_distributed_optimizer false \
   --use_hf 1 || train_exit=$?
 
-# Upload checkpoint (node 1 uploads, node 0 waits)
+# Upload checkpoint (single-node: node 0 uploads; multi-node: node 1 uploads, node 0 waits)
 hub_repo="baseten-admin/qwen80b-instruct-megatron-lora"
 upload_marker="$checkpoint_dir/.upload_done"
 script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+node_rank="${BT_NODE_RANK:-0}"
+num_nodes="${BT_GROUP_SIZE:-1}"
 
-if [[ "$BT_NODE_RANK" == "1" ]]; then
+if [[ "$num_nodes" == "1" || "$node_rank" == "1" ]]; then
   python "$script_dir/upload_checkpoint.py" "$checkpoint_dir" "$hub_repo"
   touch "$upload_marker"
-elif [[ "$BT_NODE_RANK" == "0" ]]; then
+elif [[ "$node_rank" == "0" ]]; then
   waited=0
   while [[ ! -f "$upload_marker" && $waited -lt 3600 ]]; do sleep 5; ((waited+=5)); done
   [[ -f "$upload_marker" ]] || { echo "Upload timeout"; exit 1; }
