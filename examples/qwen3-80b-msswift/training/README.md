@@ -10,6 +10,7 @@ This example fine-tunes the [Qwen3-Coder-Next](https://huggingface.co/Qwen/Qwen3
 |-------|------|------------|----|----|----|-----------|------------------|--------------------|-----------|
 | 1     | 8    | 16K        | —  | —  | 8  | 64        | 4                | 105                | ~35s      |
 | 1     | 8    | 32K        | —  | —  | 8  | 8         | 2                | 121                | ~40s      |
+| 2     | 16   | 64K        | 2  | 2  | 4  | 8         | 2                | 106                | ~338s     |
 | 4     | 32   | 48K        | 2  | —  | 16 | 8         | 1                | 98                 | ~270s     |
 | 4     | 32   | 64K        | 2  | 2  | 4  | 8         | 1                | 118                | ~455s     |
 
@@ -36,11 +37,11 @@ truss train push training/config.py
 
 ### Scaling to longer sequences
 
-To train at longer sequence lengths, increase `node_count` in `config.py` and adjust parallelism flags in `run.sh`. For example, for 64K on 4 nodes:
+To train at longer sequence lengths, increase `node_count` in `config.py` and adjust parallelism flags in `run.sh`. For example, for 64K on 2 nodes:
 
 ```python
 # config.py
-node_count=4
+node_count=2
 ```
 
 ```bash
@@ -48,8 +49,8 @@ node_count=4
 --tensor_model_parallel_size 2
 --pipeline_model_parallel_size 2
 --expert_model_parallel_size 4
---global_batch_size 32
---recompute_num_layers 1
+--global_batch_size 4
+--recompute_num_layers 2
 --max_length 64000
 ```
 
