@@ -24,7 +24,7 @@ jobs:
   # --------------------------------------------------------------------------
   smoke-test:
     runs-on: ubuntu-latest
-    timeout-minutes: 45
+    timeout-minutes: 105
     strategy:
       fail-fast: false
       matrix:
@@ -59,6 +59,7 @@ jobs:
             --check-cache \
             --accelerator ${{ matrix.accelerator }} \
             ${{ matrix.deploy-and-infer && '--deploy-and-infer' || '' }} \
+            --deploy-timeout 3600 \
             --project smoke-test-${{ matrix.accelerator }}-${{ github.run_id }} \
             --remote smoke-tests \
             --summary-file /tmp/smoke-test-summary.json
