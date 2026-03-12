@@ -13,6 +13,7 @@ This example fine-tunes the [Qwen3-Coder-Next](https://huggingface.co/Qwen/Qwen3
 | 2     | 16   | 64K        | 2  | 2  | 4  | 8         | 2                | 106                | ~338s     |
 | 4     | 32   | 48K        | 2  | —  | 16 | 8         | 1                | 98                 | ~270s     |
 | 4     | 32   | 64K        | 2  | 2  | 4  | 8         | 1                | 118                | ~455s     |
+| 4     | 32   | 128K       | 2  | 4  | 4  | 8         | 2                | 134                | ~663s     |
 
 ## Prerequisites
 
