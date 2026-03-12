@@ -23,6 +23,7 @@ jobs:
   # Smoke Test: Submit qwen3-0.6b-axolotl, validate lifecycle + checkpoints + cache
   # --------------------------------------------------------------------------
   smoke-test:
+    name: ${{ matrix.name }}
     runs-on: ubuntu-latest
     timeout-minutes: 105
     strategy:
@@ -173,6 +174,8 @@ jobs:
             '. + [{"type":"section","text":{"type":"mrkdwn","text":("<" + $url + "|View workflow run>")}}]')
 
           if [ "$all_passed" != "true" ]; then
+            # Prepend @here mention so it actually fires in the channel (text field is ignored when blocks are present)
+            blocks=$(echo "$blocks" | jq '[{"type":"section","text":{"type":"mrkdwn","text":"<!here> *Training Smoke Test Failed*"}}] + .')
             blocks=$(echo "$blocks" | jq '. + [{"type":"context","elements":[{"type":"mrkdwn","text":"Failed projects are preserved for investigation."}]}]')
           fi
 

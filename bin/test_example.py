@@ -433,6 +433,7 @@ def check_cache(project_name: str, remote: str):
     total_bytes = data.get("total_size_bytes", sum(f.get("size_bytes", 0) for f in files))
 
     assert total_files > 0, "Cache summary returned but has no files"
+    assert total_bytes > 0, f"Cache has {total_files} file(s) but total size is 0 bytes"
 
     print(f"  Cache populated: {total_files} file(s), {total_bytes} bytes total")
     print("  Cache validation PASSED")
