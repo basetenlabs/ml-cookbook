@@ -10,7 +10,7 @@ else
 fi
 
 SAVE_FULL_MODEL=false
-checkpoint_dir="$BT_CHECKPOINT_DIR/qwen3-coder-next-lora-8-16"
+checkpoint_dir="$BT_CHECKPOINT_DIR/qwen3-coder-next-lora"
 
 PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True NPROC_PER_NODE=$BT_NUM_GPUS NNODES=$BT_GROUP_SIZE NODE_RANK=$BT_NODE_RANK MASTER_ADDR=$BT_LEADER_ADDR megatron sft \
     --model Qwen/Qwen3-Coder-Next \
