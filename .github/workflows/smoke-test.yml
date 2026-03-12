@@ -31,8 +31,10 @@ jobs:
         include:
           - accelerator: H100
             deploy-and-infer: true
+            name: qwen3-0.6b-axolotl-h100
           - accelerator: H200
-            deploy-and-infer: false
+            deploy-and-infer: true
+            name: qwen3-0.6b-axolotl-h200
     steps:
       - uses: actions/checkout@v4
       - uses: astral-sh/setup-uv@v4
@@ -47,7 +49,7 @@ jobs:
           api_key = ${{ secrets.SMOKE_TESTS_API_KEY }}
           EOF
 
-      - name: Run smoke test (${{ matrix.accelerator }})
+      - name: Run smoke test (${{ matrix.name }})
         run: |
           uv run bin/test_example.py \
             examples/qwen3-0.6b-axolotl/training/config.py \
