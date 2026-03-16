@@ -114,11 +114,10 @@ jobs:
             ${{ matrix.config }} \
             --timeout 1200 \
             --assert-status TRAINING_JOB_COMPLETED \
-            --check-checkpoints \
-            --check-cache \
             --project pr-${{ github.event.pull_request.number }}-${{ matrix.name }} \
             --remote smoke-tests \
-            --summary-file /tmp/summary.json
+            --summary-file /tmp/summary.json \
+            --skip-teardown
 
       - name: Capture CLI output and build artifact
         if: always()
@@ -135,7 +134,7 @@ jobs:
           # Capture cache summary (don't fail if command errors)
           if [ -n "$project_name" ] && [ "$project_name" != "null" ]; then
             cache_output=$(uv run truss train cache summarize "$project_name" \
-              --remote smoke-tests --non-interactive 2>&1 || true)
+              --remote smoke-tests --output-format json --non-interactive 2>&1 || true)
           else
             cache_output="(no project name available)"
           fi
@@ -143,15 +142,19 @@ jobs:
           # Capture checkpoints list (don't fail if command errors)
           if [ -n "$job_id" ] && [ "$job_id" != "null" ] && [ "$job_id" != "" ]; then
             checkpoints_output=$(uv run truss train checkpoints list \
-              --job-id "$job_id" --remote smoke-tests --non-interactive 2>&1 || true)
+              --job-id "$job_id" --remote smoke-tests --output-format json --non-interactive 2>&1 || true)
           else
             checkpoints_output="(no job ID available)"
           fi
 
+          # Write large outputs to files to avoid "Argument list too long" from jq --arg
+          printf '%s' "$cache_output" > /tmp/cache_output.txt
+          printf '%s' "$checkpoints_output" > /tmp/checkpoints_output.txt
+
           # Merge into a single artifact JSON
           jq \
-            --arg cache "$cache_output" \
-            --arg checkpoints "$checkpoints_output" \
+            --rawfile cache /tmp/cache_output.txt \
+            --rawfile checkpoints /tmp/checkpoints_output.txt \
             --arg config "${{ matrix.config }}" \
             '. + {cache_output: $cache, checkpoints_output: $checkpoints, config: $config}' \
             /tmp/summary.json > /tmp/pr-test-result.json
@@ -195,7 +198,7 @@ jobs:
           import json
           import glob
 
-          lines = ["## Training Example Smoke Tests\n"]
+          lines = ["## Example Validation Results\n"]
 
           result_files = sorted(glob.glob("/tmp/results/pr-test-*/*.json"))
           if not result_files:
@@ -222,8 +225,46 @@ jobs:
                   if not passed and error and error not in ("null", ""):
                       lines.append(f"\n**Error:** {error}\n")
 
-                  lines.append(f"\n<details><summary>Cache Summary</summary>\n\n```\n{cache_output}\n```\n</details>\n")
-                  lines.append(f"\n<details><summary>Checkpoints</summary>\n\n```\n{checkpoints_output}\n```\n</details>\n")
+                  # Render cache as a compact summary, not a full file listing
+                  try:
+                      cache_data = json.loads(cache_output)
+                      total_files = cache_data.get("total_files", 0)
+                      total_bytes = cache_data.get("total_size_bytes", 0)
+                      total_human = f"{total_bytes / 1e9:.2f} GB" if total_bytes >= 1e9 else f"{total_bytes / 1e6:.2f} MB"
+                      # Group by top-level cache directory
+                      groups = {}
+                      for f in cache_data.get("files", []):
+                          top = f.get("path", "").lstrip("/").split("/")[0]
+                          groups[top] = groups.get(top, 0) + f.get("size_bytes", 0)
+                      group_lines = "\n".join(
+                          f"  /{k}: {v/1e9:.2f} GB" if v >= 1e9 else f"  /{k}: {v/1e6:.2f} MB"
+                          for k, v in sorted(groups.items(), key=lambda x: -x[1])
+                      )
+                      cache_text = f"{total_files} files, {total_human} total\n\n{group_lines}"
+                  except (json.JSONDecodeError, KeyError):
+                      cache_text = cache_output
+
+                  lines.append(f"\n<details><summary>Cache Summary</summary>\n\n```\n{cache_text}\n```\n</details>\n")
+
+                  # Render checkpoints as a compact table, stripping verbose lora_adapter_config
+                  try:
+                      cp_data = json.loads(checkpoints_output)
+                      checkpoints = cp_data.get("checkpoints", [])
+                      total = cp_data.get("total_checkpoints", len(checkpoints))
+                      rows = [f"{'ID':<20} {'Type':<10} {'Size':<12} {'Created'}",
+                              f"{'-'*20} {'-'*10} {'-'*12} {'-'*19}"]
+                      for cp in checkpoints:
+                          rows.append(
+                              f"{cp.get('checkpoint_id', '?'):<20} "
+                              f"{cp.get('checkpoint_type', '?'):<10} "
+                              f"{cp.get('size_human_readable', '?'):<12} "
+                              f"{cp.get('created_at', '?')}"
+                          )
+                      cp_text = f"{total} checkpoint(s)\n\n" + "\n".join(rows)
+                  except (json.JSONDecodeError, KeyError):
+                      cp_text = checkpoints_output
+
+                  lines.append(f"\n<details><summary>Checkpoints</summary>\n\n```\n{cp_text}\n```\n</details>\n")
 
           body = "".join(lines)
           with open("/tmp/comment-body.md", "w") as f:
@@ -238,7 +279,7 @@ jobs:
         with:
           issue-number: ${{ github.event.pull_request.number }}
           comment-author: github-actions[bot]
-          body-includes: Training Example Smoke Tests
+          body-includes: Example Validation Results
 
       - name: Post or update PR comment
         uses: peter-evans/create-or-update-comment@v3

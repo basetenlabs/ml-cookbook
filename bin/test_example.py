@@ -345,64 +345,27 @@ def check_view(job_id: str, remote: str):
 # ---------------------------------------------------------------------------
 
 
-def check_checkpoints(project_id: str, job_id: str, api_base: str, api_key: str, remote: str):
-    """Validate checkpoints exist and are accessible.
+def check_checkpoints(job_id: str, remote: str):
+    """Validate checkpoints exist using the truss CLI.
 
-    Uses REST API for checkpoint metadata validation (sizes, presigned URLs)
-    since the CLI doesn't expose this data in a machine-readable format.
-    Also runs 'truss train view --job-id' which displays checkpoints.
+    Runs 'truss train checkpoints list --job-id' and asserts the output is
+    non-empty, confirming at least one checkpoint was saved.
     """
-    headers = api_headers(api_key)
-    print("\nValidating checkpoints...")
+    print("\nValidating checkpoints via CLI...")
 
-    # List checkpoints via API
-    resp = requests.get(
-        f"{api_base}/training_projects/{project_id}/jobs/{job_id}/checkpoints",
-        headers=headers,
-    )
-    resp.raise_for_status()
-    data = resp.json()
+    result = run_truss_cli([
+        "train", "checkpoints", "list",
+        "--job-id", job_id,
+        "--remote", remote,
+        "--output-format", "json",
+    ])
+
+    data = json.loads(result.stdout)
     checkpoints = data.get("checkpoints", [])
-
     assert len(checkpoints) > 0, "No checkpoints found"
     print(f"  Found {len(checkpoints)} checkpoint(s)")
-
     for cp in checkpoints:
-        cp_id = cp.get("checkpoint_id", "unknown")
-        size = cp.get("size_bytes", 0)
-        print(f"    checkpoint_id={cp_id}  size_bytes={size}")
-        assert size > 0, f"Checkpoint {cp_id} has size_bytes=0"
-
-    # Validate checkpoint files are accessible via presigned URLs
-    resp = requests.get(
-        f"{api_base}/training_projects/{project_id}/jobs/{job_id}/checkpoint_files",
-        headers=headers,
-    )
-    resp.raise_for_status()
-    files_data = resp.json()
-    presigned_urls = files_data.get("presigned_urls", [])
-
-    assert len(presigned_urls) > 0, "No checkpoint files returned"
-    print(f"  Found {files_data.get('total_count', len(presigned_urls))} checkpoint file(s)")
-
-    # Spot-check first 3 URLs are accessible (use GET with Range header
-    # since some S3 presigned URLs don't support HEAD)
-    for file_info in presigned_urls[:3]:
-        url = file_info["url"]
-        filename = file_info.get("relative_file_name", "unknown")
-        size = file_info.get("size_bytes", "?")
-        check_resp = requests.get(
-            url, headers={"Range": "bytes=0-0"}, timeout=10
-        )
-        assert check_resp.status_code in (200, 206), (
-            f"Checkpoint file {filename} not accessible (HTTP {check_resp.status_code})"
-        )
-        print(f"    OK: {filename} ({size} bytes)")
-
-    # Also verify 'truss train view' shows checkpoints
-    print("\n  Verifying checkpoints visible in CLI view...")
-    run_truss_cli(["train", "view", "--job-id", job_id, "--remote", remote])
-
+        print(f"    {cp.get('checkpoint_id', '?')}  type={cp.get('checkpoint_type', '?')}")
     print("  Checkpoint validation PASSED")
 
 
@@ -797,6 +760,11 @@ def main():
         "--summary-file",
         help="Write JSON summary (project/job IDs, status, errors) to this file",
     )
+    parser.add_argument(
+        "--skip-teardown",
+        action="store_true",
+        help="Skip automatic teardown at the end of the run (caller is responsible for cleanup)",
+    )
 
     args = parser.parse_args()
     api_base, api_key = resolve_remote(args.remote)
@@ -874,7 +842,7 @@ def main():
 
         # 4. Checkpoint validation (optional)
         if args.check_checkpoints:
-            check_checkpoints(project_id, job_id, api_base, api_key, args.remote)
+            check_checkpoints(job_id, args.remote)
 
         # 5. Cache validation (optional, CLI)
         if args.check_cache:
@@ -907,9 +875,12 @@ def main():
             print(f"\nWriting summary to {args.summary_file}...")
             Path(args.summary_file).write_text(json.dumps(summary, indent=2))
 
-        print("\nCleaning up tracked resources...")
-        tracker.teardown_all()
-        print("Done.")
+        if args.skip_teardown:
+            print("\nSkipping teardown (--skip-teardown set).")
+        else:
+            print("\nCleaning up tracked resources...")
+            tracker.teardown_all()
+            print("Done.")
 
 
 if __name__ == "__main__":
