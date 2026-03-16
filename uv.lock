@@ -561,7 +561,7 @@ dependencies = [
 [package.metadata]
 requires-dist = [
     { name = "requests", specifier = ">=2.28" },
-    { name = "truss", specifier = ">=0.14.1" },
+    { name = "truss", specifier = "==0.15.5" },
 ]
 
 [[package]]
@@ -956,7 +956,7 @@ wheels = [
 
 [[package]]
 name = "truss"
-version = "0.14.1"
+version = "0.15.5"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "aiofiles" },
@@ -987,9 +987,9 @@ dependencies = [
     { name = "truss-transfer" },
     { name = "watchfiles" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/d0/aa/8bddc19b3008ecbcc3f253bc9543c53a5a5582bb03e81b674e6e5f6946d2/truss-0.14.1.tar.gz", hash = "sha256:62de307916fb292134703d561206936b753ef656f7e218ebdcb7c298c2ebbca7", size = 466481, upload-time = "2026-02-25T01:14:05.331Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/d3/11/f14260890192da7ddb452ec3cf4463952470ca5a34babe45624ceb5cb798/truss-0.15.5.tar.gz", hash = "sha256:7d507d099b0b3f7007cc414aab5be9762499268a7f7f3293cae6d5ff1f872f33", size = 485242, upload-time = "2026-03-16T17:36:06.524Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/dc/96/c4048924e81e515c5f910a595298720c9d2804a390afb4746ddba78cb194/truss-0.14.1-py3-none-any.whl", hash = "sha256:67b5f868a763aff7cf94e462a3ec52a0648a3e937cb84f0a36614e435fdfbf00", size = 575606, upload-time = "2026-02-25T01:14:03.337Z" },
+    { url = "https://files.pythonhosted.org/packages/77/32/c62a3ee030ccc4cd37e7be32f7823f279eb624be7e143a88bf5ad70f2004/truss-0.15.5-py3-none-any.whl", hash = "sha256:b43a05a0bca002a2b95d266afa61a96618c4b78b17a132775c5cb7fc77bb61d0", size = 596778, upload-time = "2026-03-16T17:36:04.264Z" },
 ]
 
 [[package]]
