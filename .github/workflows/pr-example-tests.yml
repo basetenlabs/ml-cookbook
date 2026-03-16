@@ -1,0 +1,249 @@
+name: PR Training Example Tests
+
+# SECURITY: pull_request trigger (not pull_request_target) — secrets are
+# available for same-repo branch PRs but NOT fork PRs. Safe for public repos.
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'examples/**'
+      - 'recipes/**'
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  # --------------------------------------------------------------------------
+  # Job 1: Detect which examples/recipes changed and build a test matrix
+  # --------------------------------------------------------------------------
+  detect-changes:
+    runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.build-matrix.outputs.matrix }}
+      has-changes: ${{ steps.build-matrix.outputs.has-changes }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Build test matrix
+        id: build-matrix
+        run: |
+          changed=$(git diff origin/${{ github.base_ref }}...HEAD --name-only)
+          echo "Changed files:"
+          echo "$changed"
+
+          entries=()
+          declare -A seen
+
+          while IFS= read -r file; do
+            [ -z "$file" ] && continue
+
+            config_path=""
+            name=""
+
+            if [[ "$file" =~ ^examples/([^/]+)/ ]]; then
+              example="${BASH_REMATCH[1]}"
+              config_path="examples/${example}/training/config.py"
+              name="examples--${example}"
+            elif [[ "$file" =~ ^recipes/([^/]+)/([^/]+)/ ]]; then
+              part_a="${BASH_REMATCH[1]}"
+              part_b="${BASH_REMATCH[2]}"
+              config_path="recipes/${part_a}/${part_b}/config.py"
+              name="recipes--${part_a}--${part_b}"
+            else
+              continue
+            fi
+
+            # Dedup by config_path
+            if [ "${seen[$config_path]+_}" ]; then
+              continue
+            fi
+            seen[$config_path]=1
+
+            # Skip if config.py doesn't exist on disk
+            if [ ! -f "$config_path" ]; then
+              echo "Skipping $config_path (not found on disk)"
+              continue
+            fi
+
+            entries+=("{\"config\":\"$config_path\",\"name\":\"$name\"}")
+          done <<< "$changed"
+
+          if [ ${#entries[@]} -eq 0 ]; then
+            echo "No changed configs found — skipping tests"
+            echo "has-changes=false" >> "$GITHUB_OUTPUT"
+            echo 'matrix=[]' >> "$GITHUB_OUTPUT"
+          else
+            matrix="[$(IFS=,; echo "${entries[*]}")]"
+            echo "Matrix: $matrix"
+            echo "has-changes=true" >> "$GITHUB_OUTPUT"
+            echo "matrix=$matrix" >> "$GITHUB_OUTPUT"
+          fi
+
+  # --------------------------------------------------------------------------
+  # Job 2: Run each changed example against the smoke-tests Baseten account
+  # --------------------------------------------------------------------------
+  run-test:
+    needs: detect-changes
+    if: needs.detect-changes.outputs.has-changes == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    strategy:
+      fail-fast: false
+      matrix:
+        include: ${{ fromJson(needs.detect-changes.outputs.matrix) }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v4
+      - run: uv sync
+
+      - name: Configure truss remote
+        run: |
+          cat > ~/.trussrc <<EOF
+          [smoke-tests]
+          remote_provider = baseten
+          remote_url = ${{ secrets.SMOKE_TESTS_REMOTE_URL }}
+          api_key = ${{ secrets.SMOKE_TESTS_API_KEY }}
+          EOF
+
+      - name: Run test (${{ matrix.config }})
+        run: |
+          uv run bin/test_example.py \
+            ${{ matrix.config }} \
+            --timeout 1200 \
+            --assert-status TRAINING_JOB_COMPLETED \
+            --check-checkpoints \
+            --check-cache \
+            --project pr-${{ github.event.pull_request.number }}-${{ matrix.name }} \
+            --remote smoke-tests \
+            --summary-file /tmp/summary.json
+
+      - name: Capture CLI output and build artifact
+        if: always()
+        run: |
+          # Ensure summary file exists even if the test crashed before submission
+          if [ ! -f /tmp/summary.json ]; then
+            echo '{"project_name":"pr-${{ github.event.pull_request.number }}-${{ matrix.name }}","project_id":"","job_id":"","status":"UNKNOWN","error":"Summary file not written (crash before job submission?)","passed":false}' \
+              > /tmp/summary.json
+          fi
+
+          job_id=$(jq -r .job_id /tmp/summary.json)
+          project_name=$(jq -r .project_name /tmp/summary.json)
+
+          # Capture cache summary (don't fail if command errors)
+          if [ -n "$project_name" ] && [ "$project_name" != "null" ]; then
+            cache_output=$(uv run truss train cache summarize "$project_name" \
+              --remote smoke-tests --non-interactive 2>&1 || true)
+          else
+            cache_output="(no project name available)"
+          fi
+
+          # Capture checkpoints list (don't fail if command errors)
+          if [ -n "$job_id" ] && [ "$job_id" != "null" ] && [ "$job_id" != "" ]; then
+            checkpoints_output=$(uv run truss train checkpoints list \
+              --job-id "$job_id" --remote smoke-tests --non-interactive 2>&1 || true)
+          else
+            checkpoints_output="(no job ID available)"
+          fi
+
+          # Merge into a single artifact JSON
+          jq \
+            --arg cache "$cache_output" \
+            --arg checkpoints "$checkpoints_output" \
+            --arg config "${{ matrix.config }}" \
+            '. + {cache_output: $cache, checkpoints_output: $checkpoints, config: $config}' \
+            /tmp/summary.json > /tmp/pr-test-result.json
+
+          echo "Artifact contents:"
+          jq '{config,status,job_id,project_name,passed,error}' /tmp/pr-test-result.json
+
+      - name: Upload test result
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: pr-test-${{ matrix.name }}
+          path: /tmp/pr-test-result.json
+
+      - name: Cleanup
+        if: always()
+        run: |
+          uv run bin/test_example.py --teardown \
+            --project pr-${{ github.event.pull_request.number }}-${{ matrix.name }} \
+            --remote smoke-tests
+
+  # --------------------------------------------------------------------------
+  # Job 3: Post (or update) a PR comment with results from all matrix jobs
+  # --------------------------------------------------------------------------
+  comment-pr:
+    needs: [detect-changes, run-test]
+    if: always() && needs.detect-changes.outputs.has-changes == 'true'
+    runs-on: ubuntu-latest
+    permissions:
+      pull-requests: write
+    steps:
+      - name: Download all test results
+        uses: actions/download-artifact@v4
+        with:
+          pattern: pr-test-*
+          path: /tmp/results
+
+      - name: Build PR comment body
+        run: |
+          python3 - <<'EOF'
+          import json
+          import glob
+
+          lines = ["## Training Example Smoke Tests\n"]
+
+          result_files = sorted(glob.glob("/tmp/results/pr-test-*/*.json"))
+          if not result_files:
+              lines.append("\n_No test result artifacts found — all jobs may have failed before writing results._\n")
+          else:
+              for result_file in result_files:
+                  with open(result_file) as f:
+                      r = json.load(f)
+
+                  config = r.get("config", "unknown")
+                  passed = r.get("passed", False)
+                  status = r.get("status", "UNKNOWN")
+                  job_id = r.get("job_id", "") or ""
+                  project_name = r.get("project_name", "") or ""
+                  error = r.get("error", "") or ""
+                  cache_output = r.get("cache_output", "") or ""
+                  checkpoints_output = r.get("checkpoints_output", "") or ""
+
+                  icon = "✅" if passed else "❌"
+
+                  lines.append(f"\n### {icon} `{config}`\n")
+                  lines.append(f"**Status:** `{status}` | **Job:** `{job_id}` | **Project:** `{project_name}`\n")
+
+                  if not passed and error and error not in ("null", ""):
+                      lines.append(f"\n**Error:** {error}\n")
+
+                  lines.append(f"\n<details><summary>Cache Summary</summary>\n\n```\n{cache_output}\n```\n</details>\n")
+                  lines.append(f"\n<details><summary>Checkpoints</summary>\n\n```\n{checkpoints_output}\n```\n</details>\n")
+
+          body = "".join(lines)
+          with open("/tmp/comment-body.md", "w") as f:
+              f.write(body)
+
+          print(f"Comment body: {len(body)} chars, {body.count(chr(10))} lines")
+          EOF
+
+      - name: Find existing comment
+        uses: peter-evans/find-comment@v3
+        id: find-comment
+        with:
+          issue-number: ${{ github.event.pull_request.number }}
+          comment-author: github-actions[bot]
+          body-includes: Training Example Smoke Tests
+
+      - name: Post or update PR comment
+        uses: peter-evans/create-or-update-comment@v3
+        with:
+          comment-id: ${{ steps.find-comment.outputs.comment-id }}
+          issue-number: ${{ github.event.pull_request.number }}
+          body-path: /tmp/comment-body.md
+          edit-mode: replace
