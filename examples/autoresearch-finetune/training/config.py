@@ -2,6 +2,7 @@ from pathlib import Path
 
 from truss_train import definitions, WeightsSource
 from truss.base.truss_config import AcceleratorSpec
+from truss.remote.remote_factory import RemoteFactory
 
 # ---------------------------------------------------------------------------
 # Read settings.env (parent dir of training/)
@@ -34,17 +35,32 @@ BASE_IMAGE = "baseten/megatron:py3.11.11-cuda12.8.1-torch2.8.0-fa2.8.1-megatron0
 _model = _settings.get("MODEL", "Qwen/Qwen3-8B")
 _model_mount = f"/app/models/{_model}"
 
+_env_vars = {
+    "HF_TOKEN": definitions.SecretReference(name="hf_access_token"),
+    "MODEL": _model_mount,
+    "MODEL_TYPE": _settings.get("MODEL_TYPE", ""),
+    "DATASET": _settings.get("DATASET", "winglian/pirate-ultrachat-10k"),
+    "EVAL_SPLIT_RATIO": _settings.get("EVAL_SPLIT_RATIO", "0.01"),
+}
+
+# Auto-detect wandb: include secret ref only if wandb_api_key exists in Baseten
+def _has_baseten_secret(name: str) -> bool:
+    try:
+        _remote = _settings.get("REMOTE", "baseten")
+        api = RemoteFactory.create(_remote)._api
+        secrets = api.get_all_secrets().get("secrets", [])
+        return any(s["name"] == name for s in secrets)
+    except Exception:
+        return False
+
+if _has_baseten_secret("wandb_api_key"):
+    _env_vars["WANDB_API_KEY"] = definitions.SecretReference(name="wandb_api_key")
+
 training_runtime = definitions.Runtime(
     start_commands=[
         "chmod +x ./run.sh && ./run.sh",
     ],
-    environment_variables={
-        "HF_TOKEN": definitions.SecretReference(name="hf_access_token"),
-        "MODEL": _model_mount,
-        "MODEL_TYPE": _settings.get("MODEL_TYPE", ""),
-        "DATASET": _settings.get("DATASET", "winglian/pirate-ultrachat-10k"),
-        "EVAL_SPLIT_RATIO": _settings.get("EVAL_SPLIT_RATIO", "0.01"),
-    },
+    environment_variables=_env_vars,
     cache_config=definitions.CacheConfig(enabled=True),
     checkpointing_config=definitions.CheckpointingConfig(enabled=True),
 )

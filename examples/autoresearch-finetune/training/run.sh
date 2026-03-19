@@ -10,6 +10,12 @@ if [ -n "${MODEL_TYPE:-}" ]; then
     MODEL_TYPE_FLAG="--model_type $MODEL_TYPE"
 fi
 
+# Build optional wandb flags
+WANDB_FLAGS=""
+if [ -n "${WANDB_API_KEY:-}" ]; then
+    WANDB_FLAGS="--wandb_project autoresearch-finetune --wandb_exp_name lr${LR}_rank${LORA_RANK}_bs${GLOBAL_BATCH_SIZE}"
+fi
+
 START_TIME=$(date +%s)
 
 # Run LoRA fine-tuning via MS-Swift/Megatron
@@ -55,6 +61,7 @@ megatron sft \
     --dataset_num_proc $DATASET_NUM_PROC \
     --attention_backend flash \
     --use_hf 1 \
+    $WANDB_FLAGS \
     2>&1 | tee /tmp/megatron_output.log
 
 MEGATRON_EXIT_CODE=${PIPESTATUS[0]}

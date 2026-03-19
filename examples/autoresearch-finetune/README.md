@@ -39,6 +39,14 @@ Once you're satisfied with the settings, launch Claude Code (or any Agent harnes
 claude --dangerously-skip-permissions
 ```
 
+Then, give the agent its instructions:
+
+```
+Read program.md and run the autoresearch loop. Start with a baseline experiment
+using the default hyperparameters, then iteratively search for better configurations
+by hill-climbing on validation loss.
+```
+
 The agent reads `program.md` for its instructions, creates a git branch for the run, submits a baseline experiment with the default hyperparameters, and then begins iterating. Each experiment modifies `training/experiment.env`, commits the change, pushes a training job to Baseten, and logs the outcome to `results.tsv`. Improvements are kept on the branch; regressions are discarded via git reset.
 
 ## Changing the model or dataset
