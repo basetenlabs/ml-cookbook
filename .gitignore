@@ -1,4 +1,21 @@
 __pycache__/
+*.pyc
+
+# Training data
+*.parquet
+*.arrow
+data/
+datasets/
+
+# Model weights and checkpoints
+*.safetensors
+*.bin
+*.pt
+*.pth
+*.gguf
+checkpoints/
+output/
+lora-output/
 
 # Distribution / packaging
 .Python
