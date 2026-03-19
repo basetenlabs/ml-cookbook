@@ -9,7 +9,7 @@ Under the hood, each experiment runs [MS-Swift](https://github.com/modelscope/ms
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="../../images/autoresearch-darkmode.png">
   <source media="(prefers-color-scheme: light)" srcset="../../images/autoresearch-lightmode.png">
-  <img alt="Autoresearch fine-tuning loop diagram" src="../../images/autoresearch-lightmode.png">
+  <img alt="Autoresearch fine-tuning loop diagram" src="../../images/autoresearch-lightmode.png" width="600">
 </picture>
 
 The default configuration fine-tunes Qwen3-8B on the [pirate-ultrachat-10k](https://huggingface.co/datasets/winglian/pirate-ultrachat-10k) instruction dataset using 2 H100 GPUs. A baseline run takes roughly 12 minutes (including container startup and 100 training iterations), and in our testing, 14 experiments over a few hours reduced validation loss by 8.6%, progressing from a LoRA rank of 8 with a 1e-4 learning rate to rank 64 with 8e-4 and a doubled batch size.
