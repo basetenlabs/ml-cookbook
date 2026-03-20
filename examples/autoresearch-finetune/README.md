@@ -53,6 +53,26 @@ By default, the agent runs two experiments per iteration. Setting `PARALLEL_JOBS
 
 To cap total spend, combine parallel jobs with a budget. For example, `PARALLEL_JOBS=2` with `TOTAL_BUDGET=20` runs up to 2 concurrent jobs at a time across 20 total experiments, consuming at most 40 GPU-job-equivalents.
 
+## Controlling the agent's scope
+
+By default, the agent only modifies `training/experiment.env` — it searches hyperparameters but can't change the training code. You can widen the agent's scope by adding instructions to your prompt:
+
+```
+Read program.md and run the autoresearch loop. You can also modify run.sh.
+```
+
+This is useful when you want the agent to go beyond hyperparameter tuning and experiment with the training recipe itself — adding new CLI flags, changing the optimizer, modifying data preprocessing, or restructuring the training pipeline.
+
+The available scope levels:
+
+| Prompt addition | What the agent can change |
+|----------------|---------------------------|
+| *(default, no addition)* | `experiment.env` only — hyperparameters |
+| *"You can also modify run.sh"* | Training entrypoint — add flags, preprocessing, custom logging |
+| *"Full access to training code"* | Everything — rewrite training logic, change optimizers, add files |
+
+In all cases, the hill-climbing loop stays the same: modify, commit, submit, measure, keep or discard. Only the search space changes. This mirrors Karpathy's [autoresearch](https://github.com/karpathy/autoresearch), where the agent has full control over `train.py` and can invent new training techniques — you can grant the same level of freedom here.
+
 ## Serving your best checkpoint
 
 Every training job saves its LoRA checkpoint to `$BT_CHECKPOINT_DIR/lora-output`, and Baseten stores this checkpoint when the job completes. That means once the autoresearch loop has converged on a configuration you're satisfied with, you're one command away from turning that checkpoint into a live inference endpoint.
@@ -69,7 +89,7 @@ For more advanced workflows, including deploying custom model architectures or c
 
 ## File reference
 
-The agent modifies only `training/experiment.env` during the experiment loop. Every other file is read-only:
+By default, the agent modifies only `training/experiment.env` during the experiment loop. The user can grant wider scope through their prompt (see "Controlling the agent's scope" above).
 
 - **`training/experiment.env`** contains the tunable hyperparameters: LoRA rank and alpha, learning rate, batch size, sequence length, recomputation settings, and data loading workers. Each variable maps directly to a `megatron sft` CLI flag.
 - **`training/run.sh`** sources `experiment.env`, constructs the `megatron sft` command, and after training completes, parses the final validation loss and peak GPU memory from the Megatron logs into a structured results block.
