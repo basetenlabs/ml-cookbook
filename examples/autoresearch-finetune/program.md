@@ -29,13 +29,20 @@ truss train push training/config.py --non-interactive --remote $REMOTE --team $T
 
 Where `$REMOTE` and `$TEAM` come from `settings.env`. If `TEAM` is empty, omit the `--team` flag.
 
-**What you can do:**
-- Modify `training/experiment.env` - this is the only file you edit. Everything is fair game: LoRA rank, learning rate, batch size, sequence length, recompute settings, etc.
+**What you can do (default scope):**
+- Modify `training/experiment.env` - hyperparameters and training config. Everything is fair game: LoRA rank, learning rate, batch size, sequence length, recompute settings, etc.
 
-**What you can't do:**
+**What you can't do (default scope):**
 - Modify `training/run.sh`, `training/config.py`, or `settings.env` during the experiment loop.
 - Add new files to the training directory.
 - Install new packages. You can only use what's in the baseten/megatron base image.
+
+**User-granted scope overrides**: The user's prompt can widen your scope beyond `experiment.env`. For example:
+- *"You can also modify run.sh"* — unlocks changes to the training entrypoint (add flags, change the megatron sft command, add preprocessing steps, etc.).
+- *"You can modify train.py"* or *"full access to training code"* — Karpathy-style: you can rewrite the training logic, change the optimizer, modify architecture, add custom loss functions, etc.
+- *"You can add new files"* — lets you create helper scripts, custom datasets, or configuration files in the training directory.
+
+When the user grants wider scope, treat those files the same way you treat `experiment.env`: commit changes, submit, measure, keep or discard. The hill-climbing loop stays the same — only the search space changes. Always prefer the minimal change that improves val_loss.
 
 **The goal is simple: get the lowest `val_loss`.** Everything in `experiment.env` is fair game. The only constraint is that the job runs without crashing and finishes within a reasonable time.
 
@@ -169,7 +176,7 @@ Each `truss train push` bundles the working directory at submission time, so all
 
 ## Key rules
 
-- **Only modify `training/experiment.env`** - never touch `run.sh`, `config.py`, or `settings.env`.
+- **Default: only modify `training/experiment.env`** - unless the user's prompt explicitly grants wider scope (see "User-granted scope overrides" above).
 - Always use `--non-interactive` with all Truss commands. Include `--team $TEAM` if `TEAM` is set in `settings.env`.
 - Log every experiment to `results.tsv` with status: `keep`, `discard`, or `crash`.
 - On crash: attempt diagnosis from logs, try to fix, and if unfixable, skip and move on.
