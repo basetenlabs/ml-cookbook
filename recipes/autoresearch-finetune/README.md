@@ -84,3 +84,7 @@ Use `--dry-run` to inspect the deployment config before pushing. For more advanc
 - **`prompt.md`** — the agent's instruction set. Tells it what to optimize, how to submit and monitor experiments, and how to track results with git. This is the source of truth for agent behavior.
 - **`training/run.sh`** — the training script the agent edits. Contains the `megatron sft` command with all hyperparameters inline. The results parsing block at the end (below the "DO NOT EDIT" line) extracts `val_loss`, `total_seconds`, and `peak_vram_mb` from the logs.
 - **`training/config.py`** — defines the Baseten training job: base image, model weights, GPU allocation, and environment variables. Edit the constants at the top for your setup; the rest generally doesn't need to change.
+
+## Private HF Model
+
+If you'd like to use a private huggingface model, make sure to include add a huggingface token to your Baseten secrets as `hf_access_token` and include `"HF_TOKEN": definitions.SecretReference("hf_access_token")` in your `environment_variables` within your `config.py`

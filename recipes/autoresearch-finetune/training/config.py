@@ -21,7 +21,6 @@ MODEL_MOUNT = f"/app/models/{MODEL}"
 training_runtime = definitions.Runtime(
     start_commands=["chmod +x ./run.sh && ./run.sh"],
     environment_variables={
-        "HF_TOKEN": definitions.SecretReference(name="hf_access_token"),
         "MODEL": MODEL_MOUNT,
         "DATASET": DATASET,
         "EVAL_SPLIT_RATIO": EVAL_SPLIT_RATIO,
@@ -41,7 +40,6 @@ training_job = definitions.TrainingJob(
         WeightsSource(
             source=f"hf://{MODEL}",
             mount_location=MODEL_MOUNT,
-            auth={"auth_method": "CUSTOM_SECRET", "auth_secret_name": "hf_access_token"},
         ),
     ],
 )
