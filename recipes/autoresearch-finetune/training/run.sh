@@ -26,7 +26,7 @@ megatron sft \
     --weight_decay 0.01 \
     --micro_batch_size 1 \
     --global_batch_size 16 \
-    --train_iters 300 \
+    --train_iters 50 \
     --eval_iters 10 \
     --eval_interval 5 \
     --finetune true \
