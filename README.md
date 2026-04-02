@@ -38,7 +38,7 @@ Before getting started, ensure you have the following:
 - A Baseten account. [Sign up here](https://baseten.co/signup) if you don't have one.
   - Add any access tokens, API keys (example: Hugging Face access token), passwords to securely access credentials from your models in [secrets](https://app.baseten.co/settings/secrets).
   - This is required to access models on Huggingface that have gated access. More information on setting up Huggingface access tokens can be found [here](https://huggingface.co/docs/hub/en/security-tokens).
-- Python 3.8 to 3.11 installed. [Conda](https://docs.conda.io/projects/conda/en/latest/user-guide/getting-started.html) env recommended.
+- Python 3.9 to 3.14 installed. [Conda](https://docs.conda.io/projects/conda/en/latest/user-guide/getting-started.html) env recommended.
 
 ### Run the examples 
 
