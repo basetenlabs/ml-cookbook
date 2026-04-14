@@ -45,6 +45,7 @@ my_training_job = definitions.TrainingJob(
     image=definitions.Image(base_image=BASE_IMAGE),
     compute=training_compute,
     runtime=training_runtime,
+    enable_baseten_workdir=True,
 )
 
 
