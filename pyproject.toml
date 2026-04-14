@@ -6,5 +6,5 @@ readme = "README.md"
 requires-python = ">=3.12.2"
 dependencies = [
     "truss==0.16.0",
-    "requests>=2.28",
+    "requests>=2.33.0",
 ]
