@@ -1,0 +1,35 @@
+# torch / torchaudio / torchcodec are pinned to the +cu128 wheels published on
+# the PyTorch index so they line up with the base image
+# (pytorch/pytorch:2.7.0-cuda12.8-... in config.py) and with hosts whose NVIDIA
+# driver only supports CUDA 12.8.
+#   - Without the +cu128 pin pip resolves to the PyPI default, which now ships
+#     against CUDA 12.9 and fails at runtime with:
+#       "NVIDIA driver on your system is too old (found version 12080)".
+#   - torchaudio must be pinned alongside torch because qwen-tts declares
+#     `torchaudio` unpinned in its requires_dist; pip would otherwise grab the
+#     latest 2.9.x wheel and crash at import with an ABI mismatch:
+#       "undefined symbol: torch_library_impl".
+#   - torchcodec 0.4 is the latest release that targets torch 2.7
+#     (see https://github.com/meta-pytorch/torchcodec compatibility table).
+#
+# flash-attn is required because sft_12hz.py loads the model with
+# `attn_implementation="flash_attention_2"`. The pytorch:2.7.0-cuda12.8-cudnn9-runtime
+# image has no nvcc, so we can't build flash-attn from source; we install the
+# matching prebuilt wheel from the Dao-AILab GitHub release. The wheel choice
+# must match python (cp311), CUDA major (cu12), torch (2.7), and CXX11 ABI.
+# PyTorch 2.7+ Linux CUDA wheels (manylinux_2_28) are CXX11_ABI=TRUE, so use
+# the cxx11abiTRUE variant. If you bump the base image's python or torch, the
+# matching wheel must be updated accordingly (see
+# https://github.com/Dao-AILab/flash-attention/releases).
+--extra-index-url https://download.pytorch.org/whl/cu128
+torch==2.7.0+cu128
+torchaudio==2.7.0+cu128
+torchcodec==0.4.0+cu128
+flash-attn @ https://github.com/Dao-AILab/flash-attention/releases/download/v2.8.3/flash_attn-2.8.3+cu12torch2.7cxx11abiTRUE-cp311-cp311-linux_x86_64.whl
+datasets>=2.14.0
+huggingface-hub>=0.16.0
+hf-transfer>=0.1.6
+pyarrow>=14.0.0
+qwen-tts
+soundfile>=0.12.0
+librosa>=0.10.0
