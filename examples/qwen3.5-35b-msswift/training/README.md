@@ -21,7 +21,6 @@ Recompute sweep on the same 1×8H200 setup (packed 128K):
 | **2** | **131** | **34** | Sweet spot — fastest config that fits |
 | 1 (every layer) | 122.5 | 50 | Most memory headroom; 1.5× slower |
 
-For comparison, `2 × 8 H200 with PP=2 + recompute=4` also works at ~71 s/iter — but it's strictly worse than the 1-node config above because PP=2 pays pipeline-bubble + cross-node communication overhead (we're at `global_batch_size=8 / micro_batch_size=1`, so only 8 microbatches per pipeline schedule).
 
 ### Unpacked (sequences ≤ longest LongAlign-10k sample, ~64K in practice)
 
@@ -84,9 +83,7 @@ The `config_*.py` files each set `node_count` and the parallelism env vars. The 
 |------|-------|-----|---------|--------|
 | `config.py` | 1 | n/a (hydrate) | n/a | ✅ pre-warms deps + model cache |
 | `config_debug.py` | 1 | n/a (sleep ∞) | n/a | ✅ SSH-enabled debug pod (`session_provider=SSH`) |
-| `config_debug_2node.py` | 2 | n/a (sleep ∞) | n/a | ✅ 2-node SSH debug pod (used to verify 2-node 128K) |
 | `config_1node_128k.py` | 1 | 128K | false | ✅ runs (LongAlign samples ≤64K so 128K not exercised) |
-| `config_2node_128k.py` | 2 | 128K | **true** | ✅ **verified packed 128K end-to-end** |
 
 ## Prerequisites
 
