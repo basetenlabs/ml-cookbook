@@ -10,15 +10,17 @@ set -eux
 PKG_DIR=$BT_PROJECT_CACHE_DIR/qwen3_6_27b_packages
 export PYTHONPATH=$PKG_DIR:${PYTHONPATH:-}
 
-SWIFT_OK=$(python -c "import swift; print(swift.__version__)" 2>/dev/null || echo "0.0.0")
-TF_OK=$(python -c "import transformers; print(transformers.__version__)" 2>/dev/null || echo "0.0.0")
-HUB_OK=$(python -c "from huggingface_hub import is_offline_mode; print('ok')" 2>/dev/null || echo "no")
-BRIDGE_OK=$(python -c "import importlib.metadata; print(importlib.metadata.version('mcore-bridge'))" 2>/dev/null || echo "no")
-if [ "$(printf '%s\n4.1.0' "$SWIFT_OK" | sort -V | head -1)" != "4.1.0" ] \
+MISSING="not installed"
+SWIFT_OK=$(python -c "import swift; print(swift.__version__)" 2>/dev/null || echo "$MISSING")
+TF_OK=$(python -c "import transformers; print(transformers.__version__)" 2>/dev/null || echo "$MISSING")
+HUB_OK=$(python -c "from huggingface_hub import is_offline_mode; print('ok')" 2>/dev/null || echo "$MISSING")
+BRIDGE_OK=$(python -c "import importlib.metadata; print(importlib.metadata.version('mcore-bridge'))" 2>/dev/null || echo "$MISSING")
+if [ "$SWIFT_OK" = "$MISSING" ] \
+   || [ "$(printf '%s\n4.1.0' "$SWIFT_OK" | sort -V | head -1)" != "4.1.0" ] \
    || ! python -c "import transformers; assert transformers.__version__.startswith('5.2.')" 2>/dev/null \
    || [ "$HUB_OK" != "ok" ] \
-   || [ "$BRIDGE_OK" = "no" ]; then
-    echo "Upgrading deps (swift=$SWIFT_OK tf=$TF_OK hub_ok=$HUB_OK bridge=$BRIDGE_OK)"
+   || [ "$BRIDGE_OK" = "$MISSING" ]; then
+    echo "Upgrading deps (swift=$SWIFT_OK tf=$TF_OK hub=$HUB_OK bridge=$BRIDGE_OK)"
     pip install --target=$PKG_DIR --no-deps \
         "ms-swift>=4.1.0" \
         "transformers==5.2.*" \
