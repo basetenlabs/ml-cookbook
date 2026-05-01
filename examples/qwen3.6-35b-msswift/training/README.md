@@ -13,9 +13,14 @@ The measurements below are split between **packed** (sequences truly fill `max_l
 | Seq length | Min compute | TP | PP | EP | CP | Recompute | Peak GiB (sw / nvidia-smi) | Steady s/iter |
 |------------|-------------|----|----|----|----|-----------|----------------------------|---------------|
 | 128K       | **1 × 8 H200** | 1 | 1 | 8 | 1 | **2** (full) | 131 / — | **~34** |
-| 262K       | **2 × 8 H200** (PP=2) | 1 | 2 | 8 | 1 | 1 (full) | TBD (in-flight) | TBD |
+| 262K       | **≥ 2 × 8 H200, config TBD** | — | — | — | — | — | — | — |
 
-1-node packed 262K **OOMs** even with `recompute_num_layers=1` (262K activations are ~2× 128K's, which already peaked near 95% of an H200). `config_1node_262k.py` is kept as a documented dead end. `config_2node_262k.py` carries the verified PP=2 path — final numbers will be filled in when the in-flight run lands.
+**262K is still open.** What we tried:
+
+- **1-node, PP=1 EP=8, recompute=1** → OOMs on rank 7 (262K activations are ~2× 128K's, which already peaked near 95% of an H200). `config_1node_262k.py` documents this dead end.
+- **2-node, PP=2 EP=8, recompute=1** → OOMs on node 1's pipeline stage. The LM head's `seq × vocab × 2 B` ≈ 65 GB logits tensor + the 1F1B microbatch buffer overwhelm stage 2.
+
+Next experiment to try (recommended in `config_2node_262k.py`): **TP=2 + PP=2 + EP=4** (still 2 nodes). TP=2 splits the LM head logits along the vocab dim, halving the dominant tensor on stage 2; EP drops to 4 because TP×PP=4 leaves DP=4 on 16 GPUs. megatron-core 0.16.1 already lifted the old `num_query_groups=2 ⇒ TP≤2` cap. Untested as of this commit.
 
 Recompute sweep on the same 1×8H200 setup (packed 128K):
 
