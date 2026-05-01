@@ -13,7 +13,9 @@ The measurements below are split between **packed** (sequences truly fill `max_l
 | Seq length | Min compute | TP | PP | EP | CP | Recompute | Peak GiB (sw / nvidia-smi) | Steady s/iter |
 |------------|-------------|----|----|----|----|-----------|----------------------------|---------------|
 | 128K       | **1 × 8 H200** | 1 | 1 | 8 | 1 | **2** (full) | 131 / — | **~34** |
-| 262K       | TBD          | — | — | — | — | — | — | — |
+| 262K       | **2 × 8 H200** (PP=2) | 1 | 2 | 8 | 1 | 1 (full) | TBD (in-flight) | TBD |
+
+1-node packed 262K **OOMs** even with `recompute_num_layers=1` (262K activations are ~2× 128K's, which already peaked near 95% of an H200). `config_1node_262k.py` is kept as a documented dead end. `config_2node_262k.py` carries the verified PP=2 path — final numbers will be filled in when the in-flight run lands.
 
 Recompute sweep on the same 1×8H200 setup (packed 128K):
 

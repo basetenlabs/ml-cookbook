@@ -4,9 +4,13 @@ from truss.base import truss_config
 project_name = "Qwen3.6-35B-A3B Long Context - ML Cookbook"
 BASE_IMAGE = "baseten/megatron:py3.11.11-cuda12.8.1-torch2.8.0-fa2.8.1-megatron0.14.1-msswift3.10.3"
 
-# 1-node packed 262K attempt. 128K already runs at peak ~131 GiB / 141 cap with
-# recompute=2; 262K doubles activations, so this is expected to be tight or OOM
-# without going to recompute=1.
+# 1-node packed 262K — VERIFIED TO OOM. Kept here as a documented dead end so
+# readers don't waste compute trying it. Even with recompute_num_layers=1
+# (most aggressive: recompute every layer), 262K activations OOM ranks 3 and 7
+# during the first iter on a single 8x H200 node. The 128K config already
+# peaks at 131 GiB / 141 cap with recompute=2, so 262K's 2x activations don't
+# fit even with the recompute lever maxed out. Use config_2node_262k.py for
+# the verified PP=2 path.
 training_runtime = definitions.Runtime(
     start_commands=["chmod +x ./run.sh && ./run.sh"],
     environment_variables={
