@@ -7,7 +7,7 @@ set -eux
 # without the training launch at the end.
 # ---------------------------------------------------------------------------
 
-PKG_DIR=$BT_PROJECT_CACHE_DIR/qwen3_5_packages
+PKG_DIR=$BT_PROJECT_CACHE_DIR/qwen3_6_packages
 export PYTHONPATH=$PKG_DIR:${PYTHONPATH:-}
 
 SWIFT_OK=$(python -c "import swift; print(swift.__version__)" 2>/dev/null || echo "0.0.0")
@@ -45,11 +45,11 @@ export HF_HOME=$BT_PROJECT_CACHE_DIR/huggingface
 mkdir -p $HF_HOME/hub
 python -c "
 from huggingface_hub import snapshot_download
-snapshot_download('Qwen/Qwen3.5-35B-A3B')
+snapshot_download('Qwen/Qwen3.6-35B-A3B')
 "
 
 # Drop a helper file in $HOME so anyone SSHing in can `source` it.
-cat > $HOME/qwen35_env.sh <<EOF
+cat > $HOME/qwen36_env.sh <<EOF
 export PYTHONPATH=$PKG_DIR:\${PYTHONPATH:-}
 export HF_HOME=$HF_HOME
 export USE_MCORE_GDN=0
@@ -58,12 +58,12 @@ export NPROC_PER_NODE=\${BT_NUM_GPUS:-8}
 export NNODES=\${BT_GROUP_SIZE:-1}
 export NODE_RANK=\${BT_NODE_RANK:-0}
 export MASTER_ADDR=\${BT_LEADER_ADDR:-127.0.0.1}
-echo "Qwen3.5 debug env loaded. Try: megatron sft --help"
+echo "Qwen3.6 debug env loaded. Try: megatron sft --help"
 EOF
-chmod +x $HOME/qwen35_env.sh
+chmod +x $HOME/qwen36_env.sh
 
 echo "===================================================================="
-echo "Debug pod ready. SSH in, then run:  source ~/qwen35_env.sh"
+echo "Debug pod ready. SSH in, then run:  source ~/qwen36_env.sh"
 echo "===================================================================="
 
 # Sleep forever so the pod stays up for SSH.

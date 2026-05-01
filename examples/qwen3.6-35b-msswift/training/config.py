@@ -1,10 +1,10 @@
 from truss_train import definitions
 from truss.base import truss_config
 
-project_name = "Qwen3.5-35B-A3B Long Context - ML Cookbook"
+project_name = "Qwen3.6-35B-A3B Long Context - ML Cookbook"
 
 # Same image used by the qwen3-80b-msswift example. run.sh upgrades ms-swift
-# (3.10.3 → >=4.1.0) and transformers (→ 5.2.*) at runtime, since Qwen3.5
+# (3.10.3 → >=4.1.0) and transformers (→ 5.2.*) at runtime, since Qwen3.6
 # requires those for model registration + the Megatron-native GatedDeltaNet.
 # It also installs flash-linear-attention + causal-conv1d, which the GDN
 # sublayers depend on.

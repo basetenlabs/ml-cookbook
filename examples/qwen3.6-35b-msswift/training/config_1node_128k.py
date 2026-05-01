@@ -1,7 +1,7 @@
 from truss_train import definitions
 from truss.base import truss_config
 
-project_name = "Qwen3.5-35B-A3B Long Context - ML Cookbook"
+project_name = "Qwen3.6-35B-A3B Long Context - ML Cookbook"
 BASE_IMAGE = "baseten/megatron:py3.11.11-cuda12.8.1-torch2.8.0-fa2.8.1-megatron0.14.1-msswift3.10.3"
 
 training_runtime = definitions.Runtime(
