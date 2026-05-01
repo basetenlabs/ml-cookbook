@@ -17,7 +17,7 @@ HYDRATE_ONLY=${HYDRATE_ONLY:-0}
 # GatedDeltaNet (linear attention) and the remaining 10 are full attention.
 # That makes flash-linear-attention + causal-conv1d hard requirements, and we
 # need ms-swift >= 4.1.0 / transformers == 5.2.* to register the model.
-PKG_DIR=$BT_PROJECT_CACHE_DIR/qwen3_6_packages
+PKG_DIR=$BT_PROJECT_CACHE_DIR/qwen3_6_27b_packages
 export PYTHONPATH=$PKG_DIR:${PYTHONPATH:-}
 
 # We use --no-deps to keep pip from yanking torch / megatron-core out from
@@ -70,10 +70,10 @@ export HF_HOME=$BT_PROJECT_CACHE_DIR/huggingface
 mkdir -p $HF_HOME/hub
 # Don't pass cache_dir — HF defaults to $HF_HOME/hub/, which is the layout
 # huggingface_hub.snapshot_download (and ms-swift's loader) reads at runtime.
-echo "Snapshotting Qwen/Qwen3.6-35B-A3B into $HF_HOME/hub/"
+echo "Snapshotting Qwen/Qwen3.6-27B into $HF_HOME/hub/"
 python -c "
 from huggingface_hub import snapshot_download
-snapshot_download('Qwen/Qwen3.6-35B-A3B')
+snapshot_download('Qwen/Qwen3.6-27B')
 "
 
 # In HYDRATE_ONLY mode we stop here — deps and model are now in the project
@@ -90,7 +90,7 @@ SAVE_FULL_MODEL=false
 # Tag the checkpoint dir with the seq length / node count of this experiment
 # so parallel runs don't clobber each other inside the shared project cache.
 EXP_TAG=${EXP_TAG:-default}
-checkpoint_dir="$BT_CHECKPOINT_DIR/qwen3.6-35b-a3b-lora-${EXP_TAG}"
+checkpoint_dir="$BT_CHECKPOINT_DIR/qwen3.6-27b-lora-${EXP_TAG}"
 
 # ---------------------------------------------------------------------------
 # GatedDeltaNet implementation
@@ -112,14 +112,10 @@ EVAL_INTERVAL=${EVAL_INTERVAL:-25}
 RECOMPUTE_NUM_LAYERS=${RECOMPUTE_NUM_LAYERS:-4}
 
 # Parallelism knobs (overridable per experiment via env)
-TP=${TP:-1}
+TP=${TP:-8}
 PP=${PP:-1}
-EP=${EP:-8}
+EP=${EP:-1}
 CP=${CP:-1}
-
-# Packing: set to "true" only with USE_MCORE_GDN=1 (Megatron-native GDN can
-# handle packed sequence boundaries; transformers fallback can't).
-PACKING=${PACKING:-false}
 
 # ---------------------------------------------------------------------------
 # Training
@@ -143,7 +139,7 @@ NNODES=$BT_GROUP_SIZE \
 NODE_RANK=$BT_NODE_RANK \
 MASTER_ADDR=$BT_LEADER_ADDR \
 megatron sft \
-    --model Qwen/Qwen3.6-35B-A3B \
+    --model Qwen/Qwen3.6-27B \
     --use_hf 1 \
     --output_dir $checkpoint_dir \
     --dataset 'zai-org/LongAlign-10k' \
@@ -166,8 +162,7 @@ megatron sft \
     --moe_expert_capacity_factor 2 \
     --micro_batch_size 1 \
     --global_batch_size 8 \
-    --packing $PACKING \
-    --packing_length $MAX_LENGTH \
+    --packing false \
     --recompute_granularity full \
     --recompute_method uniform \
     --recompute_num_layers $RECOMPUTE_NUM_LAYERS \

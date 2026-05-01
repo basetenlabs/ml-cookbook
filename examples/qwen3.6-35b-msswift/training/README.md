@@ -82,9 +82,8 @@ The `config_*.py` files each set `node_count` and the parallelism env vars. The 
 
 | File | Nodes | Seq | Packing | Status |
 |------|-------|-----|---------|--------|
-| `config.py` | 1 | n/a (hydrate) | n/a | ✅ pre-warms deps + model cache |
-| `config_debug.py` | 1 | n/a (sleep ∞) | n/a | ✅ SSH-enabled debug pod (`session_provider=SSH`) |
-| `config_1node_128k.py` | 1 | 128K | false | ✅ runs (LongAlign samples ≤64K so 128K not exercised) |
+| `config_1node_128k.py` | 1 | 128K | true | ✅ verified packed end-to-end |
+| `config_debug.py` | 1 | n/a (sleep ∞) | n/a | SSH-enabled debug pod for interactive iteration |
 
 ## Prerequisites
 
@@ -104,9 +103,8 @@ truss train push training/config_1node_128k.py --team baseten-dogfood --remote b
 
 `run.sh` checks the project cache first and only re-installs / re-downloads on a cold cache. First run is ~15 min (deps + 70 GB model + train); subsequent runs in the same project skip straight to training.
 
-**Optional helpers** (only useful in specific scenarios):
+**Optional helper:**
 
-- `config.py` — runs the dep install + model snapshot then exits (`HYDRATE_ONLY=1`). Use when fanning out **parallel** experiments — otherwise multiple jobs would race writing into the shared `$BT_PROJECT_CACHE_DIR`.
 - `config_debug.py` — 1-node `sleep infinity` pod with SSH enabled, for interactive iteration:
   ```bash
   truss train push training/config_debug.py --team baseten-dogfood --remote baseten
