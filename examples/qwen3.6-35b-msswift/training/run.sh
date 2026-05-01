@@ -4,82 +4,27 @@ set -eux
 # ---------------------------------------------------------------------------
 # Mode switch
 # ---------------------------------------------------------------------------
-# HYDRATE_ONLY=1 only (a) installs runtime deps into the project cache and
-# (b) snapshots Qwen3.6-35B-A3B into HF_HOME, then exits. Subsequent
-# experiment runs start from a warm cache and skip the ~70GB download.
-# Set HYDRATE_ONLY=0 (default) for real training runs.
+# HYDRATE_ONLY=1 only snapshots Qwen3.6-35B-A3B into HF_HOME, then exits.
+# Subsequent experiment runs start from a warm cache and skip the ~70GB
+# download. Set HYDRATE_ONLY=0 (default) for real training runs.
 HYDRATE_ONLY=${HYDRATE_ONLY:-0}
 
 # ---------------------------------------------------------------------------
-# Dependency upgrades (cached in BT_PROJECT_CACHE_DIR across runs)
-# ---------------------------------------------------------------------------
-# Qwen3.6-35B-A3B is a hybrid linear-attention MoE: ~30 of its 40 layers are
-# GatedDeltaNet (linear attention) and the remaining 10 are full attention.
-# That makes flash-linear-attention + causal-conv1d hard requirements, and we
-# need ms-swift >= 4.1.0 / transformers == 5.2.* to register the model.
-PKG_DIR=$BT_PROJECT_CACHE_DIR/qwen3_6_packages
-export PYTHONPATH=$PKG_DIR:${PYTHONPATH:-}
-
-# We use --no-deps to keep pip from yanking torch / megatron-core out from
-# under us, but that means we have to pin the auxiliary deps that transformers
-# 5.2 actually wants. Notably: huggingface-hub 1.x (transformers 5.2.0 requires
-# >=1.3.0,<2.0 and the new 1.x API exposes is_offline_mode again), tokenizers
-# 0.22-0.23, safetensors >=0.4.3, accelerate >=1.1, plus peft / liger-kernel
-# from the upstream Qwen3.6 best-practice doc.
-MISSING="not installed"
-SWIFT_OK=$(python -c "import swift; print(swift.__version__)" 2>/dev/null || echo "$MISSING")
-TF_OK=$(python -c "import transformers; print(transformers.__version__)" 2>/dev/null || echo "$MISSING")
-HUB_OK=$(python -c "from huggingface_hub import is_offline_mode; print('ok')" 2>/dev/null || echo "$MISSING")
-BRIDGE_OK=$(python -c "import importlib.metadata; print(importlib.metadata.version('mcore-bridge'))" 2>/dev/null || echo "$MISSING")
-# Short-circuit on "$MISSING" *before* the sort -V gates so non-version
-# sentinels never reach the version comparison.
-if [ "$SWIFT_OK" = "$MISSING" ] \
-   || [ "$(printf '%s\n4.1.0' "$SWIFT_OK" | sort -V | head -1)" != "4.1.0" ] \
-   || ! python -c "import transformers; assert transformers.__version__.startswith('5.2.')" 2>/dev/null \
-   || [ "$HUB_OK" != "ok" ] \
-   || [ "$BRIDGE_OK" = "$MISSING" ]; then
-    echo "Upgrading ms-swift / transformers / huggingface_hub / mcore-bridge (swift=$SWIFT_OK tf=$TF_OK hub=$HUB_OK bridge=$BRIDGE_OK)"
-    pip install --target=$PKG_DIR --no-deps \
-        "ms-swift>=4.1.0" \
-        "transformers==5.2.*" \
-        "huggingface_hub>=1.3.0,<2.0" \
-        "tokenizers>=0.22.0,<=0.23.0" \
-        "safetensors>=0.4.3" \
-        "accelerate>=1.1.0" \
-        "peft>=0.13" \
-        "liger-kernel" \
-        "qwen_vl_utils>=0.0.14" \
-        "mcore-bridge>=1.0.2" \
-        "torchao>=0.16" \
-        "tilelang" \
-        "megatron-core>=0.16"
-fi
-if ! python -c "from fla.ops.utils import *; import causal_conv1d" 2>/dev/null; then
-    # PyPI's latest flash-linear-attention (0.5.0) is missing fla.ops.utils,
-    # which transformers 5.2's Qwen3.6 implementation requires. Install from
-    # GitHub main (yields fla 0.5.1+).
-    echo "Installing flash-linear-attention (git) + causal-conv1d"
-    pip install --target=$PKG_DIR --no-deps \
-        "git+https://github.com/fla-org/flash-linear-attention.git"
-    pip install --target=$PKG_DIR --no-deps --no-build-isolation \
-        "git+https://github.com/Dao-AILab/causal-conv1d"
-fi
-
 # Hydrate model cache (idempotent; HF will skip files already on disk).
+# ---------------------------------------------------------------------------
+# All Python deps (ms-swift 4.1.3, transformers 5.6.2, mcore-bridge 1.2.1,
+# megatron-core 0.16.1, flash-linear-attention 0.5.0) ship in the base image,
+# so there's nothing to pip-install here — just pre-warm the model.
 export HF_HOME=$BT_PROJECT_CACHE_DIR/huggingface
 mkdir -p $HF_HOME/hub
-# Don't pass cache_dir — HF defaults to $HF_HOME/hub/, which is the layout
-# huggingface_hub.snapshot_download (and ms-swift's loader) reads at runtime.
 echo "Snapshotting Qwen/Qwen3.6-35B-A3B into $HF_HOME/hub/"
 python -c "
 from huggingface_hub import snapshot_download
 snapshot_download('Qwen/Qwen3.6-35B-A3B')
 "
 
-# In HYDRATE_ONLY mode we stop here — deps and model are now in the project
-# cache and subsequent experiment runs will start from a warm state.
 if [ "$HYDRATE_ONLY" = "1" ]; then
-    echo "HYDRATE_ONLY=1: deps installed, model snapshotted. Exiting."
+    echo "HYDRATE_ONLY=1: model snapshotted. Exiting."
     exit 0
 fi
 
@@ -95,13 +40,11 @@ checkpoint_dir="$BT_CHECKPOINT_DIR/qwen3.6-35b-a3b-lora-${EXP_TAG}"
 # ---------------------------------------------------------------------------
 # GatedDeltaNet implementation
 # ---------------------------------------------------------------------------
-# We install megatron-core 0.16.1 into PKG_DIR (overriding the image's 0.14.1),
-# so the Megatron-native GDN path *would* work. We still default to
-# USE_MCORE_GDN=0 (transformers fallback) because (a) it's the path actually
-# verified end-to-end on H200, (b) packing/TP-on-GDN isn't required for our
-# current configs (TP=1, packing=false). Flip to 1 if you want packing or TP>1
-# across the GatedDeltaNet sublayers.
-export USE_MCORE_GDN=${USE_MCORE_GDN:-0}
+# The image's mcore-bridge 1.2.1 + megatron-core 0.16.1 both support the
+# Megatron-native GDN path, which is required for packing and TP-on-GDN.
+# Set USE_MCORE_GDN=0 only if you specifically need the transformers GDN
+# fallback (e.g. comparing implementations).
+export USE_MCORE_GDN=${USE_MCORE_GDN:-1}
 
 # ---------------------------------------------------------------------------
 # Run-mode-dependent knobs
@@ -109,7 +52,7 @@ export USE_MCORE_GDN=${USE_MCORE_GDN:-0}
 MAX_LENGTH=${MAX_LENGTH:-131072}
 TRAIN_ITERS=${TRAIN_ITERS:-50}
 EVAL_INTERVAL=${EVAL_INTERVAL:-25}
-RECOMPUTE_NUM_LAYERS=${RECOMPUTE_NUM_LAYERS:-4}
+RECOMPUTE_NUM_LAYERS=${RECOMPUTE_NUM_LAYERS:-2}
 
 # Parallelism knobs (overridable per experiment via env)
 TP=${TP:-1}
@@ -117,26 +60,10 @@ PP=${PP:-1}
 EP=${EP:-8}
 CP=${CP:-1}
 
-# Packing: set to "true" only with USE_MCORE_GDN=1 (Megatron-native GDN can
-# handle packed sequence boundaries; transformers fallback can't).
-PACKING=${PACKING:-false}
+# Packing: with USE_MCORE_GDN=1 the Megatron-native GDN can handle packed
+# sequence boundaries; with USE_MCORE_GDN=0 (transformers fallback) it can't.
+PACKING=${PACKING:-true}
 
-# ---------------------------------------------------------------------------
-# Training
-# ---------------------------------------------------------------------------
-# Verified configuration (1 node, 8x H200, 128K seq len, LoRA rank 8):
-# - EP=8 shards 256 experts across 8 GPUs (the obvious win).
-# - TP=1 because we're on the transformers GDN impl which can't TP the GDN
-#   sublayers; with --num-query-groups=2 the dense path is also TP-limited.
-# - CP=1: GDN+CP requires further mcore-bridge / Megatron-LM main work that
-#   isn't on this image. We compensate with full recompute.
-# - recompute_granularity=full / uniform / num_layers=4 keeps activation
-#   memory bounded. The 10 full-attention layers dominate at long context.
-# - optimizer_cpu_offload + use_precision_aware_optimizer pushes optimizer
-#   state to host RAM. Standard for long-context MoE LoRA.
-# - --packing false: each LongAlign-10k sample processed at its actual length.
-#   At 128K this gave swift-reported peak ~30 GiB, nvidia-smi peak 98 GiB on
-#   rank 0 (non-expert tensors), 39-86 GiB on EP ranks; ~40s/iter steady.
 PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True \
 NPROC_PER_NODE=$BT_NUM_GPUS \
 NNODES=$BT_GROUP_SIZE \
@@ -190,20 +117,3 @@ megatron sft \
     --use_precision_aware_optimizer true \
     --padding_free false \
     --merge_lora $SAVE_FULL_MODEL
-
-# Only check for safetensors on the last node
-if [ $BT_NODE_RANK -ne $(($BT_GROUP_SIZE - 1)) ]; then
-    sleep infinity
-fi
-
-MEGATRON_EXIT_CODE=$?
-
-if [ $MEGATRON_EXIT_CODE -ne 0 ]; then
-    if [ -d "$checkpoint_dir" ] && [ -n "$(find "$checkpoint_dir" -name "*.safetensors" -type f 2>/dev/null)" ]; then
-        echo "Safetensors found in $checkpoint_dir. Exiting successfully."
-        exit 0
-    else
-        echo "Megatron command failed and no safetensors found in $checkpoint_dir. Exiting with error code."
-        exit $MEGATRON_EXIT_CODE
-    fi
-fi

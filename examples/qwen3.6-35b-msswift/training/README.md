@@ -46,35 +46,22 @@ each followed by a 256-expert MoE block (8 routed + 1 shared). Native context is
 **262K**, extensible to ~1M with YaRN. It's also a vision-language model, so
 `--freeze_vit true --freeze_aligner true` is required for text-only LoRA SFT.
 
-## Software stack (auto-installed by `run.sh`)
+## Software stack
 
-The base image (`baseten/megatron:py3.11.11-cuda12.8.1-torch2.8.0-fa2.8.1-megatron0.14.1-msswift3.10.3`) ships an older toolchain. `run.sh` upgrades the following into `$BT_PROJECT_CACHE_DIR/qwen3_6_packages` (cached across runs, takes ~3 min on first run, ~5 s thereafter):
+The base image (`baseten/megatron:py3.11.11-cuda12.8.1-torch2.9.1-fa2.8.3-megatron0.16.1-msswift4.1`) ships with everything the megatron sft training path needs — no in-script pip installs:
 
-| Package | Version | Why |
-|---------|---------|-----|
-| `ms-swift` | ≥4.1.0 | Adds `qwen3_5_moe` model registration (Qwen3.6 shares this) |
-| `transformers` | ==5.2.* | Has the Qwen3.6 modeling code |
-| `huggingface_hub` | ≥1.3.0,<2.0 | transformers 5.2 needs `is_offline_mode` (1.x re-exports it) |
-| `tokenizers` | 0.22.x–0.23.0 | transformers 5.2 dep |
-| `safetensors` | ≥0.4.3 | transformers 5.2 dep |
-| `accelerate` | ≥1.1.0 | transformers 5.2 dep |
-| `peft` | ≥0.13 | LoRA |
-| `liger-kernel` | latest | Recommended in upstream Qwen3.6 doc |
-| `qwen_vl_utils` | ≥0.0.14 | VL preprocessing |
-| `mcore-bridge` | ≥1.0.2 | ms-swift 4.1's `swift.megatron` hard-requires it |
-| `torchao` | ≥0.16 | transformers 5.2 needs this for fp8 paths |
-| `tilelang` | latest | FLA workaround for Triton ≥3.4 / Hopper bug ([fla #640](https://github.com/fla-org/flash-linear-attention/issues/640)) |
-| `megatron-core` | ≥0.16 | mcore-bridge 1.2.x uses 0.16+ sharding APIs (`dp_reshardable`) |
-| `flash-linear-attention` | git main | PyPI's 0.5.0 is missing `fla.ops.utils`; transformers' Qwen3.6 imports it |
-| `causal-conv1d` | git main | GDN dependency, built from source (~5-10 min CUDA compile) |
+| Package | Version |
+|---------|---------|
+| `ms-swift` | 4.1.3 |
+| `transformers` | 5.6.2 |
+| `mcore-bridge` | 1.2.1 |
+| `megatron-core` | 0.16.1 |
+| `flash-linear-attention` | 0.5.0 |
+| `peft` | 0.19.1 |
+| `torch` | 2.9.1 (cu12.8) |
+| `flash-attn` | 2.8.3 |
 
-### Why FLA from git, not PyPI
-
-PyPI's `flash-linear-attention==0.5.0` ships without the `fla.ops.utils` submodule that transformers 5.2's Qwen3.6 implementation imports. Installing from `https://github.com/fla-org/flash-linear-attention.git` yields `0.5.1+` which has it.
-
-### Why `megatron-core>=0.16` instead of the image's 0.14.1
-
-`mcore-bridge` 1.2.x calls `distrib_optimizer.sharded_state_dict()` with `sharding_type='dp_reshardable'`, a code path added in megatron-core 0.16. The image's 0.14.1 raises `NotImplementedError`. We install 0.16.1 into `PKG_DIR` and rely on `PYTHONPATH=$PKG_DIR:...` to shadow the system version.
+`run.sh` only pre-warms the HF model snapshot and then runs `megatron sft` directly.
 
 ## Verified configs
 
@@ -96,12 +83,12 @@ The `config_*.py` files each set `node_count` and the parallelism env vars. The 
 
 ## Getting Started
 
-**Single command — installs deps, downloads model, trains:**
+**Single command — downloads model, trains:**
 ```bash
 truss train push training/config_1node_128k.py --team baseten-dogfood --remote baseten
 ```
 
-`run.sh` checks the project cache first and only re-installs / re-downloads on a cold cache. First run is ~15 min (deps + 70 GB model + train); subsequent runs in the same project skip straight to training.
+`run.sh` is idempotent: cold first run is ~12 min (70 GB model download + train); subsequent runs in the same project skip the download and go straight to training.
 
 **Optional helper:**
 
