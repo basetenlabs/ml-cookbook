@@ -1,14 +1,21 @@
-"""Debug config: 1 node, 8x H200, sleep infinity for SSH-driven iteration."""
 from truss_train import definitions
 from truss.base import truss_config
 
-project_name = "Qwen3.5-27B Long Context - ML Cookbook"
+project_name = "Qwen3.6-27B Long Context - ML Cookbook"
+
+# Same image used by qwen3.5-35b-msswift. run.sh upgrades all the deps to what
+# transformers 5.2's Qwen3.6 family needs (huggingface_hub 1.x, ms-swift 4.1+,
+# mcore-bridge, torchao, tilelang, megatron-core 0.16+, FLA from git, etc.).
 BASE_IMAGE = "baseten/megatron:py3.11.11-cuda12.8.1-torch2.8.0-fa2.8.1-megatron0.14.1-msswift3.10.3"
 
 training_runtime = definitions.Runtime(
-    start_commands=["chmod +x ./run_debug.sh && ./run_debug.sh"],
+    start_commands=["chmod +x ./run.sh && ./run.sh"],
     environment_variables={
         "HF_TOKEN": definitions.SecretReference(name="hf_access_token"),
+        # Set to "1" for the first run to install deps and snapshot the model
+        # into the project cache. Flip to "0" once cache is hydrated.
+        "HYDRATE_ONLY": "1",
+        "EXP_TAG": "hydrate",
     },
     checkpointing_config=definitions.CheckpointingConfig(enabled=True),
     cache_config=definitions.CacheConfig(enabled=True),
@@ -25,10 +32,6 @@ my_training_job = definitions.TrainingJob(
     image=definitions.Image(base_image=BASE_IMAGE),
     compute=training_compute,
     runtime=training_runtime,
-    interactive_session=definitions.InteractiveSession(
-        trigger=definitions.InteractiveSessionTrigger.ON_DEMAND,
-        session_provider=definitions.InteractiveSessionProvider.SSH,
-    ),
 )
 
 first_project_with_job = definitions.TrainingProject(

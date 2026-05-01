@@ -1,10 +1,12 @@
-# Qwen3.5-27B Long Context Fine-Tuning with MS-Swift
+# Qwen3.6-27B Long Context Fine-Tuning with MS-Swift
 
-This example fine-tunes [Qwen3.5-27B](https://huggingface.co/Qwen/Qwen3.5-27B) — a 27B-parameter **dense** hybrid linear-attention model — using LoRA with the MS-Swift Megatron backend on Baseten. It uses the [LongAlign-10k](https://huggingface.co/datasets/zai-org/LongAlign-10k) dataset for long-context SFT.
+This example fine-tunes [Qwen3.6-27B](https://huggingface.co/Qwen/Qwen3.6-27B) — a 27B-parameter **dense** hybrid linear-attention model — using LoRA with the MS-Swift Megatron backend on Baseten. It uses the [LongAlign-10k](https://huggingface.co/datasets/zai-org/LongAlign-10k) dataset for long-context SFT.
 
-## Architecture vs. Qwen3.5-35B-A3B
+> **Note on architecture:** Qwen3.6-27B and [Qwen3.5-27B](https://huggingface.co/Qwen/Qwen3.5-27B) share the same architecture exactly. The compute measurements in this README were collected primarily on Qwen3.5; we re-ran the 1n128k packed config on Qwen3.6-27B and confirmed identical memory footprint (~28 GiB sw) and similar throughput. To use Qwen3.5 instead, just swap the model ID in `run.sh`.
 
-|  | Qwen3.5-35B-A3B | Qwen3.5-27B |
+## Architecture vs. Qwen3.6-35B-A3B
+
+|  | Qwen3.6-35B-A3B | Qwen3.6-27B |
 |---|---|---|
 | Active params | 3B (256-expert MoE) | 27B (dense FFN) |
 | Layers | 40 | **64** |
@@ -19,7 +21,7 @@ This example fine-tunes [Qwen3.5-27B](https://huggingface.co/Qwen/Qwen3.5-27B) �
 
 ## Prerequisites
 
-Same as the qwen3.5-35b-msswift example — Baseten account, Truss CLI ≥0.17, `hf_access_token` secret. See [that README](../../qwen3.5-35b-msswift/training/README.md) for the dependency stack rationale (huggingface_hub 1.x, transformers 5.2, ms-swift 4.1+, mcore-bridge, megatron-core 0.16+, FLA from git, tilelang, torchao); `run.sh` here installs the same packages into a separate `qwen3_5_27b_packages` directory in the project cache.
+Same as the qwen3.5-35b-msswift example — Baseten account, Truss CLI ≥0.17, `hf_access_token` secret. See [that README](../../qwen3.5-35b-msswift/training/README.md) for the dependency stack rationale (huggingface_hub 1.x, transformers 5.2, ms-swift 4.1+, mcore-bridge, megatron-core 0.16+, FLA from git, tilelang, torchao); `run.sh` here installs the same packages into a separate `qwen3_6_27b_packages` directory in the project cache.
 
 ## Getting Started
 
@@ -37,7 +39,7 @@ truss train push training/config_1node_128k.py --team baseten-dogfood --remote b
   ```bash
   truss train push training/config_debug.py --team baseten-dogfood --remote baseten
   # ssh training-job-<JOB_ID>-0.ssh.baseten.co
-  # source ~/qwen35_27b_env.sh
+  # source ~/qwen36_27b_env.sh
   ```
 
 ## Verified compute (packed, 1× 8 H200)

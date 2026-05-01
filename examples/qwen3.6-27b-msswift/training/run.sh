@@ -5,7 +5,7 @@ set -eux
 # Mode switch
 # ---------------------------------------------------------------------------
 # HYDRATE_ONLY=1 only (a) installs runtime deps into the project cache and
-# (b) snapshots Qwen3.5-35B-A3B into HF_HOME, then exits. Subsequent
+# (b) snapshots Qwen3.6-35B-A3B into HF_HOME, then exits. Subsequent
 # experiment runs start from a warm cache and skip the ~70GB download.
 # Set HYDRATE_ONLY=0 (default) for real training runs.
 HYDRATE_ONLY=${HYDRATE_ONLY:-0}
@@ -13,11 +13,11 @@ HYDRATE_ONLY=${HYDRATE_ONLY:-0}
 # ---------------------------------------------------------------------------
 # Dependency upgrades (cached in BT_PROJECT_CACHE_DIR across runs)
 # ---------------------------------------------------------------------------
-# Qwen3.5-35B-A3B is a hybrid linear-attention MoE: ~30 of its 40 layers are
+# Qwen3.6-35B-A3B is a hybrid linear-attention MoE: ~30 of its 40 layers are
 # GatedDeltaNet (linear attention) and the remaining 10 are full attention.
 # That makes flash-linear-attention + causal-conv1d hard requirements, and we
 # need ms-swift >= 4.1.0 / transformers == 5.2.* to register the model.
-PKG_DIR=$BT_PROJECT_CACHE_DIR/qwen3_5_27b_packages
+PKG_DIR=$BT_PROJECT_CACHE_DIR/qwen3_6_27b_packages
 export PYTHONPATH=$PKG_DIR:${PYTHONPATH:-}
 
 # We use --no-deps to keep pip from yanking torch / megatron-core out from
@@ -25,7 +25,7 @@ export PYTHONPATH=$PKG_DIR:${PYTHONPATH:-}
 # 5.2 actually wants. Notably: huggingface-hub 1.x (transformers 5.2.0 requires
 # >=1.3.0,<2.0 and the new 1.x API exposes is_offline_mode again), tokenizers
 # 0.22-0.23, safetensors >=0.4.3, accelerate >=1.1, plus peft / liger-kernel
-# from the upstream Qwen3.5 best-practice doc.
+# from the upstream Qwen3.6 best-practice doc.
 SWIFT_OK=$(python -c "import swift; print(swift.__version__)" 2>/dev/null || echo "0.0.0")
 TF_OK=$(python -c "import transformers; print(transformers.__version__)" 2>/dev/null || echo "0.0.0")
 HUB_OK=$(python -c "from huggingface_hub import is_offline_mode; print('ok')" 2>/dev/null || echo "no")
@@ -52,7 +52,7 @@ if [ "$(printf '%s\n4.1.0' "$SWIFT_OK" | sort -V | head -1)" != "4.1.0" ] \
 fi
 if ! python -c "from fla.ops.utils import *; import causal_conv1d" 2>/dev/null; then
     # PyPI's latest flash-linear-attention (0.5.0) is missing fla.ops.utils,
-    # which transformers 5.2's Qwen3.5 implementation requires. Install from
+    # which transformers 5.2's Qwen3.6 implementation requires. Install from
     # GitHub main (yields fla 0.5.1+).
     echo "Installing flash-linear-attention (git) + causal-conv1d"
     pip install --target=$PKG_DIR --no-deps \
@@ -66,10 +66,10 @@ export HF_HOME=$BT_PROJECT_CACHE_DIR/huggingface
 mkdir -p $HF_HOME/hub
 # Don't pass cache_dir — HF defaults to $HF_HOME/hub/, which is the layout
 # huggingface_hub.snapshot_download (and ms-swift's loader) reads at runtime.
-echo "Snapshotting Qwen/Qwen3.5-27B into $HF_HOME/hub/"
+echo "Snapshotting Qwen/Qwen3.6-27B into $HF_HOME/hub/"
 python -c "
 from huggingface_hub import snapshot_download
-snapshot_download('Qwen/Qwen3.5-27B')
+snapshot_download('Qwen/Qwen3.6-27B')
 "
 
 # In HYDRATE_ONLY mode we stop here — deps and model are now in the project
@@ -86,7 +86,7 @@ SAVE_FULL_MODEL=false
 # Tag the checkpoint dir with the seq length / node count of this experiment
 # so parallel runs don't clobber each other inside the shared project cache.
 EXP_TAG=${EXP_TAG:-default}
-checkpoint_dir="$BT_CHECKPOINT_DIR/qwen3.5-27b-lora-${EXP_TAG}"
+checkpoint_dir="$BT_CHECKPOINT_DIR/qwen3.6-27b-lora-${EXP_TAG}"
 
 # ---------------------------------------------------------------------------
 # GatedDeltaNet implementation
@@ -135,7 +135,7 @@ NNODES=$BT_GROUP_SIZE \
 NODE_RANK=$BT_NODE_RANK \
 MASTER_ADDR=$BT_LEADER_ADDR \
 megatron sft \
-    --model Qwen/Qwen3.5-27B \
+    --model Qwen/Qwen3.6-27B \
     --use_hf 1 \
     --output_dir $checkpoint_dir \
     --dataset 'zai-org/LongAlign-10k' \
