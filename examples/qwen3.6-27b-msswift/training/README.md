@@ -19,22 +19,43 @@ This example fine-tunes [Qwen3.6-27B](https://huggingface.co/Qwen/Qwen3.6-27B) �
 
 **Practical implication:** 27B is a heavier dense model — every GPU computes every parameter, no expert sparsity. EP doesn't help here. The natural single-node split is **TP=8** (sharding the 27B weights 8-way), not EP=8.
 
+## Software stack
+
+The base image (`baseten/megatron:py3.11.11-cuda12.8.1-torch2.9.1-fa2.8.3-megatron0.16.1-msswift4.1`) ships with everything the megatron sft training path needs — no in-script pip installs:
+
+| Package | Version |
+|---------|---------|
+| `ms-swift` | 4.1.3 |
+| `transformers` | 5.6.2 |
+| `mcore-bridge` | 1.2.1 |
+| `megatron-core` | 0.16.1 |
+| `flash-linear-attention` | 0.5.0 |
+| `peft` | 0.19.1 |
+| `torch` | 2.9.1 (cu12.8) |
+| `flash-attn` | 2.8.3 |
+
+`run.sh` only pre-warms the HF model snapshot and then runs `megatron sft` directly.
+
 ## Prerequisites
 
-Same as the qwen3.5-35b-msswift example — Baseten account, Truss CLI ≥0.17, `hf_access_token` secret. See [that README](../../qwen3.5-35b-msswift/training/README.md) for the dependency stack rationale (huggingface_hub 1.x, transformers 5.2, ms-swift 4.1+, mcore-bridge, megatron-core 0.16+, FLA from git, tilelang, torchao); `run.sh` here installs the same packages into a separate `qwen3_6_27b_packages` directory in the project cache.
+1. [Create a Baseten account](https://baseten.co/signup) if you don't already have one.
+2. Install the Truss CLI (≥0.17 for `interactive_session` SSH support):
+   ```bash
+   pip install -U "truss>=0.17"
+   ```
+3. Add your HuggingFace token as a Baseten secret named `hf_access_token` in your [workspace secrets](https://app.baseten.co/settings/secrets).
 
 ## Getting Started
 
-**Single command — installs deps, downloads model, trains:**
+**Single command — downloads model, trains:**
 ```bash
 truss train push training/config_1node_128k.py --team baseten-dogfood --remote baseten
 ```
 
-`run.sh` is idempotent: cold first run is ~12 min (deps + 50 GB model + train); subsequent runs in the same project skip the install/download.
+`run.sh` is idempotent: cold first run is ~10 min (50 GB model download + train); subsequent runs in the same project skip the download.
 
-**Optional helpers:**
+**Optional helper:**
 
-- `config.py` — pre-warm the cache only (sets `HYDRATE_ONLY=1`), useful when running parallel experiments.
 - `config_debug.py` — SSH-enabled `sleep infinity` debug pod:
   ```bash
   truss train push training/config_debug.py --team baseten-dogfood --remote baseten
