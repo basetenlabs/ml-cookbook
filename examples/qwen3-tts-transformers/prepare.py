@@ -1,28 +1,32 @@
 #!/usr/bin/env python3
 """
-Download the baseten-admin/sierra-ft-tts dataset from Hugging Face and
-convert it into the JSONL format required by Qwen3-TTS finetuning.
+Download a single-speaker TTS dataset from Hugging Face, tokenize the audio
+with the Qwen3-TTS tokenizer, and write a training JSONL.
+
+Pipeline:
+  HF dataset  ->  local wav files  ->  Qwen3TTSTokenizer.encode  ->  output JSONL
 
 Output JSONL fields (one JSON object per line):
-- audio:     path to the target training audio (wav)
-- text:      transcript corresponding to audio
-- ref_audio: path to the reference speaker audio (wav, same for every line)
+- audio:       absolute path to the target training audio (wav)
+- text:        transcript corresponding to audio
+- ref_audio:   absolute path to the reference speaker audio (wav, same for every line)
+- audio_codes: precomputed discrete codec codes for `audio`
 
-Source dataset schema (https://huggingface.co/datasets/baseten-admin/sierra-ft-tts):
-- file_name      str    Relative path to the audio clip (e.g. clips/0001.wav)
-- text           str    Punctuated transcript for the clip
-- start / end    float  Source-audio offsets in seconds
-- duration       float  Clip duration in seconds
-- num_words      int    Number of Deepgram words in the sentence
-- avg_confidence float  Mean Deepgram word confidence
+Expected source dataset schema:
+- A text column (default `text`, override with --text_column; useful for
+  datasets that provide e.g. `normalized_text` alongside `text`).
+- Either an `audio` column with embedded bytes (parquet path), or a
+  `file_name` column pointing at a wav file in the repo (AudioFolder path).
+- If neither `file_name` nor a usable `audio.path` is available, an `id`
+  column is used to name the extracted wav (e.g. `clips/<id>.wav`).
 
-Speed strategy:
+Download speed strategy:
 The script first tries to download HuggingFace's auto-converted parquet
 shards (a handful of large files, much faster with `hf_transfer`). The audio
 bytes are embedded inline in the parquet rows, so we extract them locally to
 wav files and skip the per-clip HTTP roundtrips entirely. If parquet shards
 aren't available, it falls back to a two-pass AudioFolder download:
-metadata-only first, then exactly the wav clips that survive filtering.
+metadata-only first, then exactly the wav clips that survived sampling.
 """
 
 import argparse
@@ -40,7 +44,7 @@ from huggingface_hub.utils import (
     RevisionNotFoundError,
 )
 
-DATASET_REPO = "baseten-admin/sierra-ft-tts"
+BATCH_INFER_NUM = 32
 
 # `allow_patterns` for the metadata-only pre-pass on the AudioFolder fallback
 # path. We grab anything that could plausibly be a manifest plus README/json
@@ -54,36 +58,6 @@ METADATA_ALLOW_PATTERNS = [
     "*.md",
     "README*",
 ]
-
-
-# ---------- helpers shared by both download paths ----------
-
-
-def _coerce_float(value, default=None):
-    if value is None or value == "":
-        return default
-    try:
-        return float(value)
-    except (TypeError, ValueError):
-        return default
-
-
-def _row_passes_filters(
-    row: dict,
-    min_confidence: float,
-    min_duration: float,
-    max_duration: float,
-) -> bool:
-    confidence = _coerce_float(row.get("avg_confidence"), default=1.0)
-    duration = _coerce_float(row.get("duration"), default=None)
-    if confidence is not None and confidence < min_confidence:
-        return False
-    if duration is not None:
-        if duration < min_duration:
-            return False
-        if max_duration > 0 and duration > max_duration:
-            return False
-    return True
 
 
 def _ensure_hf_transfer_or_warn() -> None:
@@ -104,6 +78,7 @@ def _ensure_hf_transfer_or_warn() -> None:
 
 
 def _try_download_parquet_shards(
+    dataset_repo: str,
     cache_dir: Path,
     token: Optional[str],
     max_workers: int,
@@ -118,7 +93,7 @@ def _try_download_parquet_shards(
     parquet_root.mkdir(parents=True, exist_ok=True)
     try:
         path = snapshot_download(
-            repo_id=DATASET_REPO,
+            repo_id=dataset_repo,
             repo_type="dataset",
             revision="refs/convert/parquet",
             local_dir=str(parquet_root),
@@ -142,13 +117,11 @@ def _try_download_parquet_shards(
 def _extract_from_parquet(
     parquet_root: Path,
     clips_dir: Path,
-    min_confidence: float,
-    min_duration: float,
-    max_duration: float,
+    text_column: str,
 ) -> List[dict]:
     """
-    Stream rows out of every parquet shard, apply filters, and write the
-    embedded audio bytes to local wav files.
+    Stream rows out of every parquet shard and write the embedded audio bytes
+    to local wav files.
     """
     try:
         import pyarrow.parquet as pq
@@ -174,19 +147,15 @@ def _extract_from_parquet(
                 f"Parquet shard {pq_file.name} has no 'audio' column "
                 f"(found: {col_names})"
             )
-        if "text" not in col_names:
+        if text_column not in col_names:
             raise RuntimeError(
-                f"Parquet shard {pq_file.name} has no 'text' column "
+                f"Parquet shard {pq_file.name} has no '{text_column}' column "
                 f"(found: {col_names})"
             )
 
         for record in table.to_pylist():
-            if not _row_passes_filters(
-                record,
-                min_confidence=min_confidence,
-                min_duration=min_duration,
-                max_duration=max_duration,
-            ):
+            text = record.get(text_column)
+            if not text:
                 continue
 
             audio = record["audio"]
@@ -200,11 +169,16 @@ def _extract_from_parquet(
             if not audio_bytes:
                 continue
 
-            file_name = (
-                record.get("file_name")
-                or audio_path_in_repo
-                or f"clips/{written:06d}.wav"
-            )
+            row_id = record.get("id")
+            if record.get("file_name"):
+                file_name = record["file_name"]
+            elif row_id:
+                file_name = f"clips/{row_id}.wav"
+            elif audio_path_in_repo:
+                file_name = audio_path_in_repo
+            else:
+                file_name = f"clips/{written:06d}.wav"
+
             out_path = (clips_dir / file_name).resolve()
             out_path.parent.mkdir(parents=True, exist_ok=True)
             if not out_path.exists():
@@ -215,11 +189,7 @@ def _extract_from_parquet(
             rows.append({
                 "file_name": file_name,
                 "audio_path": str(out_path),
-                "text": record["text"],
-                "duration": _coerce_float(record.get("duration"), default=None),
-                "avg_confidence": _coerce_float(
-                    record.get("avg_confidence"), default=1.0
-                ),
+                "text": text,
             })
 
     elapsed = max(time.time() - started, 1e-3)
@@ -275,37 +245,25 @@ def _iter_audiofolder_metadata(repo_root: Path) -> Iterator[dict]:
     )
 
 
-def _filter_audiofolder_rows(
+def _normalize_audiofolder_rows(
     rows: Iterable[dict],
     repo_root: Path,
-    min_confidence: float,
-    min_duration: float,
-    max_duration: float,
+    text_column: str,
 ) -> Iterator[dict]:
     for row in rows:
         file_name = row.get("file_name")
-        text = row.get("text")
+        text = row.get(text_column)
         if not file_name or not text:
-            continue
-        if not _row_passes_filters(
-            row,
-            min_confidence=min_confidence,
-            min_duration=min_duration,
-            max_duration=max_duration,
-        ):
             continue
         yield {
             "file_name": file_name,
             "audio_path": str((repo_root / file_name).resolve()),
             "text": text,
-            "duration": _coerce_float(row.get("duration"), default=None),
-            "avg_confidence": _coerce_float(
-                row.get("avg_confidence"), default=1.0
-            ),
         }
 
 
 def _download_clips(
+    dataset_repo: str,
     cache_dir: Path,
     file_names: List[str],
     token: Optional[str],
@@ -315,7 +273,7 @@ def _download_clips(
         return
     started = time.time()
     snapshot_download(
-        repo_id=DATASET_REPO,
+        repo_id=dataset_repo,
         repo_type="dataset",
         local_dir=str(cache_dir),
         token=token,
@@ -330,17 +288,16 @@ def _download_clips(
 
 
 def _download_via_audiofolder(
+    dataset_repo: str,
     cache_dir: Path,
     token: Optional[str],
     max_workers: int,
-    min_confidence: float,
-    min_duration: float,
-    max_duration: float,
+    text_column: str,
 ) -> Tuple[Path, List[dict]]:
-    print(f"[fallback] Fetching metadata from {DATASET_REPO} (AudioFolder layout)...")
+    print(f"[fallback] Fetching metadata from {dataset_repo} (AudioFolder layout)...")
     repo_root = Path(
         snapshot_download(
-            repo_id=DATASET_REPO,
+            repo_id=dataset_repo,
             repo_type="dataset",
             local_dir=str(cache_dir),
             token=token,
@@ -350,15 +307,181 @@ def _download_via_audiofolder(
     )
 
     rows = list(
-        _filter_audiofolder_rows(
+        _normalize_audiofolder_rows(
             _iter_audiofolder_metadata(repo_root),
             repo_root=repo_root,
-            min_confidence=min_confidence,
-            min_duration=min_duration,
-            max_duration=max_duration,
+            text_column=text_column,
         )
     )
     return repo_root, rows
+
+
+# ---------- download orchestration ----------
+
+
+def download_dataset(
+    dataset_repo: str,
+    cache_dir: Path,
+    token: Optional[str],
+    max_workers: int,
+    source: str,
+    max_samples: Optional[int],
+    ref_index: int,
+    text_column: str,
+) -> Tuple[List[dict], str]:
+    """
+    Materialize wav clips on disk and return:
+      - rows: list of {audio, text, ref_audio} dicts (paths absolute)
+      - ref_audio_path: the absolute path used as the shared reference audio
+    """
+    repo_root: Optional[Path] = None
+    rows: Optional[List[dict]] = None
+
+    if source in ("auto", "parquet"):
+        print(f"Trying parquet shard fast-path for {dataset_repo}...")
+        parquet_root = _try_download_parquet_shards(
+            dataset_repo=dataset_repo,
+            cache_dir=cache_dir,
+            token=token,
+            max_workers=max_workers,
+        )
+        if parquet_root is not None:
+            rows = _extract_from_parquet(
+                parquet_root=parquet_root,
+                clips_dir=cache_dir,
+                text_column=text_column,
+            )
+            repo_root = cache_dir
+        else:
+            if source == "parquet":
+                raise SystemExit(
+                    "Parquet shards are not available for this dataset "
+                    "(refs/convert/parquet is empty or inaccessible). "
+                    "Re-run with --source audiofolder."
+                )
+            print("[info] No parquet shards available, falling back to AudioFolder download.")
+
+    if rows is None:
+        repo_root, rows = _download_via_audiofolder(
+            dataset_repo=dataset_repo,
+            cache_dir=cache_dir,
+            token=token,
+            max_workers=max_workers,
+            text_column=text_column,
+        )
+
+    if not rows:
+        raise SystemExit("No usable rows found in the dataset.")
+
+    rows.sort(key=lambda r: r["file_name"])
+    total_rows = len(rows)
+
+    if max_samples is not None and max_samples > 0:
+        rows = rows[:max_samples]
+
+    if not 0 <= ref_index < len(rows):
+        raise SystemExit(
+            f"--ref_index {ref_index} is out of range "
+            f"(only {len(rows)} samples available)."
+        )
+
+    print(
+        f"Samples: {total_rows}"
+        + (f" (using first {len(rows)})" if len(rows) != total_rows else "")
+    )
+
+    # AudioFolder path needs a follow-up wav download for the surviving rows.
+    # Parquet path already wrote the wavs while extracting, so this is a no-op
+    # in that case.
+    missing = [r for r in rows if not Path(r["audio_path"]).exists()]
+    if missing:
+        needed_files = sorted({r["file_name"] for r in missing})
+        print(
+            f"Downloading {len(needed_files)} audio clips with "
+            f"max_workers={max_workers}..."
+        )
+        _download_clips(
+            dataset_repo=dataset_repo,
+            cache_dir=cache_dir,
+            file_names=needed_files,
+            token=token,
+            max_workers=max_workers,
+        )
+
+    still_missing = [r for r in rows if not Path(r["audio_path"]).exists()]
+    if still_missing:
+        raise SystemExit(
+            f"Expected audio file(s) missing after download, e.g. "
+            f"{still_missing[0]['file_name']!r}. Check --hf_token and dataset access."
+        )
+
+    ref_audio_path = rows[ref_index]["audio_path"]
+    print(f"Reference audio: {ref_audio_path}")
+    print(f"Dataset cache: {repo_root}")
+
+    return (
+        [
+            {
+                "audio": row["audio_path"],
+                "text": row["text"],
+                "ref_audio": ref_audio_path,
+            }
+            for row in rows
+        ],
+        ref_audio_path,
+    )
+
+
+# ---------- tokenize: precompute audio_codes ----------
+
+
+def tokenize_audio_codes(
+    rows: List[dict],
+    tokenizer_model_path: str,
+    device: str,
+) -> List[dict]:
+    """
+    Run the Qwen3 TTS tokenizer over every row's `audio` field in batches and
+    attach the resulting discrete codes as `audio_codes`.
+    """
+    from qwen_tts import Qwen3TTSTokenizer
+
+    print(
+        f"Loading Qwen3TTSTokenizer from {tokenizer_model_path} on {device}..."
+    )
+    tokenizer = Qwen3TTSTokenizer.from_pretrained(
+        tokenizer_model_path,
+        device_map=device,
+    )
+
+    encoded: List[dict] = []
+    batch_rows: List[dict] = []
+    batch_audios: List[str] = []
+    started = time.time()
+
+    def _flush():
+        if not batch_rows:
+            return
+        result = tokenizer.encode(batch_audios)
+        for code, row in zip(result.audio_codes, batch_rows):
+            row["audio_codes"] = code.cpu().tolist()
+            encoded.append(row)
+        batch_rows.clear()
+        batch_audios.clear()
+
+    for row in rows:
+        batch_rows.append(row)
+        batch_audios.append(row["audio"])
+        if len(batch_rows) >= BATCH_INFER_NUM:
+            _flush()
+    _flush()
+
+    elapsed = max(time.time() - started, 1e-3)
+    print(
+        f"Tokenized {len(encoded)} clips in {elapsed:.1f}s "
+        f"({len(encoded) / elapsed:.1f} clips/sec)."
+    )
+    return encoded
 
 
 # ---------- main ----------
@@ -367,11 +490,22 @@ def _download_via_audiofolder(
 def main():
     parser = argparse.ArgumentParser(
         description=(
-            "Download baseten-admin/sierra-ft-tts and convert it to a JSONL "
-            "for Qwen3-TTS finetuning."
+            "Download a HuggingFace TTS dataset and produce a Qwen3-TTS "
+            "training JSONL with precomputed audio_codes."
         )
     )
-    parser.add_argument("--output_jsonl", type=str, default="train_raw.jsonl")
+    parser.add_argument(
+        "--dataset_repo",
+        type=str,
+        required=True,
+        help="HuggingFace dataset repo id (e.g. `org/my-tts-dataset`).",
+    )
+    parser.add_argument(
+        "--output_jsonl",
+        type=str,
+        default="train.jsonl",
+        help="Path to the final training JSONL with audio_codes (default: train.jsonl).",
+    )
     parser.add_argument("--cache_dir", type=str, default="./hf_dataset_cache")
     parser.add_argument(
         "--ref_index",
@@ -380,14 +514,6 @@ def main():
         help="Index of the sample to use as shared reference audio (default: 0).",
     )
     parser.add_argument("--max_samples", type=int, default=None)
-    parser.add_argument("--min_confidence", type=float, default=0.0)
-    parser.add_argument("--min_duration", type=float, default=0.0)
-    parser.add_argument(
-        "--max_duration",
-        type=float,
-        default=0.0,
-        help="0 disables the upper bound (default: 0).",
-    )
     parser.add_argument(
         "--hf_token",
         type=str,
@@ -414,6 +540,36 @@ def main():
             "parquet first and falls back to audiofolder (default: auto)."
         ),
     )
+    parser.add_argument(
+        "--text_column",
+        type=str,
+        default="text",
+        help=(
+            "Name of the column containing the transcript. Some datasets "
+            "expose a normalized variant (e.g. LJ Speech has both `text` and "
+            "`normalized_text`); using the normalized form generally matches "
+            "the audio better (default: text)."
+        ),
+    )
+    parser.add_argument(
+        "--device",
+        type=str,
+        default="cuda:0",
+        help="Device for the Qwen3 TTS tokenizer (default: cuda:0).",
+    )
+    parser.add_argument(
+        "--tokenizer_model_path",
+        type=str,
+        default="Qwen/Qwen3-TTS-Tokenizer-12Hz",
+    )
+    parser.add_argument(
+        "--skip_tokenize",
+        action="store_true",
+        help=(
+            "Skip the audio_codes precomputation step. Useful for quickly "
+            "inspecting the downloaded manifest without loading the tokenizer."
+        ),
+    )
     args = parser.parse_args()
 
     _ensure_hf_transfer_or_warn()
@@ -421,108 +577,34 @@ def main():
     cache_dir = Path(args.cache_dir).expanduser().resolve()
     cache_dir.mkdir(parents=True, exist_ok=True)
 
-    repo_root: Optional[Path] = None
-    rows: Optional[List[dict]] = None
-
-    if args.source in ("auto", "parquet"):
-        print(f"Trying parquet shard fast-path for {DATASET_REPO}...")
-        parquet_root = _try_download_parquet_shards(
-            cache_dir=cache_dir,
-            token=args.hf_token,
-            max_workers=args.max_workers,
-        )
-        if parquet_root is not None:
-            rows = _extract_from_parquet(
-                parquet_root=parquet_root,
-                clips_dir=cache_dir,
-                min_confidence=args.min_confidence,
-                min_duration=args.min_duration,
-                max_duration=args.max_duration,
-            )
-            repo_root = cache_dir
-        else:
-            if args.source == "parquet":
-                raise SystemExit(
-                    "Parquet shards are not available for this dataset "
-                    "(refs/convert/parquet is empty or inaccessible). "
-                    "Re-run with --source audiofolder."
-                )
-            print("[info] No parquet shards available, falling back to AudioFolder download.")
-
-    if rows is None:
-        repo_root, rows = _download_via_audiofolder(
-            cache_dir=cache_dir,
-            token=args.hf_token,
-            max_workers=args.max_workers,
-            min_confidence=args.min_confidence,
-            min_duration=args.min_duration,
-            max_duration=args.max_duration,
-        )
-
-    if not rows:
-        raise SystemExit(
-            "No usable rows after filtering. Check --min_confidence / "
-            "--min_duration / --max_duration thresholds."
-        )
-
-    rows.sort(key=lambda r: r["file_name"])
-    total_after_filter = len(rows)
-
-    if args.max_samples is not None and args.max_samples > 0:
-        rows = rows[: args.max_samples]
-
-    if not 0 <= args.ref_index < len(rows):
-        raise SystemExit(
-            f"--ref_index {args.ref_index} is out of range "
-            f"(only {len(rows)} samples available)."
-        )
-
-    print(
-        f"Filtered samples: {total_after_filter}"
-        + (f" (using first {len(rows)})" if len(rows) != total_after_filter else "")
+    rows, ref_audio_path = download_dataset(
+        dataset_repo=args.dataset_repo,
+        cache_dir=cache_dir,
+        token=args.hf_token,
+        max_workers=args.max_workers,
+        source=args.source,
+        max_samples=args.max_samples,
+        ref_index=args.ref_index,
+        text_column=args.text_column,
     )
 
-    # AudioFolder path needs a follow-up wav download for the surviving rows.
-    # Parquet path already wrote the wavs while extracting, so this is a no-op
-    # in that case.
-    missing = [r for r in rows if not Path(r["audio_path"]).exists()]
-    if missing:
-        needed_files = sorted({r["file_name"] for r in missing})
-        print(
-            f"Downloading {len(needed_files)} audio clips with "
-            f"max_workers={args.max_workers}..."
+    if not args.skip_tokenize:
+        rows = tokenize_audio_codes(
+            rows=rows,
+            tokenizer_model_path=args.tokenizer_model_path,
+            device=args.device,
         )
-        _download_clips(
-            cache_dir=cache_dir,
-            file_names=needed_files,
-            token=args.hf_token,
-            max_workers=args.max_workers,
-        )
-
-    still_missing = [r for r in rows if not Path(r["audio_path"]).exists()]
-    if still_missing:
-        raise SystemExit(
-            f"Expected audio file(s) missing after download, e.g. "
-            f"{still_missing[0]['file_name']!r}. Check --hf_token and dataset access."
-        )
-
-    ref_audio_path = rows[args.ref_index]["audio_path"]
-    print(f"Reference audio: {ref_audio_path}")
 
     output_path = Path(args.output_jsonl)
     output_path.parent.mkdir(parents=True, exist_ok=True)
     with output_path.open("w", encoding="utf-8") as f:
         for row in rows:
-            entry = {
-                "audio": row["audio_path"],
-                "text": row["text"],
-                "ref_audio": ref_audio_path,
-            }
-            f.write(json.dumps(entry, ensure_ascii=False) + "\n")
+            f.write(json.dumps(row, ensure_ascii=False) + "\n")
 
-    print(f"\n✓ Wrote {len(rows)} rows to {output_path}")
-    print(f"  - Dataset cache: {repo_root}")
+    print(f"\nWrote {len(rows)} rows to {output_path}")
     print(f"  - Reference audio (shared by every row): {ref_audio_path}")
+    if args.skip_tokenize:
+        print("  - audio_codes NOT included (--skip_tokenize was set)")
 
 
 if __name__ == "__main__":

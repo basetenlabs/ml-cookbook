@@ -45,14 +45,7 @@ def resolve_model_path(path_or_repo_id: str) -> str:
 
 
 def compute_loss(model, batch):
-    """Forward pass + composite TTS loss used by both train and eval.
-
-    Returns (loss, speaker_embedding). The caller decides what to do with
-    `speaker_embedding` — in particular, only the *training* loop should
-    latch the first batch's embedding into `target_speaker_embedding` so
-    the saved checkpoint reflects the speaker the model was trained on, not
-    a held-out eval clip.
-    """
+    """Forward pass + composite TTS loss used by both train and eval."""
     input_ids = batch['input_ids']
     codec_ids = batch['codec_ids']
     ref_mels = batch['ref_mels']
@@ -101,7 +94,23 @@ def compute_loss(model, batch):
     )
 
     loss = outputs.loss + 0.3 * sub_talker_loss
-    return loss, speaker_embedding
+    return loss
+
+
+def compute_target_speaker_embedding(model, dataset, ref_audio_path):
+    """Run the (frozen) speaker encoder on `ref_audio_path` once.
+
+    This is the vector we write into the codec embedding table at checkpoint
+    save time. The speaker encoder isn't trained (its output is `.detach()`-ed
+    inside `compute_loss`), so computing it once up front is equivalent to
+    averaging across the dataset -- and is faithful by construction when
+    every row in the JSONL shares the same `ref_audio`.
+    """
+    with torch.no_grad():
+        wav, sr = dataset._load_audio_to_np(ref_audio_path)
+        ref_mel = dataset.extract_mels(audio=wav, sr=sr)
+        ref_mel = ref_mel.to(model.device).to(model.dtype)
+        return model.speaker_encoder(ref_mel).detach()
 
 
 @torch.no_grad()
@@ -116,7 +125,7 @@ def evaluate(model, eval_dataloader):
     total_loss = 0.0
     total_batches = 0
     for batch in eval_dataloader:
-        loss, _ = compute_loss(model, batch)
+        loss = compute_loss(model, batch)
         total_loss += loss.item()
         total_batches += 1
     if was_training:
@@ -126,10 +135,7 @@ def evaluate(model, eval_dataloader):
     return total_loss / total_batches
 
 
-target_speaker_embedding = None
 def train():
-    global target_speaker_embedding
-
     parser = argparse.ArgumentParser()
     parser.add_argument("--init_model_path", type=str, default="Qwen/Qwen3-TTS-12Hz-1.7B-Base")
     parser.add_argument("--output_model_path", type=str, default="output")
@@ -210,9 +216,9 @@ def train():
 
     # Hold out a deterministic eval slice. We shuffle indices with a seeded
     # RNG (rather than just slicing the head/tail) because the input JSONL is
-    # often produced by a sorted pipeline (download_dataset.py sorts by
-    # confidence/duration), and grabbing a contiguous block would skew eval
-    # toward one end of the quality distribution.
+    # often produced by a sorted pipeline (prepare.py sorts by file_name), and
+    # grabbing a contiguous block would skew eval toward one end of the
+    # corpus.
     eval_data = []
     if args.eval_split > 0:
         if args.eval_split >= len(train_data):
@@ -279,16 +285,28 @@ def train():
         f"(warmup={warmup_steps}, peak_lr={args.lr})"
     )
 
+    # Pick the reference audio used for the saved speaker embedding. The
+    # single-speaker recipe writes the same `ref_audio` on every row of the
+    # JSONL, so train_data[0] is canonical; warn if that invariant is broken.
+    ref_audio_path = train_data[0]['ref_audio']
+    distinct_refs = {row['ref_audio'] for row in train_data}
+    if len(distinct_refs) > 1:
+        accelerator.print(
+            f"[warn] Found {len(distinct_refs)} distinct ref_audio values in "
+            f"{args.train_jsonl}; saving the embedding for the first row's "
+            f"ref_audio: {ref_audio_path}"
+        )
+    target_speaker_embedding = compute_target_speaker_embedding(
+        model, dataset, ref_audio_path
+    )
+
     num_epochs = args.num_epochs
     model.train()
 
     for epoch in range(num_epochs):
         for step, batch in enumerate(train_dataloader):
             with accelerator.accumulate(model):
-                loss, speaker_embedding = compute_loss(model, batch)
-                if target_speaker_embedding is None:
-                    target_speaker_embedding = speaker_embedding
-
+                loss = compute_loss(model, batch)
                 accelerator.backward(loss)
 
                 if accelerator.sync_gradients:
@@ -326,7 +344,7 @@ def train():
             # `Qwen3TTSModel.from_pretrained(<checkpoint_dir>)`.
             #
             # `speech_tokenizer/` (~682 MB) is the wav<->codes codec. It is
-            # never trained (audio_codes are precomputed by prepare_data.py),
+            # never trained (audio_codes are precomputed by prepare.py),
             # but `Qwen3TTSModel.from_pretrained` only fetches it from the HF
             # Hub when the path argument is a repo id; for a local checkpoint
             # dir it expects `speech_tokenizer/config.json` to exist on disk

@@ -14,9 +14,12 @@ source .venv/bin/activate
 pip install -q -r requirements.txt
 
 # Configuration
-OUTPUT_JSONL="train_raw.jsonl"
+# Default to LJ Speech (~24h of single-speaker English from a public domain
+# reader). Override DATASET_REPO/TEXT_COLUMN to use a different dataset.
+DATASET_REPO="${DATASET_REPO:-SeanSleat/lj_speech}"
+TEXT_COLUMN="${TEXT_COLUMN:-normalized_text}"
+TRAIN_JSONL="train.jsonl"
 CACHE_DIR="./hf_dataset_cache"
-TRAIN_JSONL="train_with_codes.jsonl"
 # On Baseten, $BT_CHECKPOINT_DIR is the only directory whose contents get
 # persisted by the CheckpointingConfig (see config.py). Writing checkpoints
 # anywhere else leaves them on the job's tmpfs and they're lost when the pod
@@ -31,57 +34,49 @@ TOKENIZER_MODEL_PATH="Qwen/Qwen3-TTS-Tokenizer-12Hz"
 # resolve_model_path() snapshot_downloads it.
 INIT_MODEL_PATH="${INIT_MODEL_PATH:-Qwen/Qwen3-TTS-12Hz-1.7B-Base}"
 
-# Preset A: tuned for ~800 sentence-length clips on a single H100.
-# - eff. batch = BATCH_SIZE * GRAD_ACCUM = 4 * 2 = 8 (~100 optimizer steps/epoch)
+# Preset: starting point on a single H100 for a ~1.5h training corpus
+# (~800 sentence-length clips).
+# - eff. batch = BATCH_SIZE * GRAD_ACCUM = 4 * 2 = 8
 # - cosine LR schedule with WARMUP_RATIO of total optimizer steps
-# - more frequent checkpoints so you can A/B by ear
 # - EVAL_SPLIT rows are held out for per-epoch validation loss; set to 0 to
-#   disable. ~5% of an 800-row corpus is a reasonable starting point.
+#   disable.
 BATCH_SIZE=4
 GRAD_ACCUM=2
 LR=5e-6
 EPOCHS=12
 WARMUP_RATIO=0.05
 SAVE_EVERY_N_EPOCHS=2
-SPEAKER_NAME="jade"
+SPEAKER_NAME="${SPEAKER_NAME:-ft_speaker}"
 EVAL_SPLIT=40
 
-# Optional quality / size knobs (override via env vars when calling this script)
-MAX_SAMPLES="${MAX_SAMPLES:-}"
-MIN_CONFIDENCE="${MIN_CONFIDENCE:-0.0}"
-MIN_DURATION="${MIN_DURATION:-0.0}"
-MAX_DURATION="${MAX_DURATION:-0.0}"
+# Optional size / speed knobs (override via env vars when calling this script)
+# MAX_SAMPLES defaults to 800 clips, which is ~1.5h of LJ Speech audio
+# (~6.6s/clip avg). Set MAX_SAMPLES= (empty) to use the full dataset.
+MAX_SAMPLES="${MAX_SAMPLES-800}"
 MAX_WORKERS="${MAX_WORKERS:-32}"
 DATASET_SOURCE="${DATASET_SOURCE:-auto}"  # auto | parquet | audiofolder
 
 # Use the Rust-based hf_transfer downloader (per-file multipart parallelism).
-# `hf-transfer` is in requirements.txt; download_dataset.py also defaults this
-# on, but we set it here too so the env propagates to any other HF calls.
+# `hf-transfer` is in requirements.txt; prepare.py also defaults this on,
+# but we set it here too so the env propagates to any other HF calls.
 export HF_HUB_ENABLE_HF_TRANSFER=1
 
-# Download dataset (baseten-admin/sierra-ft-tts) and convert to JSONL
-echo "Downloading sierra-ft-tts dataset..."
-DOWNLOAD_ARGS=(
-  --output_jsonl "${OUTPUT_JSONL}"
+# Download dataset + precompute audio_codes
+echo "Preparing dataset from ${DATASET_REPO}..."
+PREPARE_ARGS=(
+  --dataset_repo "${DATASET_REPO}"
+  --output_jsonl "${TRAIN_JSONL}"
   --cache_dir "${CACHE_DIR}"
-  --min_confidence "${MIN_CONFIDENCE}"
-  --min_duration "${MIN_DURATION}"
-  --max_duration "${MAX_DURATION}"
+  --device "${DEVICE}"
+  --tokenizer_model_path "${TOKENIZER_MODEL_PATH}"
+  --text_column "${TEXT_COLUMN}"
   --max_workers "${MAX_WORKERS}"
   --source "${DATASET_SOURCE}"
 )
 if [ -n "${MAX_SAMPLES}" ]; then
-  DOWNLOAD_ARGS+=(--max_samples "${MAX_SAMPLES}")
+  PREPARE_ARGS+=(--max_samples "${MAX_SAMPLES}")
 fi
-python download_dataset.py "${DOWNLOAD_ARGS[@]}"
-
-# Prepare data (extract audio_codes)
-echo "Preparing data (extracting audio_codes)..."
-python prepare_data.py \
-  --device "${DEVICE}" \
-  --tokenizer_model_path "${TOKENIZER_MODEL_PATH}" \
-  --input_jsonl "${OUTPUT_JSONL}" \
-  --output_jsonl "${TRAIN_JSONL}"
+python prepare.py "${PREPARE_ARGS[@]}"
 
 # Run fine-tuning
 echo "Starting fine-tuning..."
