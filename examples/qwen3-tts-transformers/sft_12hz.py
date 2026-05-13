@@ -14,6 +14,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 import argparse
+import glob
 import json
 import math
 import os
@@ -44,27 +45,32 @@ def resolve_model_path(path_or_repo_id: str) -> str:
     return snapshot_download(repo_id=path_or_repo_id)
 
 
-def compute_loss(model, batch):
-    """Forward pass + composite TTS loss used by both train and eval."""
+def compute_loss(model, batch, speaker_embedding, sub_talker_loss_weight: float = 0.3):
+    """Forward pass + composite TTS loss used by both train and eval.
+
+    `speaker_embedding` is the (1, hidden) constant produced once before
+    training by `compute_target_speaker_embedding`. It's broadcast into
+    position 6 of the codec-embedding row on every step. The speaker encoder
+    itself is frozen (single-speaker recipe with one shared ref_audio), so
+    recomputing it per micro-batch would be pure waste.
+    """
     input_ids = batch['input_ids']
     codec_ids = batch['codec_ids']
-    ref_mels = batch['ref_mels']
     text_embedding_mask = batch['text_embedding_mask']
     codec_embedding_mask = batch['codec_embedding_mask']
     attention_mask = batch['attention_mask']
     codec_0_labels = batch['codec_0_labels']
     codec_mask = batch['codec_mask']
 
-    speaker_embedding = model.speaker_encoder(
-        ref_mels.to(model.device).to(model.dtype)
-    ).detach()
-
     input_text_ids = input_ids[:, :, 0]
     input_codec_ids = input_ids[:, :, 1]
 
     input_text_embedding = model.talker.model.text_embedding(input_text_ids) * text_embedding_mask
     input_codec_embedding = model.talker.model.codec_embedding(input_codec_ids) * codec_embedding_mask
-    input_codec_embedding[:, 6, :] = speaker_embedding
+    batch_size = input_codec_embedding.shape[0]
+    input_codec_embedding[:, 6, :] = speaker_embedding.to(
+        device=input_codec_embedding.device, dtype=input_codec_embedding.dtype
+    ).expand(batch_size, -1)
 
     input_embeddings = input_text_embedding + input_codec_embedding
 
@@ -80,6 +86,11 @@ def compute_loss(model, batch):
         output_hidden_states=True,
     )
 
+    # `Qwen3TTSTalker.forward` returns `hidden_states=(outputs.hidden_states,
+    # codec_ids)` (a 2-tuple), so `[0]` unwraps the inner tuple-of-layers
+    # produced by the underlying causal LM and `[-1]` selects the last
+    # layer's `(batch, seq, hidden)` tensor — the talker's final hidden
+    # state at every position.
     hidden_states = outputs.hidden_states[0][-1]
     # `codec_mask[:, :-1]` (not `codec_mask[:, 1:]`) is the upstream-correct
     # slice — see QwenLM/Qwen3-TTS commit 022e286 ("fix finetuning bug").
@@ -93,28 +104,31 @@ def compute_loss(model, batch):
         talker_codec_ids, talker_hidden_states
     )
 
-    loss = outputs.loss + 0.3 * sub_talker_loss
+    loss = outputs.loss + sub_talker_loss_weight * sub_talker_loss
     return loss
 
 
-def compute_target_speaker_embedding(model, dataset, ref_audio_path):
+@torch.no_grad()
+def compute_target_speaker_embedding(model, ref_audio_path, sample_dataset):
     """Run the (frozen) speaker encoder on `ref_audio_path` once.
 
     This is the vector we write into the codec embedding table at checkpoint
-    save time. The speaker encoder isn't trained (its output is `.detach()`-ed
-    inside `compute_loss`), so computing it once up front is equivalent to
-    averaging across the dataset -- and is faithful by construction when
-    every row in the JSONL shares the same `ref_audio`.
+    save time AND broadcast into the codec embedding column at every training
+    step. Because the encoder is frozen, computing it once up front is
+    equivalent to averaging across the dataset — and is faithful by
+    construction when every row in the JSONL shares the same `ref_audio`.
+
+    `sample_dataset` is only used for its audio-loading helpers (so we don't
+    duplicate librosa/mel-spectrogram code here).
     """
-    with torch.no_grad():
-        wav, sr = dataset._load_audio_to_np(ref_audio_path)
-        ref_mel = dataset.extract_mels(audio=wav, sr=sr)
-        ref_mel = ref_mel.to(model.device).to(model.dtype)
-        return model.speaker_encoder(ref_mel).detach()
+    wav, sr = sample_dataset._load_audio_to_np(ref_audio_path)
+    ref_mel = sample_dataset.extract_mels(audio=wav, sr=sr)
+    ref_mel = ref_mel.to(model.device).to(model.dtype)
+    return model.speaker_encoder(ref_mel)
 
 
 @torch.no_grad()
-def evaluate(model, eval_dataloader):
+def evaluate(model, eval_dataloader, speaker_embedding, sub_talker_loss_weight):
     """Run the eval forward pass over `eval_dataloader` and return mean loss.
 
     Returns NaN if the dataloader is empty so callers can detect "no eval
@@ -125,7 +139,7 @@ def evaluate(model, eval_dataloader):
     total_loss = 0.0
     total_batches = 0
     for batch in eval_dataloader:
-        loss = compute_loss(model, batch)
+        loss = compute_loss(model, batch, speaker_embedding, sub_talker_loss_weight)
         total_loss += loss.item()
         total_batches += 1
     if was_training:
@@ -133,6 +147,88 @@ def evaluate(model, eval_dataloader):
     if total_batches == 0:
         return float("nan")
     return total_loss / total_batches
+
+
+def save_checkpoint(
+    output_dir: str,
+    model,
+    accelerator: Accelerator,
+    model_path: str,
+    target_speaker_embedding: torch.Tensor,
+    speaker_name: str,
+    training_args: dict,
+):
+    """Persist a self-contained Qwen3-TTS checkpoint to `output_dir`.
+
+    Only rank-0 actually writes; callers should already be gated on
+    `accelerator.is_main_process`. We assume `accelerator.wait_for_everyone()`
+    has been called immediately before so other ranks aren't racing into the
+    next epoch.
+    """
+    # Clone the base model's auxiliary files (text tokenizer, configs,
+    # processor, speech_tokenizer/) so each checkpoint is self-contained
+    # and loadable via `Qwen3TTSModel.from_pretrained(<checkpoint_dir>)`.
+    #
+    # `speech_tokenizer/` (~682 MB) is the wav<->codes codec. It is never
+    # trained (audio_codes are precomputed by prepare.py), but
+    # `Qwen3TTSModel.from_pretrained` only fetches it from the HF Hub when
+    # the path argument is a repo id; for a local checkpoint dir it expects
+    # `speech_tokenizer/config.json` on disk and raises OSError otherwise.
+    # So we copy it through.
+    #
+    # README.md / .gitattributes are skipped — docs / git metadata not
+    # needed at inference.
+    shutil.copytree(
+        model_path,
+        output_dir,
+        dirs_exist_ok=True,
+        ignore=shutil.ignore_patterns("README.md", ".gitattributes"),
+    )
+
+    # Defensive cleanup: if the base model ever ships sharded weights, the
+    # copytree above will bring over `model-00001-of-N.safetensors` plus
+    # `model.safetensors.index.json`, and our subsequent `save_file` of a
+    # consolidated `model.safetensors` would leave the index pointing at
+    # stale shards. Wipe any prior weight files before writing our own.
+    for stale in glob.glob(os.path.join(output_dir, "model*.safetensors*")):
+        os.remove(stale)
+    for stale in glob.glob(os.path.join(output_dir, "pytorch_model*.bin*")):
+        os.remove(stale)
+
+    input_config_file = os.path.join(model_path, "config.json")
+    output_config_file = os.path.join(output_dir, "config.json")
+    with open(input_config_file, "r", encoding="utf-8") as f:
+        config_dict = json.load(f)
+    config_dict["tts_model_type"] = "custom_voice"
+    talker_config = config_dict.get("talker_config", {})
+    talker_config["spk_id"] = {speaker_name: 3000}
+    talker_config["spk_is_dialect"] = {speaker_name: False}
+    config_dict["talker_config"] = talker_config
+    with open(output_config_file, "w", encoding="utf-8") as f:
+        json.dump(config_dict, f, indent=2, ensure_ascii=False)
+
+    with open(os.path.join(output_dir, "training_args.json"), "w", encoding="utf-8") as f:
+        json.dump(training_args, f, indent=2, ensure_ascii=False)
+
+    unwrapped_model = accelerator.unwrap_model(model)
+    state_dict = {k: v.detach().to("cpu") for k, v in unwrapped_model.state_dict().items()}
+
+    # Speaker encoder is frozen and not trained; drop its weights from the
+    # checkpoint to save a few hundred MB. Inference re-loads them from the
+    # base model dir copied above.
+    drop_prefix = "speaker_encoder"
+    for k in [k for k in state_dict.keys() if k.startswith(drop_prefix)]:
+        del state_dict[k]
+
+    # Bake the target speaker embedding into the codec embedding table at
+    # the configured `spk_id` (3000). At inference, the talker reads this
+    # row instead of running the speaker encoder.
+    weight = state_dict["talker.model.codec_embedding.weight"]
+    state_dict["talker.model.codec_embedding.weight"][3000] = (
+        target_speaker_embedding[0].detach().to(weight.device).to(weight.dtype)
+    )
+
+    save_file(state_dict, os.path.join(output_dir, "model.safetensors"))
 
 
 def train():
@@ -152,7 +248,10 @@ def train():
             "small-data SFT."
         ),
     )
-    parser.add_argument("--lr", type=float, default=2e-5)
+    # Defaults below intentionally mirror run.sh / README. TTS fine-tuning is
+    # sensitive to LR — values much above ~1e-5 tend to degrade speaker
+    # quality on small corpora, so we lean conservative.
+    parser.add_argument("--lr", type=float, default=5e-6)
     parser.add_argument(
         "--warmup_ratio",
         type=float,
@@ -163,7 +262,18 @@ def train():
             "the schedule entirely (constant LR)."
         ),
     )
-    parser.add_argument("--num_epochs", type=int, default=3)
+    parser.add_argument("--num_epochs", type=int, default=12)
+    parser.add_argument(
+        "--sub_talker_loss_weight",
+        type=float,
+        default=0.3,
+        help=(
+            "Weight on the sub-talker (depth head) cross-entropy added to the "
+            "main talker loss. 0.3 is the upstream default; lower it (e.g. "
+            "0.1) if the depth head over-fits before the main loss settles, "
+            "raise it (e.g. 0.5) if codec channels 1..15 sound noisy."
+        ),
+    )
     parser.add_argument("--speaker_name", type=str, default="speaker_test")
     parser.add_argument(
         "--eval_split",
@@ -194,13 +304,24 @@ def train():
             "produce one checkpoint."
         ),
     )
+    parser.add_argument(
+        "--log_every_n_steps",
+        type=int,
+        default=10,
+        help="How often (in micro-batches) to print + log train loss / LR.",
+    )
     args = parser.parse_args()
 
     accelerator = Accelerator(
         gradient_accumulation_steps=args.gradient_accumulation_steps,
         mixed_precision="bf16",
         log_with="tensorboard",
+        project_dir=args.output_model_path,
     )
+    # Tensorboard logs land under `<output_model_path>/sft_12hz/`. Drop the
+    # full argparse namespace as the run's hparams so each TB run is
+    # self-describing.
+    accelerator.init_trackers("sft_12hz", config=vars(args))
 
     MODEL_PATH = resolve_model_path(args.init_model_path)
 
@@ -210,6 +331,12 @@ def train():
         attn_implementation="flash_attention_2",
     )
     config = AutoConfig.from_pretrained(MODEL_PATH)
+
+    # Freeze the speaker encoder: single-speaker recipe runs it once before
+    # training (see compute_target_speaker_embedding below) and reuses the
+    # cached embedding on every step. Setting requires_grad=False keeps its
+    # params out of the optimizer entirely.
+    qwen3tts.speaker_encoder.requires_grad_(False)
 
     train_data = open(args.train_jsonl).readlines()
     train_data = [json.loads(line) for line in train_data]
@@ -239,12 +366,15 @@ def train():
             f"training on {len(train_data)}."
         )
 
-    dataset = TTSDataset(train_data, qwen3tts.processor, config)
+    # `skip_ref_mel=True` because the speaker embedding is precomputed once
+    # (see below) and broadcast into every micro-batch — there's no reason
+    # to re-extract the mel spectrogram per __getitem__.
+    dataset = TTSDataset(train_data, qwen3tts.processor, config, skip_ref_mel=True)
     train_dataloader = DataLoader(dataset, batch_size=args.batch_size, shuffle=True, collate_fn=dataset.collate_fn)
 
     eval_dataloader = None
     if eval_data:
-        eval_dataset = TTSDataset(eval_data, qwen3tts.processor, config)
+        eval_dataset = TTSDataset(eval_data, qwen3tts.processor, config, skip_ref_mel=True)
         eval_dataloader = DataLoader(
             eval_dataset,
             batch_size=args.batch_size,
@@ -252,7 +382,11 @@ def train():
             collate_fn=eval_dataset.collate_fn,
         )
 
-    optimizer = AdamW(qwen3tts.model.parameters(), lr=args.lr, weight_decay=0.01)
+    optimizer = AdamW(
+        [p for p in qwen3tts.model.parameters() if p.requires_grad],
+        lr=args.lr,
+        weight_decay=0.01,
+    )
 
     # Cosine LR schedule with linear warmup. With small datasets a flat LR
     # tends to over-shoot early (gradient noise on a partially-adapted speaker
@@ -296,17 +430,26 @@ def train():
             f"{args.train_jsonl}; saving the embedding for the first row's "
             f"ref_audio: {ref_audio_path}"
         )
+    # Run the (frozen) speaker encoder exactly once on the shared ref_audio.
+    # The resulting (1, hidden) tensor is what we (a) inject into the codec
+    # embedding column at every training step and (b) bake into the codec
+    # embedding table at save time.
     target_speaker_embedding = compute_target_speaker_embedding(
-        model, dataset, ref_audio_path
+        model, ref_audio_path, dataset
     )
 
-    num_epochs = args.num_epochs
+    training_args_snapshot = vars(args)
+
+    best_eval_loss = float("inf")
+    global_step = 0
     model.train()
 
-    for epoch in range(num_epochs):
+    for epoch in range(args.num_epochs):
         for step, batch in enumerate(train_dataloader):
             with accelerator.accumulate(model):
-                loss = compute_loss(model, batch)
+                loss = compute_loss(
+                    model, batch, target_speaker_embedding, args.sub_talker_loss_weight
+                )
                 accelerator.backward(loss)
 
                 if accelerator.sync_gradients:
@@ -320,77 +463,85 @@ def train():
                 scheduler.step()
                 optimizer.zero_grad()
 
-            if step % 10 == 0:
+                if accelerator.sync_gradients:
+                    global_step += 1
+
+            if step % args.log_every_n_steps == 0:
                 current_lr = scheduler.get_last_lr()[0]
                 accelerator.print(
                     f"Epoch {epoch} | Step {step} | "
                     f"Loss: {loss.item():.4f} | LR: {current_lr:.2e}"
                 )
+                accelerator.log(
+                    {"train/loss": loss.item(), "train/lr": current_lr, "train/epoch": epoch},
+                    step=global_step,
+                )
 
         if eval_dataloader is not None:
-            eval_loss = evaluate(model, eval_dataloader)
+            eval_loss = evaluate(
+                model, eval_dataloader, target_speaker_embedding, args.sub_talker_loss_weight
+            )
             accelerator.print(
                 f"Epoch {epoch} | Eval Loss: {eval_loss:.4f} "
                 f"(n={len(eval_data)})"
             )
+            accelerator.log(
+                {"eval/loss": eval_loss, "eval/epoch": epoch},
+                step=global_step,
+            )
 
         is_periodic_save = (epoch + 1) % args.save_every_n_epochs == 0
         is_final_epoch = epoch == args.num_epochs - 1
-        if accelerator.is_main_process and (is_periodic_save or is_final_epoch):
-            output_dir = os.path.join(args.output_model_path, f"checkpoint-epoch-{epoch}")
-            # Clone the base model's auxiliary files (text tokenizer, configs,
-            # processor, speech_tokenizer/) so each epoch's checkpoint is
-            # self-contained and loadable via
-            # `Qwen3TTSModel.from_pretrained(<checkpoint_dir>)`.
-            #
-            # `speech_tokenizer/` (~682 MB) is the wav<->codes codec. It is
-            # never trained (audio_codes are precomputed by prepare.py),
-            # but `Qwen3TTSModel.from_pretrained` only fetches it from the HF
-            # Hub when the path argument is a repo id; for a local checkpoint
-            # dir it expects `speech_tokenizer/config.json` to exist on disk
-            # and raises OSError otherwise. So we copy it through.
-            #
-            # Only README.md / .gitattributes are skipped — docs / git metadata
-            # not needed at inference.
-            shutil.copytree(
-                MODEL_PATH,
-                output_dir,
-                dirs_exist_ok=True,
-                ignore=shutil.ignore_patterns(
-                    "README.md",
-                    ".gitattributes",
-                ),
-            )
+        should_save = is_periodic_save or is_final_epoch
 
-            input_config_file = os.path.join(MODEL_PATH, "config.json")
-            output_config_file = os.path.join(output_dir, "config.json")
-            with open(input_config_file, 'r', encoding='utf-8') as f:
-                config_dict = json.load(f)
-            config_dict["tts_model_type"] = "custom_voice"
-            talker_config = config_dict.get("talker_config", {})
-            talker_config["spk_id"] = {
-                args.speaker_name: 3000
-            }
-            talker_config["spk_is_dialect"] = {
-                args.speaker_name: False
-            }
-            config_dict["talker_config"] = talker_config
+        # Sync all ranks before rank-0 starts the slow copytree + state_dict
+        # gather. Without this, other ranks happily proceed into the next
+        # epoch while rank-0 is mid-save, which races on shared filesystems
+        # and on shutdown.
+        if should_save:
+            accelerator.wait_for_everyone()
+            if accelerator.is_main_process:
+                output_dir = os.path.join(args.output_model_path, f"checkpoint-epoch-{epoch}")
+                save_checkpoint(
+                    output_dir=output_dir,
+                    model=model,
+                    accelerator=accelerator,
+                    model_path=MODEL_PATH,
+                    target_speaker_embedding=target_speaker_embedding,
+                    speaker_name=args.speaker_name,
+                    training_args=training_args_snapshot,
+                )
+            accelerator.wait_for_everyone()
 
-            with open(output_config_file, 'w', encoding='utf-8') as f:
-                json.dump(config_dict, f, indent=2, ensure_ascii=False)
+        # Best-checkpoint tracking. Persisted to `<output_model_path>/best/`
+        # so callers can always grab the lowest-eval-loss snapshot without
+        # having to parse training logs. Only updated when eval is enabled
+        # and the current epoch beats the running minimum.
+        if eval_dataloader is not None and eval_loss < best_eval_loss:
+            best_eval_loss = eval_loss
+            accelerator.wait_for_everyone()
+            if accelerator.is_main_process:
+                best_dir = os.path.join(args.output_model_path, "best")
+                save_checkpoint(
+                    output_dir=best_dir,
+                    model=model,
+                    accelerator=accelerator,
+                    model_path=MODEL_PATH,
+                    target_speaker_embedding=target_speaker_embedding,
+                    speaker_name=args.speaker_name,
+                    training_args={
+                        **training_args_snapshot,
+                        "best_epoch": epoch,
+                        "best_eval_loss": best_eval_loss,
+                    },
+                )
+                accelerator.print(
+                    f"[best] Updated {best_dir} (epoch {epoch}, eval_loss={best_eval_loss:.4f})"
+                )
+            accelerator.wait_for_everyone()
 
-            unwrapped_model = accelerator.unwrap_model(model)
-            state_dict = {k: v.detach().to("cpu") for k, v in unwrapped_model.state_dict().items()}
+    accelerator.end_training()
 
-            drop_prefix = "speaker_encoder"
-            keys_to_drop = [k for k in state_dict.keys() if k.startswith(drop_prefix)]
-            for k in keys_to_drop:
-                del state_dict[k]
-
-            weight = state_dict['talker.model.codec_embedding.weight']
-            state_dict['talker.model.codec_embedding.weight'][3000] = target_speaker_embedding[0].detach().to(weight.device).to(weight.dtype)
-            save_path = os.path.join(output_dir, "model.safetensors")
-            save_file(state_dict, save_path)
 
 if __name__ == "__main__":
     train()

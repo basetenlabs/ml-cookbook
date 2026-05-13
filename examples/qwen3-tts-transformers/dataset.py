@@ -31,11 +31,16 @@ AudioLike = Union[
 MaybeList = Union[Any, List[Any]]
 
 class TTSDataset(Dataset):
-    def __init__(self, data_list, processor, config:Qwen3TTSConfig, lag_num = -1):
+    def __init__(self, data_list, processor, config:Qwen3TTSConfig, lag_num = -1, skip_ref_mel: bool = False):
         self.data_list = data_list
         self.processor = processor
         self.lag_num = lag_num
         self.config = config
+        # When the speaker embedding is computed once up front (single-speaker
+        # SFT, same ref_audio on every row), the per-sample mel extraction is
+        # pure waste — `compute_loss` ignores `ref_mels` entirely in that mode.
+        # Skip it to avoid `librosa.load` + `mel_spectrogram` per __getitem__.
+        self.skip_ref_mel = skip_ref_mel
 
     def __len__(self):
         return len(self.data_list)
@@ -131,11 +136,13 @@ class TTSDataset(Dataset):
 
         audio_codes = torch.tensor(audio_codes, dtype=torch.long)
 
-        ref_audio_list = self._ensure_list(ref_audio_path)
-        normalized = self._normalize_audio_inputs(ref_audio_list)
-        wav,sr = normalized[0]
-
-        ref_mel = self.extract_mels(audio=wav, sr=sr)
+        if self.skip_ref_mel:
+            ref_mel = None
+        else:
+            ref_audio_list = self._ensure_list(ref_audio_path)
+            normalized = self._normalize_audio_inputs(ref_audio_list)
+            wav,sr = normalized[0]
+            ref_mel = self.extract_mels(audio=wav, sr=sr)
 
         return {
             "text_ids": text_ids[:,:-5],    # 1 , t
@@ -203,12 +210,8 @@ class TTSDataset(Dataset):
             codec_mask[i,   8+text_ids_len-1:8+text_ids_len-1+codec_ids_len] = True
             attention_mask[i, :8+text_ids_len+codec_ids_len] = True
         
-        ref_mels = [data['ref_mel'] for data in batch]
-        ref_mels = torch.cat(ref_mels,dim=0)
-
-        return {
+        out = {
             'input_ids':input_ids,
-            'ref_mels':ref_mels,
             'attention_mask':attention_mask,
             'text_embedding_mask':text_embedding_mask.unsqueeze(-1),
             'codec_embedding_mask':codec_embedding_mask.unsqueeze(-1),
@@ -216,3 +219,7 @@ class TTSDataset(Dataset):
             'codec_ids': codec_ids,
             'codec_mask':codec_mask
         }
+        if not self.skip_ref_mel:
+            ref_mels = [data['ref_mel'] for data in batch]
+            out['ref_mels'] = torch.cat(ref_mels,dim=0)
+        return out

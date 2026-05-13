@@ -20,6 +20,7 @@ DATASET_REPO="${DATASET_REPO:-SeanSleat/lj_speech}"
 TEXT_COLUMN="${TEXT_COLUMN:-normalized_text}"
 TRAIN_JSONL="train.jsonl"
 CACHE_DIR="./hf_dataset_cache"
+
 # On Baseten, $BT_CHECKPOINT_DIR is the only directory whose contents get
 # persisted by the CheckpointingConfig (see config.py). Writing checkpoints
 # anywhere else leaves them on the job's tmpfs and they're lost when the pod
@@ -56,9 +57,6 @@ MAX_SAMPLES="${MAX_SAMPLES-800}"
 MAX_WORKERS="${MAX_WORKERS:-32}"
 DATASET_SOURCE="${DATASET_SOURCE:-auto}"  # auto | parquet | audiofolder
 
-# Use the Rust-based hf_transfer downloader (per-file multipart parallelism).
-# `hf-transfer` is in requirements.txt; prepare.py also defaults this on,
-# but we set it here too so the env propagates to any other HF calls.
 export HF_HUB_ENABLE_HF_TRANSFER=1
 
 # Download dataset + precompute audio_codes
