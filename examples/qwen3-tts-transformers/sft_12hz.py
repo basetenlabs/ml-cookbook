@@ -335,8 +335,9 @@ def train():
     # Freeze the speaker encoder: single-speaker recipe runs it once before
     # training (see compute_target_speaker_embedding below) and reuses the
     # cached embedding on every step. Setting requires_grad=False keeps its
-    # params out of the optimizer entirely.
-    qwen3tts.speaker_encoder.requires_grad_(False)
+    # params out of the optimizer entirely. It lives on `qwen3tts.model`
+    # (the inner nn.Module), not on the `Qwen3TTSModel` wrapper.
+    qwen3tts.model.speaker_encoder.requires_grad_(False)
 
     train_data = open(args.train_jsonl).readlines()
     train_data = [json.loads(line) for line in train_data]

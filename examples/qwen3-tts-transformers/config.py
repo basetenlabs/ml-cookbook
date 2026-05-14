@@ -42,10 +42,6 @@ training_job = definitions.TrainingJob(
             mount_location=INIT_MODEL_MOUNT,
         ),
     ],
-    interactive_session=definitions.InteractiveSession(
-        trigger=definitions.InteractiveSessionTrigger.ON_STARTUP,
-        session_provider=definitions.InteractiveSessionProvider.SSH,
-    ),
 )
 
 training_project = definitions.TrainingProject(

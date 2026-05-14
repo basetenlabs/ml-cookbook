@@ -46,8 +46,13 @@ class TTSDataset(Dataset):
         return len(self.data_list)
     
     def _load_audio_to_np(self, x: str) -> Tuple[np.ndarray, int]:
-        
-        audio, sr = librosa.load(x, sr=None, mono=True)
+        # `extract_mels` and the Qwen3-TTS speaker encoder both require 24 kHz
+        # input (mel_spectrogram is parameterized for sampling_rate=24000 and
+        # asserts on the way in). Source datasets are typically NOT at 24 kHz —
+        # LJ Speech is 22.05 kHz, common HF audio columns vary — and
+        # `prepare.py` doesn't resample on disk, so we let librosa resample
+        # on load.
+        audio, sr = librosa.load(x, sr=24000, mono=True)
 
         if audio.ndim > 1:
             audio = np.mean(audio, axis=-1)
