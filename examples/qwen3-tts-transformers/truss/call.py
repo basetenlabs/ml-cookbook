@@ -15,7 +15,7 @@ resp = client.post(
     },
     json={
         "input": (
-            "Can I get the grilled tuh-MAY-toes and one order of french fries?"
+            "Wow! Isn't fine-tuning this model amazing?"
         ),
         "voice": "ft_speaker",
         "task_type": "CustomVoice",
