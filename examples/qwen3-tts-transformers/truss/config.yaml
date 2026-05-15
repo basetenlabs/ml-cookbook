@@ -1,0 +1,28 @@
+model_name: Qwen3 TTS 12Hz Finetuned (Custom Voice)
+python_version: py312
+base_image:
+  image: vllm/vllm-omni:v0.20.0
+secrets:
+  hf_access_token: null
+weights:
+  - source: "hf://Qwen/Qwen3-TTS-12Hz-1.7B-Base@main"
+    mount_location: "/models/Qwen3-TTS-12Hz-1.7B-Base"
+system_packages:
+  - sox
+  - ffmpeg
+resources:
+  accelerator: H100
+  use_gpu: true
+training_checkpoints:
+  download_folder: /models/training_checkpoints
+  artifact_references:
+    - training_job_id: abc123 # Replace with your training job ID
+      paths:
+        # Or rank-0/checkpoint-epoch-*/
+        - "rank-0/best"
+docker_server:
+  start_command: bash -c "vllm serve /models/training_checkpoints/abc123/rank-0/best --omni --task CustomVoice --trust-remote-code --host 0.0.0.0 --port 8091 --served-model-name qwen3-tts-12hz-1.7b"
+  server_port: 8091
+  liveness_endpoint: /health
+  readiness_endpoint: /health
+  predict_endpoint: /v1/audio/speech
