@@ -491,7 +491,10 @@ def train():
                 step=global_step,
             )
 
-        is_periodic_save = (epoch + 1) % args.save_every_n_epochs == 0
+        is_periodic_save = (
+            args.save_every_n_epochs > 0
+            and (epoch + 1) % args.save_every_n_epochs == 0
+        )
         is_final_epoch = epoch == args.num_epochs - 1
         should_save = is_periodic_save or is_final_epoch
 

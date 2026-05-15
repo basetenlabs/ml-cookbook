@@ -118,10 +118,18 @@ def _extract_from_parquet(
     parquet_root: Path,
     clips_dir: Path,
     text_column: str,
+    max_samples: Optional[int] = None,
 ) -> List[dict]:
     """
-    Stream rows out of every parquet shard and write the embedded audio bytes
-    to local wav files.
+    Materialize the embedded audio bytes from the parquet shards as local wav
+    files.
+
+    Two-pass to avoid extracting wavs we'd immediately throw away:
+      Pass 1: metadata-only scan (skips the heavy `audio` bytes column) to
+              build candidate rows, sort them by file_name, and apply
+              ``max_samples`` if set.
+      Pass 2: for each shard that still contributes a surviving row, read the
+              `audio` column and write only those wavs to disk.
     """
     try:
         import pyarrow.parquet as pq
@@ -135,12 +143,13 @@ def _extract_from_parquet(
     parquet_files = sorted(parquet_root.rglob("*.parquet"))
     print(f"Reading {len(parquet_files)} parquet shard(s)...")
 
-    rows: List[dict] = []
-    written = 0
-    started = time.time()
-    for pq_file in parquet_files:
-        table = pq.read_table(pq_file)
-        col_names = table.column_names
+    # ---- Pass 1: metadata-only scan ----
+    # We project just the columns needed to compute `file_name` and pick up
+    # `text`. Crucially we skip the `audio` column so we don't pull GBs of
+    # inline wav bytes through memory just to discard most of them.
+    candidates: List[dict] = []
+    for shard_idx, pq_file in enumerate(parquet_files):
+        col_names = pq.read_schema(pq_file).names
 
         if "audio" not in col_names:
             raise RuntimeError(
@@ -153,20 +162,15 @@ def _extract_from_parquet(
                 f"(found: {col_names})"
             )
 
-        for record in table.to_pylist():
+        meta_cols = [text_column]
+        for opt in ("id", "file_name"):
+            if opt in col_names and opt not in meta_cols:
+                meta_cols.append(opt)
+        meta_rows = pq.read_table(pq_file, columns=meta_cols).to_pylist()
+
+        for row_idx, record in enumerate(meta_rows):
             text = record.get(text_column)
             if not text:
-                continue
-
-            audio = record["audio"]
-            if isinstance(audio, dict):
-                audio_bytes = audio.get("bytes")
-                audio_path_in_repo = audio.get("path")
-            else:
-                audio_bytes = audio
-                audio_path_in_repo = None
-
-            if not audio_bytes:
                 continue
 
             row_id = record.get("id")
@@ -174,14 +178,65 @@ def _extract_from_parquet(
                 file_name = record["file_name"]
             elif row_id:
                 file_name = f"clips/{row_id}.wav"
-            elif audio_path_in_repo:
-                file_name = audio_path_in_repo
             else:
-                file_name = f"clips/{written:06d}.wav"
+                # Deterministic fallback; ordered by (shard, in-shard index)
+                # so it's stable across runs.
+                file_name = f"clips/{shard_idx:04d}_{row_idx:06d}.wav"
 
+            candidates.append({
+                "shard_path": pq_file,
+                "row_idx": row_idx,
+                "file_name": file_name,
+                "text": text,
+            })
+
+    total_candidates = len(candidates)
+    candidates.sort(key=lambda c: c["file_name"])
+    if max_samples is not None and max_samples > 0:
+        candidates = candidates[:max_samples]
+    print(
+        f"Parquet metadata scan: {total_candidates} candidate rows"
+        + (
+            f" (selecting first {len(candidates)} after sort, "
+            f"max_samples={max_samples})"
+            if len(candidates) != total_candidates
+            else ""
+        )
+    )
+
+    # Group surviving rows by shard so each shard is read at most once.
+    by_shard: "dict[Path, List[dict]]" = {}
+    for c in candidates:
+        by_shard.setdefault(c["shard_path"], []).append(c)
+
+    # ---- Pass 2: write only the wavs we actually keep ----
+    rows: List[dict] = []
+    written = 0
+    started = time.time()
+    for pq_file, shard_cands in by_shard.items():
+        # If every selected wav for this shard already exists on disk (re-run
+        # of prepare.py with the same --max_samples), skip the parquet read
+        # entirely.
+        pending = [
+            c for c in shard_cands
+            if not (clips_dir / c["file_name"]).resolve().exists()
+        ]
+        audio_col = None
+        if pending:
+            audio_col = pq.read_table(pq_file, columns=["audio"])["audio"]
+
+        for c in shard_cands:
+            file_name = c["file_name"]
             out_path = (clips_dir / file_name).resolve()
-            out_path.parent.mkdir(parents=True, exist_ok=True)
             if not out_path.exists():
+                audio = audio_col[c["row_idx"]].as_py()
+                if isinstance(audio, dict):
+                    audio_bytes = audio.get("bytes")
+                else:
+                    audio_bytes = audio
+                if not audio_bytes:
+                    continue
+                out_path.parent.mkdir(parents=True, exist_ok=True)
                 with open(out_path, "wb") as f:
                     f.write(audio_bytes)
                 written += 1
@@ -189,13 +244,14 @@ def _extract_from_parquet(
             rows.append({
                 "file_name": file_name,
                 "audio_path": str(out_path),
-                "text": text,
+                "text": c["text"],
             })
 
     elapsed = max(time.time() - started, 1e-3)
+    rate = written / elapsed if written else 0.0
     print(
         f"Extracted {len(rows)} rows ({written} new wav files written) "
-        f"in {elapsed:.1f}s ({written / elapsed:.0f} files/sec written)."
+        f"in {elapsed:.1f}s ({rate:.0f} files/sec written)."
     )
     return rows
 
@@ -293,7 +349,15 @@ def _download_via_audiofolder(
     token: Optional[str],
     max_workers: int,
     text_column: str,
+    max_samples: Optional[int] = None,
 ) -> Tuple[Path, List[dict]]:
+    """
+    Two-pass AudioFolder fetch:
+      Pass 1: pull just metadata (manifests, READMEs) so we can enumerate
+              every candidate row without downloading any wavs.
+      Pass 2: sort + apply ``max_samples``, then targeted-download only the
+              wavs for the surviving rows.
+    """
     print(f"[fallback] Fetching metadata from {dataset_repo} (AudioFolder layout)...")
     repo_root = Path(
         snapshot_download(
@@ -313,6 +377,33 @@ def _download_via_audiofolder(
             text_column=text_column,
         )
     )
+
+    total_candidates = len(rows)
+    rows.sort(key=lambda r: r["file_name"])
+    if max_samples is not None and max_samples > 0:
+        rows = rows[:max_samples]
+    if rows and len(rows) != total_candidates:
+        print(
+            f"AudioFolder metadata scan: {total_candidates} candidate rows "
+            f"(selecting first {len(rows)} after sort, max_samples={max_samples})."
+        )
+
+    missing_files = sorted({
+        r["file_name"] for r in rows if not Path(r["audio_path"]).exists()
+    })
+    if missing_files:
+        print(
+            f"Downloading {len(missing_files)} audio clips with "
+            f"max_workers={max_workers}..."
+        )
+        _download_clips(
+            dataset_repo=dataset_repo,
+            cache_dir=cache_dir,
+            file_names=missing_files,
+            token=token,
+            max_workers=max_workers,
+        )
+
     return repo_root, rows
 
 
@@ -350,6 +441,7 @@ def download_dataset(
                 parquet_root=parquet_root,
                 clips_dir=cache_dir,
                 text_column=text_column,
+                max_samples=max_samples,
             )
             repo_root = cache_dir
         else:
@@ -368,16 +460,11 @@ def download_dataset(
             token=token,
             max_workers=max_workers,
             text_column=text_column,
+            max_samples=max_samples,
         )
 
     if not rows:
         raise SystemExit("No usable rows found in the dataset.")
-
-    rows.sort(key=lambda r: r["file_name"])
-    total_rows = len(rows)
-
-    if max_samples is not None and max_samples > 0:
-        rows = rows[:max_samples]
 
     if not 0 <= ref_index < len(rows):
         raise SystemExit(
@@ -385,28 +472,7 @@ def download_dataset(
             f"(only {len(rows)} samples available)."
         )
 
-    print(
-        f"Samples: {total_rows}"
-        + (f" (using first {len(rows)})" if len(rows) != total_rows else "")
-    )
-
-    # AudioFolder path needs a follow-up wav download for the surviving rows.
-    # Parquet path already wrote the wavs while extracting, so this is a no-op
-    # in that case.
-    missing = [r for r in rows if not Path(r["audio_path"]).exists()]
-    if missing:
-        needed_files = sorted({r["file_name"] for r in missing})
-        print(
-            f"Downloading {len(needed_files)} audio clips with "
-            f"max_workers={max_workers}..."
-        )
-        _download_clips(
-            dataset_repo=dataset_repo,
-            cache_dir=cache_dir,
-            file_names=needed_files,
-            token=token,
-            max_workers=max_workers,
-        )
+    print(f"Samples: {len(rows)}")
 
     still_missing = [r for r in rows if not Path(r["audio_path"]).exists()]
     if still_missing:
