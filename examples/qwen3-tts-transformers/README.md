@@ -8,8 +8,6 @@ The Qwen3-TTS-12Hz-1.7B/0.6B-Base model series currently supports single-speaker
 To run on Baseten, run the following command to deploy the finetuning job:
 ```truss train push config.py```
 
-
-
 ## Local Usage Reference
 
 ### 0) Prepare the dataset
