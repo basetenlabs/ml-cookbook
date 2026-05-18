@@ -4,6 +4,12 @@ The Qwen3-TTS-12Hz-1.7B/0.6B-Base model series currently supports single-speaker
 
 **Note:** The `run.sh` script automatically creates and uses a virtual environment (`.venv`) to avoid conflicts with system Python installations. If running scripts manually, ensure you're using a virtual environment or have the required packages installed.
 
+## Quickstart
+To run on Baseten, run the following command to deploy the finetuning job:
+```truss train push config.py```
+
+## Local Usage Reference
+
 ### 0) Prepare the dataset
 
 `prepare.py` downloads a HuggingFace TTS dataset, materializes the wav clips locally, and writes the training JSONL with precomputed `audio_codes` so the actual SFT loop stays fast.
