@@ -10,6 +10,8 @@ To run on Baseten, run the following command to deploy the finetuning job:
 
 
 
+## Local Usage Reference
+
 ### 0) Prepare the dataset
 
 `prepare.py` downloads a HuggingFace TTS dataset, materializes the wav clips locally, and writes the training JSONL with precomputed `audio_codes` so the actual SFT loop stays fast.
