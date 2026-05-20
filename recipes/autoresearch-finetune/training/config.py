@@ -15,7 +15,7 @@ GPU_COUNT = 2                                     # GPUs per training job
 # Training job definition (generally don't need to edit below)
 # ---------------------------------------------------------------------------
 
-BASE_IMAGE = "baseten/megatron:py3.11.11-cuda12.8.1-torch2.8.0-fa2.8.1-megatron0.14.1-msswift3.10.3"
+BASE_IMAGE = "baseten/megatron:py3.11.11-cuda12.8.1-torch2.9.1-fa2.8.3-megatron0.16.1-msswift4.2.1-peftstamp"
 MODEL_MOUNT = f"/app/models/{MODEL}"
 
 training_runtime = definitions.Runtime(
