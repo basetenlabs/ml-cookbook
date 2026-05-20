@@ -2,7 +2,7 @@ from truss_train import definitions
 from truss.base import truss_config
 
 project_name = "Qwen3.6-35B-A3B Long Context - ML Cookbook"
-BASE_IMAGE = "baseten/megatron:py3.11.11-cuda12.8.1-torch2.9.1-fa2.8.3-megatron0.16.1-msswift4.1"
+BASE_IMAGE = "baseten/megatron:py3.11.11-cuda12.8.1-torch2.9.1-fa2.8.3-megatron0.16.1-msswift4.2.1-peftstamp"
 
 training_runtime = definitions.Runtime(
     start_commands=["chmod +x ./run.sh && ./run.sh"],

@@ -21,7 +21,7 @@ This example fine-tunes [Qwen3.6-27B](https://huggingface.co/Qwen/Qwen3.6-27B) �
 
 ## Software stack
 
-The base image (`baseten/megatron:py3.11.11-cuda12.8.1-torch2.9.1-fa2.8.3-megatron0.16.1-msswift4.1`) ships with everything the megatron sft training path needs — no in-script pip installs:
+The base image (`baseten/megatron:py3.11.11-cuda12.8.1-torch2.9.1-fa2.8.3-megatron0.16.1-msswift4.2.1-peftstamp`) ships with everything the megatron sft training path needs — no in-script pip installs:
 
 | Package | Version |
 |---------|---------|
