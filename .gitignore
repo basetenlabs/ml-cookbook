@@ -36,4 +36,5 @@ share/python-wheels/
 .installed.cfg
 *.egg
 MANIFEST
-.DS_Store
+.DS_Store.venv/
+.ruff_cache/

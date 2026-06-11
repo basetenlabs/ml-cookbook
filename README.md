@@ -20,6 +20,7 @@ From data preprocessing to checkpointed and trained models, these recipes cover 
 
 - [Usage](#usage)
   - [Examples vs Recipes](#examples-vs-recipes)
+  - [Loops: online training SDK](#loops-online-training-sdk)
   - [Programmatic Training API](#programmatic-training-api)
   - [Long-context SFT](#long-context-sft)
   - [Fine-tune GPT OSS 20B with LoRa and trl](#fine-tune-gpt-oss-20b-with-lora-and-trl)
@@ -81,6 +82,12 @@ git clone https://github.com/basetenlabs/ml-cookbook.git
 `examples/` are runnable, model/framework-specific projects you can launch directly with `truss train push config.py`.
 
 `recipes/` are reusable implementation guides and patterns that help you choose an approach and adapt it to your own project.
+
+### Loops: online training SDK
+
+Loops is Baseten's SDK for online training: write your training loop in plain Python — forward-backward passes, optimizer steps, weight sync to a live sampler — with no infrastructure management. The Loops cookbook has starter recipes for SFT, GRPO (sync and async with bounded off-policy sampling), and multi-turn RL.
+
+[`recipes/loops/README.md`](recipes/loops/README.md)
 
 ### Programmatic Training API
 
