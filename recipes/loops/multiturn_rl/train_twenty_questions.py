@@ -1,3 +1,6 @@
+# Adapted from tinker-cookbook (https://github.com/thinking-machines-lab/tinker-cookbook),
+# Copyright 2025 Thinking Machines Lab, licensed under Apache-2.0. Modified by Baseten.
+
 """Multi-turn RL: train a model to play twenty questions against another LLM.
 
 Each episode is a full game — the player (the policy being trained) asks

@@ -1,3 +1,6 @@
+# Adapted from tinker-cookbook (https://github.com/thinking-machines-lab/tinker-cookbook),
+# Copyright 2025 Thinking Machines Lab, licensed under Apache-2.0. Modified by Baseten.
+
 """Async GRPO on GSM8K with bounded off-policy sampling.
 
 Unlike the synchronous loop in train_grpo.py — which alternates between

@@ -1,3 +1,6 @@
+# Adapted from tinker-cookbook (https://github.com/thinking-machines-lab/tinker-cookbook),
+# Copyright 2025 Thinking Machines Lab, licensed under Apache-2.0. Modified by Baseten.
+
 """GRPO on GSM8K math problems.
 
 Uses tinker-cookbook's RL training loop, running against a Baseten Loops

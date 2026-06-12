@@ -1,3 +1,6 @@
+# Adapted from tinker-cookbook (https://github.com/thinking-machines-lab/tinker-cookbook),
+# Copyright 2025 Thinking Machines Lab, licensed under Apache-2.0. Modified by Baseten.
+
 """Supervised fine-tuning on the HuggingFaceH4/no_robots chat dataset.
 
 Uses tinker-cookbook's supervised training loop, running against a Baseten
