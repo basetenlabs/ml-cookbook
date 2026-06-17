@@ -1,7 +1,7 @@
   <a href="https://www.baseten.co/">
     <img alt="Baseten" src="https://github.com/user-attachments/assets/1e342a9e-56a5-4919-b776-228a5fc1288e">
   </a>
-  
+
 <p align="center">
   <strong><a href="https://docs.baseten.co/examples/deploy-your-first-model">Inference docs</a> | <a href="https://docs.baseten.co/training/overview">Training docs</a></strong>
 </p>
@@ -41,9 +41,9 @@ Before getting started, ensure you have the following:
   - This is required to access models on Huggingface that have gated access. More information on setting up Huggingface access tokens can be found [here](https://huggingface.co/docs/hub/en/security-tokens).
 - Python 3.8 to 3.11 installed. [Conda](https://docs.conda.io/projects/conda/en/latest/user-guide/getting-started.html) env recommended.
 
-### Run the examples 
+### Run the examples
 
-#### Install `truss` 
+#### Install `truss`
 Use the appropriate command for your package manager
 ```bash
 # pip
@@ -94,6 +94,12 @@ Loops is Baseten's SDK for online training: write your training loop in plain Py
 The Programmatic Training API lets you launch and manage machine learning training jobs directly from your Python code, rather than relying solely on CLI commands or configuration files.
 
 [`recipes/programmatic-training-api/README.md`](recipes/programmatic-training-api/README.md)
+
+### Isaac Lab RL
+
+[NVIDIA Isaac Lab](https://github.com/isaac-sim/IsaacLab) is a GPU-accelerated robot-learning framework built on Isaac Sim. This recipe runs headless reinforcement-learning training (Cartpole by default, any Isaac Lab task) as a Baseten training job. Note Isaac Sim's RTX renderer requires an RT-core GPU (A10G/L4/T4) — it does not run on H100/A100/B200.
+
+[`recipes/isaac-lab/README.md`](recipes/isaac-lab/README.md)
 
 ### Long-context SFT
 
