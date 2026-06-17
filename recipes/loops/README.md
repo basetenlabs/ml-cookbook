@@ -58,6 +58,10 @@ In `rl/train_grpo_async.py`, rollout workers generate trajectory groups continuo
 
 Defaults here use Qwen3.5 models, which are supported by Loops trainers and samplers. Pick the smallest model that works for your task to keep iteration fast — `Qwen/Qwen3.5-4B` is a good starting point, and `Qwen/Qwen3-0.6B` trains in minutes if you just want to validate an environment before scaling up.
 
+## Visualizing your rollouts
+
+Use the `rollouts-dashboard` skill to visualize your rollouts as your training progresses. This skill helps your agents build helpful data visualizations for RL use cases.
+
 ## License and attribution
 
 The recipes in this directory are adapted from [tinker-cookbook](https://github.com/thinking-machines-lab/tinker-cookbook), Copyright 2025 Thinking Machines Lab, licensed under the Apache License 2.0 (see [LICENSE](LICENSE) in this directory). Each adapted file carries an attribution header noting it was modified by Baseten. This Apache-2.0 licensing applies to the contents of `recipes/loops/`; the rest of this repository is MIT-licensed.
