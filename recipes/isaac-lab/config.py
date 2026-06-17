@@ -1,16 +1,13 @@
 from truss_train import definitions
 from truss.base import truss_config
 
-project_name = "isaac-lab-cartpole"
+project_name = "Isaac Lab Cartpole RL - ML Cookbook"
 
-# Ubuntu 22.04 / GLIBC 2.35 / Python 3.11 / torch 2.7.0+cu128 — an exact match for
-# Isaac Sim 5.1's requirements, so no Python or torch reinstall is needed.
+# Matches Isaac Sim 5.1 exactly (Ubuntu 22.04, Python 3.11, torch 2.7.0+cu128).
 BASE_IMAGE = "pytorch/pytorch:2.7.0-cuda12.8-cudnn9-devel"
 
-# Isaac Sim's RTX renderer initializes Vulkan even in --headless mode and requires
-# hardware ray tracing. This only works on RT-core GPUs (T4, A10G, L4). Compute SKUs
-# (A100, H100, B200) have no RT cores and cannot create a Vulkan device — Isaac Sim
-# fails at GPU-foundation init on those. A10G is a good default for Isaac Lab RL.
+# Isaac Sim's RTX renderer needs hardware ray tracing, so it only runs on RT-core GPUs
+# (T4, A10G, L4) — not on compute SKUs (A100, H100, B200), which can't create a Vulkan device.
 ACCELERATOR = truss_config.Accelerator.A10G
 GPU_COUNT = 1
 
@@ -20,13 +17,10 @@ training_runtime = definitions.Runtime(
         "./run.sh",
     ],
     environment_variables={
-        # Default is "compute,utility", which injects only CUDA libs. "all" makes the
-        # NVIDIA container runtime also inject the graphics/Vulkan stack (libGLX_nvidia,
-        # nvidia_icd.json, libnvidia-rtcore) that the RTX renderer needs.
+        # "all" makes the container runtime inject the graphics/Vulkan stack, not just CUDA.
         "NVIDIA_DRIVER_CAPABILITIES": "all",
         # Accept the Omniverse EULA non-interactively; otherwise `import isaacsim` blocks.
         "OMNI_KIT_ACCEPT_EULA": "YES",
-        # Route pip + Kit shader caches onto the persistent cache mount for fast reruns.
         "PIP_CACHE_DIR": "/root/.cache/pip",
     },
     cache_config=definitions.CacheConfig(
