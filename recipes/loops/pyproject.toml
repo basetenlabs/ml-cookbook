@@ -5,10 +5,10 @@ description = "Starter training recipes for the Baseten Loops SDK"
 requires-python = ">=3.13"
 dependencies = [
     "tinker-cookbook[math-rl]",
-    "baseten-loops>=0.5.0",
     "baseten-loops-tinker>=0.4.0",
     "chz",
     "wandb>=0.16.0",
+    "baseten-loops>=0.5.0",
 ]
 
 [tool.uv]
