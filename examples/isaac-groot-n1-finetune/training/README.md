@@ -5,7 +5,7 @@ Vision-Language-Action foundation model for humanoid robots, on a LeRobot-format
 dataset. Training is pure PyTorch on pre-recorded demonstrations, so no simulator
 or rendering stack is required.
 
-**Resources:** 1 node, 1x L40S GPU (48GB).
+**Resources:** 1 node, 1x A10G GPU (24GB).
 
 ## Prerequisites
 
@@ -36,9 +36,10 @@ truss train push config.py
 - **Dataset.** The example trains on the robotics demo dataset bundled in the
   GR00T repo (`demo_data/robot_sim.PickNPlace`). Point `--dataset-path` in
   `run.sh` at your own LeRobot v2 dataset (must include `meta/modality.json`).
-- **GPU / VRAM.** A full fine-tune needs a 40GB+ GPU (L40S or H100). On a 24GB GPU
-  (A10G/L4), switch `run.sh` to LoRA (`--lora_rank 64`) or
-  `--no-tune_diffusion_model`.
+- **GPU / VRAM.** This example runs on a 24GB A10G by passing
+  `--no-tune_diffusion_model`, which keeps the fine-tune within 24GB. For a full
+  fine-tune that also tunes the diffusion head, use a 40GB+ GPU (L40S or H100) and
+  drop that flag, or use LoRA (`--lora_rank 64`).
 - **Pin a version.** `run.sh` clones `main`. Pin to a release tag and match the
   command: N1.5 uses `scripts/gr00t_finetune.py`, N1.7 uses
   `gr00t/experiment/launch_finetune.py`.

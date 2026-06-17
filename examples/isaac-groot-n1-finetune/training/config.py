@@ -25,9 +25,10 @@ training_runtime = definitions.Runtime(
 training_compute = definitions.Compute(
     node_count=1,
     accelerator=truss_config.AcceleratorSpec(
-        # Full fine-tune needs a 40GB+ GPU; L40S (48GB) fits, H100 is faster. On a
-        # 24GB GPU (A10G/L4), switch run.sh to LoRA or --no-tune_diffusion_model.
-        accelerator=truss_config.Accelerator.L40S,
+        # A10G (24GB): run.sh passes --no-tune_diffusion_model so the fine-tune
+        # fits in 24GB. For a full fine-tune of the diffusion head, use a 40GB+
+        # GPU (L40S/H100) and drop that flag (and/or use LoRA).
+        accelerator=truss_config.Accelerator.A10G,
         count=1,
     ),
 )

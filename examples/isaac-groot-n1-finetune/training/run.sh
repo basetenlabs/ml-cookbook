@@ -31,11 +31,14 @@ uv pip install flash-attn==2.7.4.post1 --no-build-isolation
 
 # Fine-tune. The example trains on the robotics demo dataset bundled in the repo.
 # Replace --dataset-path with your own LeRobot v2 dataset (needs meta/modality.json).
+# --no-tune_diffusion_model keeps the fine-tune within a 24GB A10G. On a 40GB+ GPU
+# (L40S/H100) drop it for a full fine-tune and raise --batch-size.
 python scripts/gr00t_finetune.py \
   --dataset-path ./demo_data/robot_sim.PickNPlace \
   --num-gpus "${BT_NUM_GPUS:-1}" \
   --output-dir "${BT_CHECKPOINT_DIR:-./outputs}" \
+  --no-tune_diffusion_model \
   --max-steps 500 \
-  --batch-size 32
+  --batch-size 8
 
 echo "GR00T fine-tune complete. Checkpoints in ${BT_CHECKPOINT_DIR:-./outputs}"
