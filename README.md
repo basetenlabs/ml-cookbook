@@ -29,6 +29,7 @@ From data preprocessing to checkpointed and trained models, these recipes cover 
     - [Training](#training-1)
   - [Train and deploy an MNIST digit classifier with Pytorch](#train-and-deploy-an-mnist-digit-classifier-with-pytorch)
     - [Training](#training-2)
+  - [Fine-tune NVIDIA Isaac-GR00T N1](#fine-tune-nvidia-isaac-gr00t-n1)
 - [Contributing](#contributing)
 - [License](#license)
 
@@ -201,6 +202,12 @@ In this example, since checkpointing is enabled in `config.py`, checkpoints are 
 ```
 truss train get_checkpoint_urls --job-id $JOB_ID
 ```
+
+### Fine-tune NVIDIA Isaac-GR00T N1
+
+[NVIDIA Isaac-GR00T](https://github.com/NVIDIA/Isaac-GR00T) is a ~3B Vision-Language-Action foundation model for humanoid robots. This recipe fine-tunes it on a LeRobot-format dataset. Training is pure PyTorch on pre-recorded demonstrations — no simulator or rendering stack — so it runs on any GPU. It defaults to a single A10G (24GB) via `--no-tune_diffusion_model`; use a 40GB+ GPU (L40S/H100) for a full fine-tune.
+
+[`recipes/isaac-groot/README.md`](recipes/isaac-groot/README.md)
 
 ## Contributing
 
