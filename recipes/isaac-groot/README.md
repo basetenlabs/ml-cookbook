@@ -40,7 +40,11 @@ base model needs no token.
 
 ## Notes
 
+- **Verified on H100.** Run end-to-end on a single H100 — full fine-tune, 100
+  steps, full 3B checkpoint synced, job completed cleanly.
 - **Pinned to n1.5.** `run.sh` clones the `n1.5-release` tag, whose
-  `scripts/gr00t_finetune.py` entrypoint and `--no-tune-diffusion-model` flag are
-  stable. (`main` has moved to N1.7, which uses
-  `gr00t/experiment/launch_finetune.py` instead.)
+  `scripts/gr00t_finetune.py` entrypoint and CLI flags are stable. (`main` has
+  moved to N1.7, which uses `gr00t/experiment/launch_finetune.py` instead.)
+- **Weights & Biases is off.** `run.sh` sets `WANDB_MODE=disabled` (the job has no
+  W&B key); metrics print to the job logs. To enable it, set `WANDB_MODE=online`
+  and add a `WANDB_API_KEY` workspace secret.
