@@ -205,7 +205,7 @@ truss train get_checkpoint_urls --job-id $JOB_ID
 
 ### Fine-tune NVIDIA Isaac-GR00T N1
 
-[NVIDIA Isaac-GR00T](https://github.com/NVIDIA/Isaac-GR00T) is a ~3B Vision-Language-Action foundation model for humanoid robots. This recipe fine-tunes it on a LeRobot-format dataset. Training is pure PyTorch on pre-recorded demonstrations — no simulator or rendering stack — so it runs on any GPU. It defaults to a single A10G (24GB) via `--no-tune_diffusion_model`; use a 40GB+ GPU (L40S/H100) for a full fine-tune.
+[NVIDIA Isaac-GR00T](https://github.com/NVIDIA/Isaac-GR00T) is a ~3B Vision-Language-Action foundation model for humanoid robots. This recipe fine-tunes it on a LeRobot-format dataset. Training is pure PyTorch on pre-recorded demonstrations — no simulator or rendering stack. It defaults to a full fine-tune on a single H100; to run on a 24GB GPU (A10G), use LoRA (`--lora-rank 64`).
 
 [`recipes/isaac-groot/README.md`](recipes/isaac-groot/README.md)
 
