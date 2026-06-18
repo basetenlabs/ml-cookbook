@@ -29,7 +29,7 @@ source /opt/groot-venv/bin/activate
 uv pip install -e .
 uv pip install flash-attn==2.7.4.post1 --no-build-isolation
 
-# Fine-tune. The example trains on the robotics demo dataset bundled in the repo.
+# Fine-tune. The recipe trains on the robotics demo dataset bundled in the repo.
 # Replace --dataset-path with your own LeRobot v2 dataset (needs meta/modality.json).
 # --no-tune_diffusion_model keeps the fine-tune within a 24GB A10G. On a 40GB+ GPU
 # (L40S/H100) drop it for a full fine-tune and raise --batch-size.
