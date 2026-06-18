@@ -42,4 +42,3 @@ base model needs no token.
 - **Pin a version.** `run.sh` clones `main`. Pin to a release tag and match the
   command: N1.5 uses `scripts/gr00t_finetune.py`, N1.7 uses
   `gr00t/experiment/launch_finetune.py`.
-- Isaac-GR00T is currently NVIDIA **Early Access** (no commercial deployment until GA).
