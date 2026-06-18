@@ -12,10 +12,11 @@ project_name = "isaac-groot-n1-finetune"
 # build a 3.10 environment.
 BASE_IMAGE = "pytorch/pytorch:2.7.0-cuda12.8-cudnn9-devel"
 
-# A10G (24GB): run.sh passes --no-tune_diffusion_model so the fine-tune fits in
-# 24GB. For a full fine-tune of the diffusion head, use a 40GB+ GPU (L40S/H100)
-# and drop that flag (and/or use LoRA).
-ACCELERATOR = truss_config.Accelerator.A10G
+# H100 (80GB): a full fine-tune of GR00T's projector + diffusion action head fits
+# comfortably, and the box's large host RAM handles the full 3B-model save.
+# (A10G trains GR00T fine, but its 16GB host RAM OOMs at the full save — use LoRA
+# there; see run.sh.)
+ACCELERATOR = truss_config.Accelerator.H100
 GPU_COUNT = 1
 
 training_runtime = definitions.Runtime(
@@ -24,8 +25,6 @@ training_runtime = definitions.Runtime(
         "./run.sh",
     ],
     environment_variables={
-        # Faster downloads for the ~6GB base model.
-        "HF_HUB_ENABLE_HF_TRANSFER": "true",
         # For gated HF datasets/models, add an `hf_access_token` workspace secret
         # and map it here (the public GR00T base model needs no token):
         #   "HF_TOKEN": definitions.SecretReference(name="hf_access_token"),
@@ -33,6 +32,9 @@ training_runtime = definitions.Runtime(
     cache_config=definitions.CacheConfig(
         enabled=True,
         enable_legacy_hf_mount=True,
+        # Don't pin the HF cache to one GPU type's nodes — lets the same project
+        # run on A10G or H100 without a cache-affinity conflict.
+        require_cache_affinity=False,
     ),
     checkpointing_config=definitions.CheckpointingConfig(
         enabled=True,

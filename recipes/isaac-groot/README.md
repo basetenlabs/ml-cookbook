@@ -10,10 +10,11 @@ rendering stack — so it runs on any GPU with no RT-core requirement.
 
 ## Hardware
 
-The default is a single **A10G (24GB)**, using `--no-tune_diffusion_model` so the
-fine-tune fits in 24GB. For a full fine-tune that also tunes the diffusion head,
-use a 40GB+ GPU (**L40S** or **H100**) and drop that flag, or use LoRA
-(`--lora_rank 64`).
+The default is a single **H100 (80GB)**, which runs a full fine-tune of GR00T's
+projector and diffusion action head and has ample host RAM for the full 3B-model
+save. To fine-tune on a smaller GPU such as an **A10G (24GB)**, add `--lora-rank 64`
+in `run.sh` (training fits, but A10G's 16GB host RAM can OOM on a full-model save,
+so LoRA's small-adapter save is the safer path there).
 
 ## How it works
 
@@ -39,6 +40,7 @@ base model needs no token.
 
 ## Notes
 
-- **Pin a version.** `run.sh` clones `main`. Pin to a release tag and match the
-  command: N1.5 uses `scripts/gr00t_finetune.py`, N1.7 uses
-  `gr00t/experiment/launch_finetune.py`.
+- **Pinned to n1.5.** `run.sh` clones the `n1.5-release` tag, whose
+  `scripts/gr00t_finetune.py` entrypoint and `--no-tune-diffusion-model` flag are
+  stable. (`main` has moved to N1.7, which uses
+  `gr00t/experiment/launch_finetune.py` instead.)
