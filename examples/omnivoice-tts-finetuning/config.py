@@ -1,7 +1,13 @@
 from truss_train import definitions, WeightsSource
 from truss.base import truss_config
 
-BASE_IMAGE = "pytorch/pytorch:2.8.0-cuda12.8-cudnn9-runtime"
+# Use the `-devel` image (not `-runtime`): the default flex_attention backend
+# compiles its kernels at runtime via torch.compile/Inductor/Triton, which
+# needs a host C compiler (gcc) + CUDA dev headers. The slim runtime image
+# ships neither and fails with "Failed to find C compiler". If you'd rather
+# avoid runtime compilation entirely, switch run.sh to the SDPA training
+# config and the runtime image is sufficient.
+BASE_IMAGE = "pytorch/pytorch:2.8.0-cuda12.8-cudnn9-devel"
 PROJECT_NAME = "OmniVoice Finetuning (TTS)"
 
 # Pretrained OmniVoice checkpoint to fine-tune from. We mount it so the job

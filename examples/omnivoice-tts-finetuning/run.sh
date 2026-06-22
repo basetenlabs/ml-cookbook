@@ -142,6 +142,21 @@ print(f"Wrote rendered train config to {dst}")
 PY
 fi
 
+# OmniVoice's trainer saves the AdamW optimizer state (optimizer.bin, ~2x the
+# model size) into every checkpoint via accelerator.save_state. That state is
+# only needed to *resume* training, not for inference/deployment, so we strip
+# it to keep checkpoints lean. A background sweeper deletes it as checkpoints
+# appear (so peak disk stays low during training), plus a final sweep below.
+# NOTE: with optimizer.bin removed you cannot resume from these checkpoints
+# (resume_from_checkpoint); they remain fully loadable via from_pretrained.
+strip_optimizer_state() {
+  find "${OUTPUT_DIR}" -type f -name 'optimizer*.bin' -delete 2>/dev/null || true
+}
+
+( while true; do strip_optimizer_state; sleep 30; done ) &
+SWEEPER_PID=$!
+trap 'kill "${SWEEPER_PID}" 2>/dev/null || true' EXIT
+
 # ---- Stage 2: fine-tune ----
 echo "Stage 2: Fine-tuning..."
 accelerate launch \
@@ -152,4 +167,8 @@ accelerate launch \
   --data_config "${DATA_CONFIG}" \
   --output_dir "${OUTPUT_DIR}"
 
-echo "Done. Checkpoints written under ${OUTPUT_DIR}"
+# Stop the sweeper and do a final pass over the last checkpoint(s).
+kill "${SWEEPER_PID}" 2>/dev/null || true
+strip_optimizer_state
+
+echo "Done. Checkpoints written under ${OUTPUT_DIR} (optimizer state stripped)"

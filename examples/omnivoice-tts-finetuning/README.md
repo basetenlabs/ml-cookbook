@@ -177,6 +177,8 @@ DATASET_REPO=org/my-tts-dataset TEXT_COLUMN=text ./run.sh
 
 Checkpoints land under `${OUTPUT_DIR}/checkpoint-<step>` (HF format: `config.json` + `model.safetensors` + tokenizer files), directly loadable with `OmniVoice.from_pretrained(...)`.
 
+> **Optimizer state is stripped.** OmniVoice's trainer also writes the AdamW optimizer state (`optimizer.bin`, ~2× the model size) into each checkpoint for training resumption. `run.sh` deletes these as checkpoints are written (and once more at the end), keeping each checkpoint to its inference-only contents. The trade-off: you can't `resume_from_checkpoint` from a stripped checkpoint. If you need resumable checkpoints, remove the `strip_optimizer_state` sweeper from `run.sh`.
+
 **Monitor with TensorBoard:**
 
 ```bash
@@ -266,7 +268,7 @@ truss push
 
 Once the deployment is live, grab its `MODEL_ID` and `DEPLOYMENT_ID` from the Baseten UI and edit them into `truss/call.py`:
 
-```9:10:examples/omnivoice-tts-finetuning/truss/call.py
+```29:30:examples/omnivoice-tts-finetuning/truss/call.py
 MODEL_ID = "..."
 DEPLOYMENT_ID = "..."
 ```
@@ -278,10 +280,14 @@ export BASETEN_API_KEY=...
 python truss/call.py
 ```
 
-`call.py` POSTs the request and writes the returned WAV to `output.wav`. Notes on the request body:
+`call.py` POSTs the request and writes the returned WAV to `output.wav`.
 
-- `text` (required): the text to synthesize.
-- `ref_audio` / `ref_text` (optional): base64 wav + its transcript for voice cloning. Set `REF_AUDIO_PATH` in `call.py` to enable.
+OmniVoice is a zero-shot voice-clone model — fine-tuning adapts the weights toward your speaker, but the voice at inference is driven by a reference clip rather than a baked-in speaker name (unlike the Qwen3-TTS recipe). So `call.py` does **voice cloning**: it sends a short reference clip from the target speaker plus its transcript on the speech request. By default it pulls one clip (+ transcript) from the LJ Speech dataset via the HF datasets-server, so it runs without a local copy of the training data; set `REF_AUDIO_PATH` / `REF_TEXT` to use your own clip instead.
+
+Request body notes:
+
+- `input` (required): the text to synthesize.
+- `ref_audio` / `ref_text`: base64 wav + its transcript for voice cloning (what `call.py` sends). Omitting both falls back to "auto voice", which picks a *random* voice each call.
 - `instruct` (optional): style attributes for voice design (e.g. `"female, british accent"`).
 - `language` (optional): language name or code (e.g. `English` / `en`).
 - generation knobs (optional): `num_step`, `guidance_scale`, `speed`, `duration`.
