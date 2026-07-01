@@ -9,7 +9,7 @@ sampler) responds, until the player guesses the secret word or runs out of
 turns. The environment lives in env.py and is the part you'd adapt to build
 your own multi-turn task.
 
-Set BASETEN_API_KEY and LOOPS_PROJECT_ID before running:
+Set BASETEN_API_KEY before running:
 
     uv run multiturn_rl/train_twenty_questions.py
 

@@ -4,8 +4,8 @@
 """Supervised fine-tuning on the HuggingFaceH4/no_robots chat dataset.
 
 Uses tinker-cookbook's supervised training loop, running against a Baseten
-Loops trainer via the baseten-loops-tinker shim. Set BASETEN_API_KEY and
-LOOPS_PROJECT_ID before running:
+Loops trainer via the baseten-loops-tinker shim. Set BASETEN_API_KEY before
+running:
 
     uv run sft/train_sft.py
 
