@@ -5,7 +5,7 @@
 
 Uses tinker-cookbook's RL training loop, running against a Baseten Loops
 trainer/sampler pair via the baseten-loops-tinker shim. Set BASETEN_API_KEY
-and LOOPS_PROJECT_ID before running:
+before running:
 
     uv run rl/train_grpo.py
 

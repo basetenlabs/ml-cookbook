@@ -15,11 +15,10 @@ These recipes use [tinker-cookbook](https://pypi.org/project/tinker-cookbook/)'s
 
 ## Setup
 
-You need [uv](https://docs.astral.sh/uv/), a [Baseten account](https://app.baseten.co/signup), and a training project. Then:
+You need [uv](https://docs.astral.sh/uv/) and a [Baseten account](https://app.baseten.co/signup). Then:
 
 ```bash
 export BASETEN_API_KEY="your-api-key"
-export LOOPS_PROJECT_ID="proj_abc123"
 uv sync
 ```
 

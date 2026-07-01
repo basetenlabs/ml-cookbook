@@ -19,7 +19,7 @@ published to the paired sampler after every step, and sampling requests carry
 an `X-Min-Policy-Version` floor so a rollout is never served by weights older
 than the version it was pinned to.
 
-Set BASETEN_API_KEY and LOOPS_PROJECT_ID before running:
+Set BASETEN_API_KEY before running:
 
     uv run rl/train_grpo_async.py
 
