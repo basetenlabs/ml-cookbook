@@ -21,16 +21,17 @@ def check_ocaml_compilation(ocaml_code):
    with tempfile.NamedTemporaryFile(mode='w', suffix='.ml', delete=False) as f:
        f.write(ocaml_code)
        temp_path = f.name
-    
-   result = subprocess.run(['ocamlc', '-c', temp_path], capture_output=True)
-   
-   # Clean up
-   os.unlink(temp_path)
-   for ext in ['.cmo', '.cmi']:
-       compiled = temp_path.replace('.ml', ext)
-       if os.path.exists(compiled):
-           os.unlink(compiled)
-   
+
+   try:
+       result = subprocess.run(['ocamlc', '-c', temp_path], capture_output=True)
+   finally:
+       # Clean up source and any compiled artifacts unconditionally
+       os.unlink(temp_path)
+       for ext in ['.cmo', '.cmi']:
+           compiled = temp_path.replace('.ml', ext)
+           if os.path.exists(compiled):
+               os.unlink(compiled)
+
    return result.returncode == 0
 
 def extract_solution(solution_str):
