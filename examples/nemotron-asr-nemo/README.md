@@ -4,6 +4,8 @@ This example fine-tunes NVIDIA's [Nemotron 3.5 ASR streaming](https://huggingfac
 
 Nemotron 3.5 ASR is a 600M-parameter, multilingual (40 language-locales), real-time streaming model built on a Cache-Aware FastConformer-RNNT architecture with prompt-based language conditioning. This recipe does a full fine-tune from the base `.nemo` checkpoint using NeMo's `speech_to_text_finetune.py`, following NVIDIA's [official fine-tuning recipe](https://huggingface.co/blog/nvidia/fine-tuning-nemotron-35-asr). It uses the small public AN4 corpus as a stand-in so it runs end-to-end quickly.
 
+The base checkpoint is delivered read-only via the [Baseten Delivery Network (BDN)](https://docs.baseten.co/training/concepts/storage) — declared as a `WeightsSource` in `config.py` — so it's on local disk before training starts and never costs billed GPU time to download.
+
 **Resources:** 1 node, 1x H100 GPU
 
 ## Prerequisites
@@ -42,6 +44,17 @@ Two details matter most:
 - **Match the base model's text style** — punctuated, properly-cased transcripts, since that's what the model produces.
 
 For larger datasets, point the trainer at tarred NeMo/Lhotse shards and drive training with a fixed step budget (`trainer.max_steps`) rather than epochs. When specializing on a few languages in the multilingual model, blend in a slice of the other languages ("replay") to avoid eroding them.
+
+For real, **frozen** datasets (e.g. tarred shards on Hugging Face, S3, or GCS), mount them through BDN the same way as the base checkpoint rather than downloading them in `run.sh` — add another `WeightsSource` in `config.py` and read from the mount path:
+
+```python
+weights=[
+    WeightsSource(source=f"hf://{INIT_MODEL}", mount_location=INIT_MODEL_MOUNT, auth_secret_name="hf_access_token"),
+    WeightsSource(source="s3://my-bucket/asr-shards", mount_location="/app/data"),
+]
+```
+
+The AN4 smoke test stays as an in-container download because it's tiny and needs on-the-fly preprocessing (`.sph`→`.wav` + manifest building), which a read-only BDN mount can't do in place.
 
 ## Evaluate
 

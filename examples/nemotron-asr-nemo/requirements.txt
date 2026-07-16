@@ -1,7 +1,5 @@
-# The NeMo framework container already provides nemo_toolkit[asr] and its
-# heavy audio dependencies. These pins cover the extra utilities used by
-# prepare_data.py and the checkpoint download step.
-huggingface-hub==0.34.3
-hf_transfer==0.1.9
-librosa==0.11.0
-soundfile==0.13.1
+# The NeMo framework container already provides nemo_toolkit[asr] and its heavy
+# audio deps (librosa, soundfile, kaldialign, huggingface-hub, etc.). Keep this
+# minimal and unpinned so we don't downgrade the container's tested stack -
+# hf_transfer is the only extra the checkpoint download benefits from.
+hf_transfer

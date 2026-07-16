@@ -9,12 +9,10 @@ pip install -r requirements.txt
 export MODEL_ID="nvidia/nemotron-3.5-asr-streaming-0.6b"
 export TARGET_LANG="en-US"
 
-# Where to download the base checkpoint. Prefer the shared team cache so the
-# ~2.4GB .nemo file is only pulled once across runs.
-ASSETS_DIR="${BT_TEAM_CACHE_DIR:-./assets}"
+# BDN mounts the base checkpoint here (set in config.py). Falls back to a local
+# path for dev runs outside Baseten.
+INIT_MODEL_MOUNT="${INIT_MODEL_MOUNT:-./assets/$MODEL_ID}"
 export DATA_DIR="./data"
-NEMO_DIR="/opt/NeMo-src"
-# Pin to a tag/commit for reproducibility once one is available for this recipe.
 NEMO_BRANCH="main"
 
 if [[ -z "${HF_TOKEN:-}" ]]; then
@@ -23,19 +21,36 @@ if [[ -z "${HF_TOKEN:-}" ]]; then
 fi
 
 # ------------------------------------------------------------------
-# 1. NeMo example scripts + streaming-prompt fine-tune config
+# 1. Locate NeMo example scripts + streaming-prompt fine-tune config
 # ------------------------------------------------------------------
-if [[ ! -d "$NEMO_DIR" ]]; then
-  git clone -b "$NEMO_BRANCH" https://github.com/NVIDIA-NeMo/NeMo "$NEMO_DIR"
+# The 26.06 container bundles NeMo source (with all ASR deps already installed),
+# so prefer it. Only clone as a fallback for older images / local dev - in which
+# case the tree may need deps the base image lacks (e.g. kaldialign).
+NEMO_DIR=""
+for cand in /opt/NeMo /workspace/NeMo /opt/nemo; do
+  if [[ -f "$cand/examples/asr/speech_to_text_finetune.py" ]]; then
+    NEMO_DIR="$cand"
+    break
+  fi
+done
+if [[ -z "$NEMO_DIR" ]]; then
+  NEMO_DIR="/opt/NeMo-src"
+  [[ -d "$NEMO_DIR" ]] || git clone -b "$NEMO_BRANCH" https://github.com/NVIDIA-NeMo/NeMo "$NEMO_DIR"
+  export PYTHONPATH="$NEMO_DIR:${PYTHONPATH:-}"
+  pip install kaldialign
 fi
-export PYTHONPATH="$NEMO_DIR:${PYTHONPATH:-}"
+echo "Using NeMo source at: $NEMO_DIR"
 
 # ------------------------------------------------------------------
-# 2. Download the base checkpoint (.nemo) from Hugging Face
+# 2. Locate the base checkpoint (.nemo)
 # ------------------------------------------------------------------
-CKPT_DIR="$ASSETS_DIR/nemotron-3.5-asr-streaming-0.6b"
-huggingface-cli download "$MODEL_ID" --local-dir "$CKPT_DIR"
-HF_CKPT="$(find "$CKPT_DIR" -name '*.nemo' | head -n 1)"
+# On Baseten it's already on local disk via BDN (see config.py `weights`), so
+# there's no download on billed GPU time. Outside Baseten, pull it once.
+if [[ ! -d "$INIT_MODEL_MOUNT" ]]; then
+  echo "Checkpoint mount not found; downloading $MODEL_ID (local dev fallback)."
+  huggingface-cli download "$MODEL_ID" --local-dir "$INIT_MODEL_MOUNT"
+fi
+HF_CKPT="$(find "$INIT_MODEL_MOUNT" -name '*.nemo' | head -n 1)"
 echo "Using base checkpoint: $HF_CKPT"
 
 # ------------------------------------------------------------------
