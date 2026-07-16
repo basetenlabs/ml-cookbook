@@ -1,5 +1,4 @@
-# The NeMo framework container already provides nemo_toolkit[asr] and its heavy
-# audio deps (librosa, soundfile, kaldialign, huggingface-hub, etc.). Keep this
-# minimal and unpinned so we don't downgrade the container's tested stack -
-# hf_transfer is the only extra the checkpoint download benefits from.
+# The NeMo container already provides nemo_toolkit[asr] and its full ASR stack
+# (lightning, numba, kaldialign, librosa, ...). Only add the small extra used to
+# speed up the Hugging Face checkpoint download in the local-dev fallback.
 hf_transfer

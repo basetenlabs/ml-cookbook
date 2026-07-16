@@ -1,11 +1,12 @@
 from truss_train import definitions, WeightsSource
 from truss.base import truss_config
 
-# NeMo framework container ships NeMo + all ASR deps (kaldialign, sox, ffmpeg,
-# libsndfile) and a matching PyTorch/CUDA stack. The Nemotron 3.5 ASR recipe
-# requires NeMo 26.06+, so pin the 26.06 container (which also bundles the
-# streaming-prompt fine-tune script + config).
-BASE_IMAGE = "nvcr.io/nvidia/nemo:26.06"
+# Last consolidated NeMo Framework container that bundles the ASR/TTS collection
+# with a pre-tested CUDA/numba/lightning/kaldialign stack (the newer 26.06 image
+# is Megatron/LLM-only). NVIDIA-NeMo/Speech recommends 26.02 as the current
+# stable runtime for speech models, so it sidesteps the source-build + numba-JIT
+# issues you hit on a plain PyTorch image.
+BASE_IMAGE = "nvcr.io/nvidia/nemo:26.02"
 
 # Base checkpoint. Delivered read-only via BDN before start commands run, so we
 # never pay for the ~2.4GB download on billed GPU time (BDN mirrors + caches it

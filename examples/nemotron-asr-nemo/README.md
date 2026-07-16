@@ -4,7 +4,7 @@ This example fine-tunes NVIDIA's [Nemotron 3.5 ASR streaming](https://huggingfac
 
 Nemotron 3.5 ASR is a 600M-parameter, multilingual (40 language-locales), real-time streaming model built on a Cache-Aware FastConformer-RNNT architecture with prompt-based language conditioning. This recipe does a full fine-tune from the base `.nemo` checkpoint using NeMo's `speech_to_text_finetune.py`, following NVIDIA's [official fine-tuning recipe](https://huggingface.co/blog/nvidia/fine-tuning-nemotron-35-asr). It uses the small public AN4 corpus as a stand-in so it runs end-to-end quickly.
 
-The base checkpoint is delivered read-only via the [Baseten Delivery Network (BDN)](https://docs.baseten.co/training/concepts/storage) — declared as a `WeightsSource` in `config.py` — so it's on local disk before training starts and never costs billed GPU time to download.
+The job runs on the `nvcr.io/nvidia/nemo:26.02` container — the last consolidated NeMo Framework image that bundles the ASR/TTS collection with a pre-tested CUDA/numba/lightning/kaldialign stack (the newer `26.06` image is Megatron/LLM-only, and the collection now lives in [`NVIDIA-NeMo/Speech`](https://github.com/NVIDIA-NeMo/Speech)). `run.sh` uses the container's bundled NeMo when it has the streaming-prompt recipe, and otherwise clones it and prepends it to `PYTHONPATH` so the recipe code runs against the container's already-installed, correctly CUDA-linked deps. The base checkpoint is delivered read-only via the [Baseten Delivery Network (BDN)](https://docs.baseten.co/training/concepts/storage) — declared as a `WeightsSource` in `config.py` — so it's on local disk before training starts and never costs billed GPU time to download.
 
 **Resources:** 1 node, 1x H100 GPU
 
