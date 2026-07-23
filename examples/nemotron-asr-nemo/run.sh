@@ -97,3 +97,42 @@ python3 "$NEMO_DIR/examples/asr/speech_to_text_finetune.py" \
     ++exp_manager.exp_dir="$BT_CHECKPOINT_DIR" \
     ++exp_manager.use_datetime_version=False \
     ++exp_manager.version=finetune
+
+# ------------------------------------------------------------------
+# 6. Register the checkpoint with Baseten
+# ------------------------------------------------------------------
+# Baseten's checkpoint detector registers an artifact when it finds a
+# `checkpoint-<N>/config.json` layout under $BT_CHECKPOINT_DIR (rank-0 root).
+# NeMo emits a `.nemo` tarball rather than HF safetensors + config.json, so we
+# move the final .nemo into a checkpoint-<N>/ dir and drop a minimal config.json
+# marker so the checkpoint is registered, backed up, and shows up in
+# `truss train checkpoints list`. It's a NeMo checkpoint - load it with NeMo
+# (see README "Evaluate"), not the vLLM/HF deploy path.
+FINAL_NEMO="$(find "$BT_CHECKPOINT_DIR" -name '*.nemo' -printf '%T@ %p\n' 2>/dev/null \
+  | sort -nr | head -n 1 | cut -d' ' -f2-)"
+
+if [[ -n "${FINAL_NEMO:-}" && -f "$FINAL_NEMO" ]]; then
+  # Derive N from the checkpoint name if it carries a step, else default to 1.
+  STEP="$(basename "$FINAL_NEMO" .nemo | grep -oE '[0-9]+' | tail -n 1)"
+  STEP="${STEP:-1}"
+  CKPT_OUT="$BT_CHECKPOINT_DIR/checkpoint-$STEP"
+  mkdir -p "$CKPT_OUT"
+  mv "$FINAL_NEMO" "$CKPT_OUT/"
+  NEMO_FILE="$(basename "$FINAL_NEMO")"
+
+  # The detector registers on config.json with an `architectures` or `model_type`
+  # field (no safetensors needed) and reads the base model from `_name_or_path`.
+  cat > "$CKPT_OUT/config.json" <<EOF
+{
+  "_name_or_path": "$MODEL_ID",
+  "architectures": ["EncDecRNNTBPEModel"],
+  "model_type": "nemo_asr",
+  "framework": "nemo",
+  "nemo_checkpoint": "$NEMO_FILE",
+  "note": "NeMo .nemo checkpoint (not HF safetensors). Load with NeMo, not vLLM."
+}
+EOF
+  echo "Registered checkpoint at: $CKPT_OUT ($NEMO_FILE)"
+else
+  echo "WARNING: no .nemo file found under $BT_CHECKPOINT_DIR; nothing to register."
+fi

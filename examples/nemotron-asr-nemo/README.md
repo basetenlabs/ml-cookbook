@@ -56,6 +56,10 @@ weights=[
 
 The AN4 smoke test stays as an in-container download because it's tiny and needs on-the-fly preprocessing (`.sph`→`.wav` + manifest building), which a read-only BDN mount can't do in place.
 
+## Checkpoints
+
+NeMo saves a `.nemo` tarball rather than the HF `config.json` + safetensors layout Baseten's checkpoint detector looks for, so `run.sh` moves the final `.nemo` into a `checkpoint-<N>/` directory under `$BT_CHECKPOINT_DIR` and writes a minimal `config.json` marker. This registers the artifact so it's backed up and appears in `truss train checkpoints list`. It's a NeMo checkpoint — download it and load it with NeMo (see below), not the standard vLLM/HF deploy path.
+
 ## Evaluate
 
 Evaluate at your deployment latency on held-out data using NeMo's streaming inference script. The lowest-latency setting (`att_context_size=[56,0]`, 80ms chunk, 0ms look-ahead) is the most demanding, honest condition:
