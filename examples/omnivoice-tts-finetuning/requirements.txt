@@ -1,0 +1,11 @@
+--extra-index-url https://download.pytorch.org/whl/cu128
+torch==2.8.0+cu128
+torchaudio==2.8.0+cu128
+# OmniVoice brings in transformers, accelerate, webdataset, etc. and provides
+# the omnivoice.scripts.extract_audio_tokens / omnivoice.cli.train entrypoints.
+omnivoice
+# Dataset download + wav materialization (prepare.py).
+huggingface-hub>=0.16.0
+hf-transfer>=0.1.6
+pyarrow>=14.0.0
+soundfile>=0.12.0
