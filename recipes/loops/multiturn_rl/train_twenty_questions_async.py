@@ -38,10 +38,8 @@ from tinker_cookbook.rl import train
 
 from env import TwentyQuestionsDatasetBuilder
 
-# RL both trains and samples, so provision the paired sampler alongside the
-# trainer instead of at the first sampling request — the two cold starts
-# overlap and startup time roughly halves. Train-only scripts should leave
-# this unset so no sampler GPU is provisioned.
+# Provision the paired sampler in parallel with the trainer instead of at
+# the first sampling request.
 os.environ.setdefault("LOOPS_WARM_START_SAMPLER", "1")
 
 
@@ -64,9 +62,7 @@ class CLIConfig:
     answerer_base_model: str = "Qwen/Qwen3.5-0.8B"
 
     # Trajectory groups sampled more than this many optimizer steps behind
-    # the current policy are requeued rather than trained on. Multi-turn
-    # games go stale more often than single completions, so raising this
-    # trades on-policy fidelity for fewer requeues.
+    # the current policy are requeued rather than trained on.
     max_steps_off_policy: int = 2
 
     behavior_if_log_dir_exists: cli_utils.LogdirBehavior = "ask"
