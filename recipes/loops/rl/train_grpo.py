@@ -15,6 +15,7 @@ Any Config field can be overridden on the command line, e.g.:
 """
 
 import asyncio
+import os
 import sys
 
 import chz
@@ -22,6 +23,12 @@ import chz
 from tinker_cookbook import cli_utils
 from tinker_cookbook.recipes.math_rl.math_env import Gsm8kDatasetBuilder
 from tinker_cookbook.rl import train
+
+# RL both trains and samples, so provision the paired sampler alongside the
+# trainer instead of at the first sampling request — the two cold starts
+# overlap and startup time roughly halves. Train-only scripts should leave
+# this unset so no sampler GPU is provisioned.
+os.environ.setdefault("LOOPS_WARM_START_SAMPLER", "1")
 
 
 def build_config_blueprint() -> chz.Blueprint[train.Config]:
