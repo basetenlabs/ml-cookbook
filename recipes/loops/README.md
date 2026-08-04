@@ -32,7 +32,7 @@ uv run rl/train_grpo_async.py
 uv run multiturn_rl/train_twenty_questions.py
 ```
 
-The first run provisions a trainer (and a paired sampler for the RL recipes) in your training project, which can take a few minutes. The RL recipes set `LOOPS_WARM_START_SAMPLER=1` so the sampler is provisioned in parallel with the trainer rather than at the first sampling request — if you know your script will both train and sample, this roughly halves startup time. Leave it unset in train-only scripts (like the SFT recipe) so no sampler GPU is provisioned. Subsequent runs reuse the live servers.
+The first run provisions a trainer (and a paired sampler for the RL recipes) in your training project, which can take a few minutes. The RL recipes set `LOOPS_WARM_START_SAMPLER=true` so the sampler is provisioned in parallel with the trainer rather than at the first sampling request — if you know your script will both train and sample, this roughly halves startup time. Leave it unset in train-only scripts (like the SFT recipe) so no sampler GPU is provisioned. Subsequent runs reuse the live servers.
 
 Every config field can be overridden from the command line:
 

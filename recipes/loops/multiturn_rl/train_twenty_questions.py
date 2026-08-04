@@ -31,7 +31,7 @@ from env import TwentyQuestionsDatasetBuilder
 
 # Provision the paired sampler in parallel with the trainer instead of at
 # the first sampling request.
-os.environ.setdefault("LOOPS_WARM_START_SAMPLER", "1")
+os.environ.setdefault("LOOPS_WARM_START_SAMPLER", "true")
 
 
 @chz.chz
