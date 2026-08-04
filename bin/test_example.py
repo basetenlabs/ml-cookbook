@@ -29,6 +29,10 @@ from pathlib import Path
 import requests
 
 POLL_INTERVAL = 15  # seconds between status checks
+# Log dumps are best-effort diagnostics, so they get a tighter budget than the
+# operations the test depends on.
+LOG_FETCH_TIMEOUT = 120  # seconds
+TIMEOUT_RETURNCODE = 124  # conventional exit code for a timed-out command
 TERMINAL_STATUSES = {
     "TRAINING_JOB_COMPLETED",
     "TRAINING_JOB_DEPLOY_FAILED",
@@ -97,6 +101,15 @@ def request_with_retry(method, url, max_retries=3, **kwargs):
 # ---------------------------------------------------------------------------
 
 
+def _echo_cli_output(stdout: str | None, stderr: str | None) -> None:
+    if stdout:
+        for line in stdout.rstrip().split("\n"):
+            print(f"  {line}")
+    if stderr:
+        for line in stderr.rstrip().split("\n"):
+            print(f"  [stderr] {line}", file=sys.stderr)
+
+
 def run_truss_cli(
     args: list[str], check: bool = True, timeout: int = 300
 ) -> subprocess.CompletedProcess:
@@ -106,15 +119,23 @@ def run_truss_cli(
     """
     cmd = ["uv", "run", "truss"] + args + ["--non-interactive"]
     print(f"  $ {' '.join(cmd)}")
-    result = subprocess.run(
-        cmd, capture_output=True, text=True, timeout=timeout
-    )
-    if result.stdout:
-        for line in result.stdout.rstrip().split("\n"):
-            print(f"  {line}")
-    if result.stderr:
-        for line in result.stderr.rstrip().split("\n"):
-            print(f"  [stderr] {line}", file=sys.stderr)
+    try:
+        result = subprocess.run(
+            cmd, capture_output=True, text=True, timeout=timeout
+        )
+    except subprocess.TimeoutExpired as exc:
+        # A hung CLI call must not become the reported failure. Echo whatever it
+        # emitted and hand a synthetic result back so a check=False caller (a
+        # best-effort log dump) can carry on and report the real outcome.
+        _echo_cli_output(exc.stdout, exc.stderr)
+        message = f"CLI command timed out after {timeout}s: {' '.join(cmd)}"
+        if check:
+            raise RuntimeError(message) from exc
+        print(f"  {message}")
+        return subprocess.CompletedProcess(
+            cmd, TIMEOUT_RETURNCODE, exc.stdout or "", exc.stderr or ""
+        )
+    _echo_cli_output(result.stdout, result.stderr)
     if check and result.returncode != 0:
         raise RuntimeError(
             f"CLI command failed (exit {result.returncode}): {' '.join(cmd)}"
@@ -294,6 +315,7 @@ def poll_job_status(
             run_truss_cli(
                 ["train", "logs", "--job-id", job_id, "--remote", remote],
                 check=False,
+                timeout=LOG_FETCH_TIMEOUT,
             )
             # Stop the timed-out job via CLI
             run_truss_cli(
@@ -322,6 +344,7 @@ def poll_job_status(
                 run_truss_cli(
                     ["train", "logs", "--job-id", job_id, "--remote", remote],
                     check=False,
+                    timeout=LOG_FETCH_TIMEOUT,
                 )
             return status
 
