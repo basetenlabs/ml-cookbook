@@ -174,7 +174,7 @@ wheels = [
 
 [[package]]
 name = "baseten-loops"
-version = "0.15.0"
+version = "0.16.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "datasets" },
@@ -188,21 +188,21 @@ dependencies = [
     { name = "truss" },
     { name = "wandb" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/74/b3/7bec9b81937dac0f2b79b0e64ce8e906c6e964d805eb4a90ae6b9be70427/baseten_loops-0.15.0.tar.gz", hash = "sha256:40963dd37e76d97b95dee4a21c88cc7164b0b734db2b8b91d6a3ae7ae4e911f3", size = 284054, upload-time = "2026-07-30T02:25:39.968Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/51/ad/e03c38b8bd5fd38169748530ffc85011bf6cf4a0015b0498cccb157ebd33/baseten_loops-0.16.0.tar.gz", hash = "sha256:e7e11005d5386ce9af8af983dd7519c7af65f4daff336d23c5805e7b0f4917a7", size = 288520, upload-time = "2026-08-04T17:09:41.075Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/36/69/d0fde1353a51bdc57d5701221b06436f8cbbf1a3fa43df1e65a335cac1d5/baseten_loops-0.15.0-py3-none-any.whl", hash = "sha256:38c17d5c30ec746d2d60339f121a7d58ed768378da4326dc2849eb38065a6bca", size = 67689, upload-time = "2026-07-30T02:25:38.418Z" },
+    { url = "https://files.pythonhosted.org/packages/0d/4b/04b574e118b0a58f127693a39db53f347641237e38dbfb1bf4061d7dfaa9/baseten_loops-0.16.0-py3-none-any.whl", hash = "sha256:94a1f88518f9669f1f663e0d5a880090a789eb1a489ccb5383fd1e2e70dd860b", size = 69220, upload-time = "2026-08-04T17:09:39.437Z" },
 ]
 
 [[package]]
 name = "baseten-loops-tinker"
-version = "0.11.0"
+version = "0.12.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "baseten-loops" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/97/31/ca20aa61ca1040e0c53966acf1c8f21a7a0320c9dfd9c666dab2f95f2e89/baseten_loops_tinker-0.11.0.tar.gz", hash = "sha256:3335474306b8f46f98d1cf7100706b23838e836170a37a5702a5fd005f07b2e4", size = 87035, upload-time = "2026-07-30T02:25:29.107Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/fe/6a/ed5703a88dd11cada57bfb5228ae2971b6486c9d73e9e7990fa75f456e97/baseten_loops_tinker-0.12.0.tar.gz", hash = "sha256:e03baf83ac6ca760726c90464ee808e60c2c5793f1e65c0b34448a5d389ab24c", size = 87590, upload-time = "2026-08-04T17:09:49.361Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/f3/04/ed9061e5956694731208fdbd0066de04bedcab4ea3971f8a82f4d837d53b/baseten_loops_tinker-0.11.0-py3-none-any.whl", hash = "sha256:89a17f7fc33c8ca4d50bd668e1c1aba37700b76e3b1ff41727f65fd5b8c691db", size = 10164, upload-time = "2026-07-30T02:25:27.831Z" },
+    { url = "https://files.pythonhosted.org/packages/28/48/d589d2f37472408ab317e9d9b82e6f655a305e0f97039be74c655e9329c7/baseten_loops_tinker-0.12.0-py3-none-any.whl", hash = "sha256:0f0a55f710a729132a8a5b92ec619143e9533d6c1ec36a5cd329232295bdbfb0", size = 10314, upload-time = "2026-08-04T17:09:47.969Z" },
 ]
 
 [[package]]
@@ -1156,8 +1156,8 @@ dependencies = [
 
 [package.metadata]
 requires-dist = [
-    { name = "baseten-loops", specifier = ">=0.5.0" },
-    { name = "baseten-loops-tinker", specifier = ">=0.4.0" },
+    { name = "baseten-loops", specifier = ">=0.16.0" },
+    { name = "baseten-loops-tinker", specifier = ">=0.12.0" },
     { name = "chz" },
     { name = "tinker-cookbook", extras = ["math-rl"] },
     { name = "wandb", specifier = ">=0.16.0" },
