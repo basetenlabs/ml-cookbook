@@ -13,6 +13,7 @@ These recipes use [tinker-cookbook](https://pypi.org/project/tinker-cookbook/)'s
 | [`rl/train_grpo.py`](rl/train_grpo.py) | GRPO on GSM8K math problems — synchronous sample-then-train loop. |
 | [`rl/train_grpo_async.py`](rl/train_grpo_async.py) | Async GRPO with bounded off-policy sampling — rollouts and optimizer steps run concurrently. |
 | [`multiturn_rl/train_twenty_questions.py`](multiturn_rl/train_twenty_questions.py) | Multi-turn RL: the policy plays twenty questions against a frozen answerer model served by a second sampler. [`env.py`](multiturn_rl/env.py) is the template for building your own multi-turn environment. |
+| [`multiturn_rl/train_twenty_questions_async.py`](multiturn_rl/train_twenty_questions_async.py) | Async multi-turn RL: the same twenty-questions environment with rollout workers playing games continuously while the trainer takes optimizer steps. |
 
 ## Setup
 
@@ -31,6 +32,7 @@ uv run sft/train_sft.py
 uv run rl/train_grpo.py
 uv run rl/train_grpo_async.py
 uv run multiturn_rl/train_twenty_questions.py
+uv run multiturn_rl/train_twenty_questions_async.py
 ```
 
 The first run provisions a trainer (and a paired sampler for the RL recipes) in your training project, which can take a few minutes. Subsequent runs reuse the live servers.
@@ -45,7 +47,7 @@ Training metrics land in the recipe's `log_path` (under `/tmp/loops-cookbook/` b
 
 ## Async RL and off-policy bounds
 
-In `rl/train_grpo_async.py`, rollout workers generate trajectory groups continuously while the training loop consumes them — sampling never waits for the optimizer and vice versa. The cost is staleness: a rollout may have been sampled from a policy several optimizer steps old.
+In `rl/train_grpo_async.py` and `multiturn_rl/train_twenty_questions_async.py`, rollout workers generate trajectory groups continuously while the training loop consumes them — sampling never waits for the optimizer and vice versa. The cost is staleness: a rollout may have been sampled from a policy several optimizer steps old. Async mode pays off most for multi-turn tasks, where each episode takes many sequential sampler calls and a synchronous loop would leave the trainer idle for the duration of the slowest game in every batch.
 
 `max_steps_off_policy` bounds that staleness. Each trajectory group is tagged with the policy version it was sampled from; groups more than `max_steps_off_policy` steps behind the current trainer step are requeued instead of trained on. This rides on Loops' weight-versioning semantics:
 
@@ -54,6 +56,8 @@ In `rl/train_grpo_async.py`, rollout workers generate trajectory groups continuo
 - Sampling requests carry an `X-Min-Policy-Version` floor — the sampler blocks until its live adapter reaches that version, so rollouts are never served by weights older than the version they were pinned to, and every sample result reports the policy version that produced it.
 
 `max_steps_off_policy=2` is a reasonable default; raise it for more pipelining throughput, lower it to stay closer to on-policy.
+
+`train_twenty_questions_async.py` also sets `LOOPS_WARM_START_SAMPLER=true`, which makes the SDK provision the paired sampler alongside the trainer at run creation instead of at the first sampling request, so the two cold starts overlap. Leave it unset in train-only scripts (like the SFT recipe) so no sampler GPU is provisioned.
 
 ## Choosing a base model
 
