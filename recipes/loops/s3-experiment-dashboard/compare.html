@@ -129,6 +129,12 @@
       return String(s).replace(/[&<>"']/g, c =>
         ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
     }
+    // Embed a value as a JS string argument inside an inline handler attribute.
+    // JSON.stringify handles the JS-context escaping (quotes, backslashes);
+    // esc() then makes the result safe to sit inside the HTML attribute.
+    // esc() alone is NOT enough there — the browser decodes entities before
+    // the JS parser runs.
+    const jsArg = v => esc(JSON.stringify(String(v ?? '')));
     const fmtNum = v => (v === null || v === undefined) ? '—' : String(v);
 
     // ---- theme toggle (same cookie as index.html) ---------------------------
@@ -232,7 +238,7 @@
         const chips = sorted.map(v => {
           const on = chipFilters.get(key)?.has(v);
           return `<button class="chip ${on ? 'active' : ''}"
-                     onclick="toggleChip('${esc(key)}', '${esc(v)}')">${esc(v)}</button>`;
+                     onclick="toggleChip(${jsArg(key)}, ${jsArg(v)})">${esc(v)}</button>`;
         }).join('');
         return `<div class="chip-row"><span class="chip-key">${esc(key)}</span>${chips}</div>`;
       });
@@ -250,13 +256,14 @@
         ${hparamKeys.map(k => `<th class="num">${esc(k)}</th>`).join('')}
         <th class="num">last step</th><th class="num">final eval</th><th class="num">best eval</th>
       </tr>`;
+      const runIndex = new Map(EXPERIMENTS.runs.map((run, i) => [run.run_id, i]));
       const body = runs.map(r => {
-        const i = EXPERIMENTS.runs.indexOf(r);   // color by identity, not filtered rank
+        const i = runIndex.get(r.run_id);   // color by identity, not filtered rank
         const s = r.summary || {};
         const on = checked.get(r.run_id) !== false;
         return `<tr class="${runHasSeries(r, metric) ? '' : 'no-metric'}">
           <td><input type="checkbox" ${on ? 'checked' : ''}
-                     onchange="toggleRun('${esc(r.run_id)}')" title="plot this run"></td>
+                     onchange="toggleRun(${jsArg(r.run_id)})" title="plot this run"></td>
           <td><span class="run-swatch" style="background:${runColor(i)}"></span>
               <a href="/run/${encodeURIComponent(r.run_id)}/">${esc(r.run_id)}</a></td>
           <td><span class="source-badge ${esc(r.source || '')}">${esc(r.source || '?')}</span></td>
@@ -307,9 +314,10 @@
       const runs = plottedRuns().filter(r => runHasSeries(r, metric));
       document.getElementById('compare-title').textContent = `${metric} vs step`;
 
+      const runIndex = new Map(EXPERIMENTS.runs.map((run, i) => [run.run_id, i]));
       const datasets = [];
       for (const r of runs) {
-        const i = EXPERIMENTS.runs.indexOf(r);
+        const i = runIndex.get(r.run_id);   // color by identity, not filtered rank
         const data = await fetchRunData(r.run_id);
         // Legend label: append the learning rate when the run logs one —
         // it's usually the hyperparameter people sweep.

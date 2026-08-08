@@ -88,11 +88,29 @@ def resolve_run_dir(run_id: str):
 # ----------------------------------------------------------------------------
 
 def resolve_paths(file_or_glob: str, run_dir: Path):
-    """Return list of paths matching a file string or glob pattern."""
+    """Return list of paths matching a file string or glob pattern.
+
+    `file`/`glob` values come from run.json, which is synced from S3 and only
+    semi-trusted — so, mirroring resolve_run_dir(), every resolved path
+    (including glob matches) must stay inside run_dir. Anything that escapes
+    (e.g. ../../etc/passwd, symlinks pointing out) is silently dropped.
+    """
+    root = run_dir.resolve()
+
+    def inside(p: Path) -> bool:
+        try:
+            return p.resolve().is_relative_to(root)
+        except OSError:
+            return False
+
     if "*" in file_or_glob:
-        return sorted(run_dir.glob(file_or_glob))
+        try:
+            matches = list(run_dir.glob(file_or_glob))
+        except ValueError:  # e.g. absolute or otherwise invalid pattern
+            return []
+        return sorted(p for p in matches if inside(p))
     p = run_dir / file_or_glob
-    return [p] if p.exists() else []
+    return [p] if p.exists() and inside(p) else []
 
 
 def read_records_from_path(path: Path):
@@ -830,13 +848,12 @@ def find_port():
     import socket
     for offset in range(PORT_TRIES):
         port = PORT_BASE + offset
-        s = socket.socket()
-        try:
-            s.bind(("localhost", port))
-            s.close()
-            return port
-        except OSError:
-            continue
+        with socket.socket() as s:
+            try:
+                s.bind(("localhost", port))
+                return port
+            except OSError:
+                continue
     return None
 
 
