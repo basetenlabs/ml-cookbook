@@ -1,0 +1,55 @@
+model_name: OmniVoice Finetuned
+python_version: py312
+model_metadata:
+  repo_id: k2-fsa/OmniVoice
+environment_variables:
+  VLLM_ALLOW_LONG_MAX_MODEL_LEN: "1"
+  OMNIVOICE_MICRO_BATCH: "1"
+  OMNIVOICE_MICRO_BATCH_MAX: "8"
+  OMNIVOICE_MICRO_BATCH_WAIT_MS: "10"
+  VLLM_OMNI_TTS_BATCH_MAX_ITEMS: "64"
+  OMNIVOICE_CUDA_GRAPH: "1"
+  OMNIVOICE_CUDA_GRAPH_BATCH_SIZES: "1,2,4,8,16"
+  OMNIVOICE_GENERATOR_DTYPE: "bfloat16"
+weights:
+  - source: "hf://k2-fsa/OmniVoice@main"
+    mount_location: "/models/OmniVoice"
+    # Only the audio_tokenizer/ (Higgs Audio v2) is needed from the base repo;
+    # the fine-tuned checkpoint supplies the LM weights + text tokenizer. The
+    # start_command below symlinks this subdir into the checkpoint dir.
+    allow_patterns: ["audio_tokenizer/*"]
+    ignore_patterns: ["*.md", "*.txt"]
+training_checkpoints:
+  download_folder: /models/training_checkpoints
+  artifact_references:
+    - training_job_id: qe79ppw # Replace with your training job ID
+      paths:
+        # OmniVoice writes checkpoint-<step> dirs; pick the step you want.
+        - "rank-0/checkpoint-5000"
+base_image:
+  image: baseten/vllm-omni:0.21.0-omnivoice
+secrets:
+  hf_access_token: null
+system_packages:
+  - sox
+  - ffmpeg
+docker_server:
+  # The training job doesn't save the audio_tokenizer/ (Higgs Audio v2) subdir
+  # that the base OmniVoice repo ships, but vLLM-Omni resolves
+  # <model>/audio_tokenizer and errors if it's missing. Symlink it from the
+  # base weights mount into the (writable) checkpoint dir before serving.
+  start_command: >-
+    sh -c '
+    CKPT=/models/training_checkpoints/qe79ppw/rank-0/checkpoint-5000;
+    ln -sfn /models/OmniVoice/audio_tokenizer "$CKPT/audio_tokenizer";
+    vllm serve "$CKPT" --host 0.0.0.0 --port 8091 --trust-remote-code --omni
+    '
+  readiness_endpoint: /health
+  liveness_endpoint: /health
+  predict_endpoint: /v1/audio/speech
+  server_port: 8091
+resources:
+  accelerator: H100
+  use_gpu: true
+runtime:
+  predict_concurrency: 64

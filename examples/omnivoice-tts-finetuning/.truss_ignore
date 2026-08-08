@@ -1,0 +1,12 @@
+# Excluded from the `truss train push` upload context (.gitignore syntax).
+# NOTE: datasets/ is intentionally NOT ignored — a bundled local dataset
+# (e.g. datasets/my_speaker, see LOCAL_DATASET_DIR) must ship with the job.
+.venv/
+__pycache__/
+*.pyc
+hf_dataset_cache/
+data/
+exp/
+config/_*.rendered.json
+# The inference truss is deployed separately with `truss push` from truss/.
+truss/
