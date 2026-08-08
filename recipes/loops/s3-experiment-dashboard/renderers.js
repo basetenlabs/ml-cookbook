@@ -21,14 +21,6 @@ function esc(s) {
     .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
 }
 
-// Embed a value as a JS string argument inside an inline handler attribute.
-// JSON.stringify handles the JS-context escaping (quotes, backslashes); esc()
-// then makes the result safe to sit inside the HTML attribute. esc() alone is
-// NOT enough there — the browser decodes entities before the JS parser runs.
-function jsArg(v) {
-  return esc(JSON.stringify(String(v ?? '')));
-}
-
 function fmt(n, places = 3) {
   if (n == null || typeof n !== 'number') return '—';
   if (Math.abs(n) >= 1000 || Math.abs(n) < 0.001 && n !== 0) {
@@ -87,7 +79,24 @@ function renderStatStrip() {
 
 // ---- rollouts section ------------------------------------------------------
 
+// Rollout dots/rows carry data-src-idx/data-id/data-title instead of an inline
+// onclick. `dataset` hands back the decoded string, so esc() (the HTML encoder)
+// is the only encoder in play and it's applied in the context it's actually for.
+// One delegated listener on the persistent #rollout-display container covers
+// every dot/row across re-renders.
+function ensureRolloutDelegation() {
+  const display = document.getElementById('rollout-display');
+  if (!display || display.dataset.delegated) return;
+  display.dataset.delegated = '1';
+  display.addEventListener('click', e => {
+    const el = e.target.closest('[data-id]');
+    if (!el || !display.contains(el)) return;
+    openPanel(Number(el.dataset.srcIdx), el.dataset.id, el.dataset.title);
+  });
+}
+
 function renderRollouts() {
+  ensureRolloutDelegation();
   const sources = RUN.rollout_sources || [];
   document.getElementById('rollouts-meta').textContent =
     sources.length ? `${sources.length} source${sources.length > 1 ? 's' : ''}` : 'none detected';
@@ -217,7 +226,7 @@ function renderGroupGrid(src, recs) {
       // Click target: synth id is always safe; fall back to qualified or natural id.
       const id = r._synth_id || r._qualified_id || (idKey && r[idKey]) || '';
       const label = v != null ? fmt(v, 2).replace(/^0\./, '.').replace(/^-0\./, '-.') : '';
-      return `<div class="rollout-dot ${scoreClass(v)}" onclick="openPanel(${activeSourceIdx}, ${jsArg(id)}, ${jsArg(label || id)})" title="${esc(String(id))}">${esc(label)}</div>`;
+      return `<div class="rollout-dot ${scoreClass(v)}" data-src-idx="${activeSourceIdx}" data-id="${esc(String(id))}" data-title="${esc(String(label || id))}" title="${esc(String(id))}">${esc(label)}</div>`;
     }).join('');
     const more = items.length > dotCap ? `<span class="rollout-dot-more">+${items.length - dotCap}</span>` : '';
 
@@ -257,7 +266,7 @@ function renderFlatList(src, recs) {
     const step = stepKey ? r[stepKey] : '';
     const preview = r._preview || '';
     return `
-      <div class="rollout-row" onclick="openPanel(${activeSourceIdx}, ${jsArg(id)}, ${jsArg(id)})">
+      <div class="rollout-row" data-src-idx="${activeSourceIdx}" data-id="${esc(String(id))}" data-title="${esc(String(id))}">
         <div class="score-cell"><span class="rollout-dot ${scoreClass(score)}" style="width: auto; padding: 2px 6px;">${score != null ? fmt(score, 2) : '—'}</span></div>
         <div class="step-cell">${esc(String(step))}</div>
         <div class="id-cell">${esc(String(id))}</div>
