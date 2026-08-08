@@ -81,7 +81,7 @@
       <div id="panel-loader" class="panel-loader" aria-hidden="true">
         <div class="panel-loader-spinner"></div>
       </div>
-      <iframe id="side-panel-iframe" src="about:blank" onload="onPanelLoad()"></iframe>
+      <iframe id="side-panel-iframe" src="about:blank" onload="window.onPanelLoad && onPanelLoad()"></iframe>
     </div>
   </div>
 

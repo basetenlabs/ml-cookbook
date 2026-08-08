@@ -319,8 +319,12 @@ function updateChart(series) {
   const m = RUN.metrics;
   const xAxis = m.x_axis;
   const recs = m._records || [];
-  const xs = recs.map(r => r[xAxis]);
-  const ys = recs.map(r => r[series]);
+  // Keep only records where this series is present — sparse series (e.g.
+  // eval_loss logged every N steps) otherwise map to undefined for the
+  // in-between rows, which Chart.js renders as nothing at pointRadius 0.
+  const present = recs.filter(r => r[series] !== undefined && r[series] !== null);
+  const xs = present.map(r => r[xAxis]);
+  const ys = present.map(r => r[series]);
 
   const cardId = `chart-card-${cssId(series)}`;
   const canvas = document.querySelector(`#${cardId} canvas`);

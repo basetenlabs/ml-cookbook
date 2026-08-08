@@ -61,7 +61,7 @@ The rollout-dashboard schema, unchanged, plus three optional extension keys. Old
 }
 ```
 
-`rollout_sources` is usually empty for this store — the per-run view degrades to metrics-and-config, which is the primary use here.
+`build_manifests.py` always writes `rollout_sources: []` — it indexes metrics/config only, and the per-run view degrades to metrics-and-config, which is the primary use here. Rollout panels appear only when a run's `run.json` lists rollout sources, which means running the detection phases above (or hand-editing) for that run.
 
 ### Top-level `experiments.json`
 

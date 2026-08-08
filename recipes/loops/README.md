@@ -12,6 +12,7 @@ These recipes use [tinker-cookbook](https://pypi.org/project/tinker-cookbook/)'s
 | [`rl/train_grpo.py`](rl/train_grpo.py) | GRPO on GSM8K math problems — synchronous sample-then-train loop. |
 | [`rl/train_grpo_async.py`](rl/train_grpo_async.py) | Async GRPO with bounded off-policy sampling — rollouts and optimizer steps run concurrently. |
 | [`multiturn_rl/train_twenty_questions.py`](multiturn_rl/train_twenty_questions.py) | Multi-turn RL: the policy plays twenty questions against a frozen answerer model served by a second sampler. [`env.py`](multiturn_rl/env.py) is the template for building your own multi-turn environment. |
+| [`s3-experiment-dashboard/`](s3-experiment-dashboard/) | Local, self-hosted dashboard over an S3 experiment store — syncs runs down and serves loss-curve overlays, hyperparameter filtering, and cross-run comparison (Python stdlib only). |
 
 ## Setup
 

@@ -63,18 +63,23 @@ def detect_run(run_dir: Path):
         for k, v in r.items():
             if k in ("step", "time") or k in seen:
                 continue
-            if isinstance(v, (int, float)):
+            if isinstance(v, (int, float)) and not isinstance(v, bool):
                 seen.add(k)
                 series.append(k)
 
-    mtimes = [p.stat().st_mtime for p in run_dir.iterdir() if p.is_file()]
+    # Exclude run.json — it's what this script writes, so counting it would
+    # make every run read "just updated" on each rebuild.
+    mtimes = [p.stat().st_mtime for p in run_dir.iterdir()
+              if p.is_file() and p.name != "run.json"]
     last_updated = iso(max(mtimes)) if mtimes else None
 
     run_json = {
         "run_id": run_dir.name,
         "started_at": meta.get("started_at") or (iso(min(mtimes)) if mtimes else None),
         "last_updated": last_updated,
-        "rollout_sources": [],  # this store logs metrics only — no rollout files
+        # This script indexes metrics/config only. The Claude-skill flow
+        # (SKILL.md) may fill this in when a run dir has rollout files.
+        "rollout_sources": [],
         "metrics": {
             "file": "metrics.jsonl",
             "x_axis": "step",
@@ -91,14 +96,15 @@ def detect_run(run_dir: Path):
     }
     run_json = {k: v for k, v in run_json.items() if v is not None}
 
-    # summary stats for experiments.json
-    evals = [(r["step"], r[EVAL_SERIES]) for r in records if EVAL_SERIES in r]
-    trains = [(r["step"], r[TRAIN_SERIES]) for r in records if TRAIN_SERIES in r]
+    # summary stats for experiments.json — a record may omit `step`, so use
+    # .get(); consumers render a None last_step as "—".
+    evals = [(r.get("step"), r[EVAL_SERIES]) for r in records if EVAL_SERIES in r]
+    trains = [(r.get("step"), r[TRAIN_SERIES]) for r in records if TRAIN_SERIES in r]
     summary = {
         "final_eval_loss": round(evals[-1][1], 4) if evals else None,
         "best_eval_loss": round(min(v for _, v in evals), 4) if evals else None,
         "final_train_loss": round(trains[-1][1], 4) if trains else None,
-        "last_step": records[-1]["step"] if records else None,
+        "last_step": records[-1].get("step") if records else None,
     }
     return run_json, summary, flatten(hparams)
 

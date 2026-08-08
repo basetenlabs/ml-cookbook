@@ -7,7 +7,7 @@ Forked from [`rollout-dashboard`](../rollout-dashboard) — each run also gets t
 ## What you see
 
 - **Compare page (the landing page)** — a run table (run id, source, every hyperparameter, last step, final/best eval loss), filter chips for each hyperparameter that varies across runs, checkboxes to pick runs, and one overlay chart of any logged metric vs step. The metric selector lists every metric any run logged (defaults to `eval_loss`).
-- **Per-run view** (click a run id) — one line chart per logged metric (`train_loss`, `eval_loss`, `learning_rate`, `grad_norm`, … whatever the run wrote), the full hyperparameter/config table, and rollout panels when the run has rollout files (inherited from rollout-dashboard).
+- **Per-run view** (click a run id) — one line chart per logged metric (`train_loss`, `eval_loss`, `learning_rate`, `grad_norm`, … whatever the run wrote), and the full hyperparameter/config table. Rollout panels (inherited from rollout-dashboard) appear when the run's `run.json` lists rollout sources — the Claude-skill flow ([SKILL.md](SKILL.md)) can populate these during detection; the plain `build_manifests.py` indexes metrics/config only.
 - **Nothing is hardcoded** — every numeric key in `metrics.jsonl` becomes a chart. Scalars only: no images, no histograms.
 - Dark/light theme toggle on every page; the per-run view auto-refreshes every 5 s (the compare page picks up new data on browser reload).
 
