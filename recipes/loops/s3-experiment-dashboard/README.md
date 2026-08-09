@@ -1,6 +1,6 @@
 # S3 Experiment Dashboard
 
-A local, self-hosted viewer for training runs stored in S3. Every run uploads three small files (`metrics.jsonl`, `hyperparams.json`, `meta.json`) to a shared bucket prefix; this recipe syncs the prefix down, indexes it, and serves a browser dashboard for loss curves, hyperparameter filtering, and cross-run comparison. No vendor, no shared server, no database — S3 is the store of record, and the dashboard is a read-only viewer on `localhost` (Python stdlib only).
+A local, self-hosted viewer for training runs stored in S3. Every run uploads three small files (`metrics.jsonl`, `hyperparams.json`, `meta.json`) to a shared bucket prefix; this recipe syncs the prefix down, indexes it, and serves a browser dashboard for loss curves, hyperparameter filtering, and cross-run comparison. Loops and Training Jobs v1 can publish the same file contract. No vendor, no shared server, no database. S3 is the store of record, and the dashboard is a read-only viewer on `localhost` (Python stdlib only).
 
 Forked from [`rollout-dashboard`](../rollout-dashboard) — each run also gets that skill's full single-run view. If you're driving this with a Claude agent, point it at [SKILL.md](SKILL.md); this README is the human-readable setup path.
 
@@ -54,6 +54,14 @@ Upload at run end (or periodically, for near-live curves):
 ```bash
 aws s3 sync <run_dir> s3://<bucket>/<prefix>/<run_id>/
 ```
+
+### Training Jobs v1
+
+Training Jobs v1 injects the Baseten job ID, project ID, names, and node rank into each training container. Workspace secrets can provide customer-managed S3 credentials. The included adapter uses those values to produce and upload the three dashboard files from the primary training process.
+
+See [`training_jobs_v1/README.md`](training_jobs_v1/README.md) for the `config.py` secret mapping and the training-loop integration. The adapter uses `BT_TRAINING_JOB_ID` as the run ID and sets `source` to `baseten-training-jobs-v1`.
+
+Use a customer-managed experiment bucket for this workflow. Do not place dashboard files in the Baseten checkpoint directory. Baseten manages that directory as model output, while this dashboard needs a shared S3 prefix that the team can read directly.
 
 ## Setup and run
 

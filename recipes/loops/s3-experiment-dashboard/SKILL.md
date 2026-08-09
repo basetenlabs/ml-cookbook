@@ -1,6 +1,6 @@
 ---
 name: s3-experiment-dashboard
-description: Build a local browser dashboard over an S3-backed experiment store. Every training run uploads metrics.jsonl + hyperparams.json + meta.json to a shared bucket prefix; this skill syncs the prefix down, indexes the runs, and serves a local UI for loss curves, hyperparameter filtering, and cross-run comparison. S3 is the store of record; the dashboard is a read-only local viewer. Use whenever the user wants to compare training runs, view loss curves across experiments, or browse a team's S3 experiment store — even if they don't say "dashboard".
+description: Build a local browser dashboard over an S3-backed experiment store. Loops and Training Jobs v1 runs upload metrics.jsonl + hyperparams.json + meta.json to a shared bucket prefix; this skill syncs the prefix down, indexes the runs, and serves a local UI for loss curves, hyperparameter filtering, and cross-run comparison. S3 is the store of record; the dashboard is a read-only local viewer. Use whenever the user wants to compare training runs, view loss curves across experiments, or browse a team's S3 experiment store — even if they don't say "dashboard".
 ---
 
 # S3 Experiment Dashboard
@@ -37,6 +37,14 @@ Each run directory under the prefix is expected to contain:
 - `meta.json` — written once at launch: `source` (e.g. `"ec2"` or `"baseten"`), `started_at`, `git_sha`, free-form extras.
 
 `build_manifests.py` implements detection phases 1–5 for exactly this layout. For run directories that *don't* conform (extra rollout files, other metric formats), the full detection logic in [rollout-dashboard's SKILL.md](../rollout-dashboard/SKILL.md) applies unchanged — score the files, identify the fields, and hand-edit that run's `run.json`; the renderer treats it like any other run.
+
+### Training Jobs v1 producer
+
+Use [`training_jobs_v1/s3_experiment_logger.py`](training_jobs_v1/s3_experiment_logger.py) inside a Training Jobs v1 project. The runtime injects `BT_TRAINING_JOB_ID`, `BT_TRAINING_PROJECT_ID`, their names, and `BT_NODE_RANK`. The adapter uses these values for run identity and metadata. It checks distributed ranks so only the primary process writes.
+
+Map a customer-managed bucket URI and AWS credentials through the job's `Runtime.environment_variables`. Use `SecretReference` for both credential values. The complete `config.py` and training-loop snippets are in [`training_jobs_v1/README.md`](training_jobs_v1/README.md).
+
+The adapter writes outside the Baseten checkpoint directory. Baseten manages checkpoints as model outputs, while the dashboard requires a customer-readable S3 prefix shared across Loops and Training Jobs v1 runs.
 
 ## Manifest schemas
 
