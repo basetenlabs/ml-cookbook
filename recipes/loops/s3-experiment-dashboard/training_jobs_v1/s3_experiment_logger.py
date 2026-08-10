@@ -4,6 +4,7 @@
 import atexit
 import json
 import os
+import signal
 import sys
 import time
 from datetime import datetime, timezone
@@ -25,7 +26,7 @@ def _parse_s3_uri(s3_uri: str) -> Tuple[str, str]:
 def _is_primary_process() -> bool:
     """Return true once per distributed job, including torchrun jobs."""
     global_rank = os.environ.get("RANK")
-    if global_rank is not None:
+    if global_rank:  # empty string means unset; fall through to the next check
         return global_rank == "0"
     return (
         os.environ.get("BT_NODE_RANK", "0") == "0"
@@ -60,6 +61,13 @@ class S3ExperimentLogger:
         self.sync_every_seconds = sync_every_seconds
         self._last_sync = 0.0
         if not self.enabled:
+            print(
+                "[s3-experiment-dashboard] logging disabled: non-primary process"
+                f" (RANK={os.environ.get('RANK')!r},"
+                f" BT_NODE_RANK={os.environ.get('BT_NODE_RANK')!r},"
+                f" LOCAL_RANK={os.environ.get('LOCAL_RANK')!r})",
+                file=sys.stderr,
+            )
             return
 
         self.run_id = os.environ.get("BT_TRAINING_JOB_ID")
@@ -97,6 +105,29 @@ class S3ExperimentLogger:
         self.s3_client = s3_client or self._new_s3_client()
         self.sync()
         atexit.register(self.close)
+        self._install_sigterm_handler()
+        print(
+            f"[s3-experiment-dashboard] logging enabled: run_id={self.run_id}"
+            f" uploading to s3://{self.bucket}/{self._object_key('')}/",
+            file=sys.stderr,
+        )
+
+    def _install_sigterm_handler(self) -> None:
+        """Flush on SIGTERM (scheduler preemption), then defer to any prior handler."""
+        previous = signal.getsignal(signal.SIGTERM)
+
+        def _handle_sigterm(signum, frame):
+            self.close()
+            if callable(previous):
+                previous(signum, frame)
+            else:
+                signal.signal(signal.SIGTERM, signal.SIG_DFL)
+                os.kill(os.getpid(), signal.SIGTERM)
+
+        try:
+            signal.signal(signal.SIGTERM, _handle_sigterm)
+        except ValueError:
+            pass  # not the main thread; atexit still covers normal exit
 
     @staticmethod
     def _new_s3_client():
@@ -122,18 +153,23 @@ class S3ExperimentLogger:
             return
         record = {"step": step, "time": time.time(), **metrics}
         with self.metrics_path.open("a") as metrics_file:
-            metrics_file.write(json.dumps(record) + "\n")
+            metrics_file.write(json.dumps(record, default=str) + "\n")
 
         if time.monotonic() - self._last_sync >= self.sync_every_seconds:
-            self.sync()
+            self.sync(files=("metrics.jsonl",))
 
-    def sync(self) -> bool:
-        """Upload the current run snapshot. Return false after a non-strict failure."""
+    def sync(self, files: Tuple[str, ...] = FILES) -> bool:
+        """Upload the current run snapshot. Return false after a non-strict failure.
+
+        hyperparams.json and meta.json never change after __init__, so the
+        periodic sync from log() passes files=("metrics.jsonl",); __init__ and
+        close() do a full pass.
+        """
         if not self.enabled or self.closed:
             return True
 
         success = True
-        for filename in FILES:
+        for filename in files:
             path = self.run_dir / filename
             try:
                 self.s3_client.upload_file(

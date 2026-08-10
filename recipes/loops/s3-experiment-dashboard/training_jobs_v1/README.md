@@ -69,7 +69,7 @@ with S3ExperimentLogger(hyperparameters, sync_every_seconds=60) as experiment:
 
 Call `experiment.log(...)` after evaluation to add `eval_loss`, accuracy, reward, or other numeric values. The dashboard charts every numeric key.
 
-The helper uploads all three files at startup, every 60 seconds while metrics arrive, and at normal process exit. Upload failures produce training logs and do not stop training by default. Pass `strict_uploads=True` if the experiment record must be complete.
+The helper uploads all three files at startup, uploads only `metrics.jsonl` every 60 seconds while metrics arrive (`hyperparams.json` and `meta.json` never change after startup), and uploads all three files again at normal process exit or on `SIGTERM` (scheduler preemption). Upload failures produce training logs and do not stop training by default. Pass `strict_uploads=True` if the experiment record must be complete. At startup the helper prints one line to stderr stating whether logging is enabled, the run ID, and the destination S3 URI.
 
 ## 3. Open the dashboard
 
