@@ -76,7 +76,7 @@ The helper uploads all three files at startup, uploads only `metrics.jsonl` ever
 On a local machine with read access to the same bucket:
 
 ```bash
-cd recipes/loops/s3-experiment-dashboard
+cd recipes/experiment-dashboard
 S3_URI=s3://my-bucket/my-team/experiments ./sync.sh
 S3_URI=s3://my-bucket/my-team/experiments python3 build_manifests.py
 python3 dashboard.py

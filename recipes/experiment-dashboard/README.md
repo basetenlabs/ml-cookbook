@@ -2,7 +2,7 @@
 
 A local, self-hosted viewer for training runs stored in S3. Every run uploads three small files (`metrics.jsonl`, `hyperparams.json`, `meta.json`) to a shared bucket prefix; this recipe syncs the prefix down, indexes it, and serves a browser dashboard for loss curves, hyperparameter filtering, and cross-run comparison. Loops and Training Jobs v1 can publish the same file contract. No vendor, no shared server, no database. S3 is the store of record, and the dashboard is a read-only viewer on `localhost` (Python stdlib only).
 
-Forked from [`rollout-dashboard`](../rollout-dashboard) — each run also gets that skill's full single-run view. If you're driving this with a Claude agent, point it at [SKILL.md](SKILL.md); this README is the human-readable setup path.
+Forked from [`rollout-dashboard`](../loops/rollout-dashboard) — each run also gets that skill's full single-run view. If you're driving this with a Claude agent, point it at [SKILL.md](SKILL.md); this README is the human-readable setup path.
 
 ## What you see
 

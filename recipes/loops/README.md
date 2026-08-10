@@ -14,7 +14,6 @@ These recipes use [tinker-cookbook](https://pypi.org/project/tinker-cookbook/)'s
 | [`rl/train_grpo_async.py`](rl/train_grpo_async.py) | Async GRPO with bounded off-policy sampling — rollouts and optimizer steps run concurrently. |
 | [`multiturn_rl/train_twenty_questions.py`](multiturn_rl/train_twenty_questions.py) | Multi-turn RL: the policy plays twenty questions against a frozen answerer model served by a second sampler. [`env.py`](multiturn_rl/env.py) is the template for building your own multi-turn environment. |
 | [`multiturn_rl/train_twenty_questions_async.py`](multiturn_rl/train_twenty_questions_async.py) | Async multi-turn RL: the same twenty-questions environment with rollout workers playing games continuously while the trainer takes optimizer steps. |
-| [`s3-experiment-dashboard/`](s3-experiment-dashboard/) | Local, self-hosted dashboard over an S3 experiment store — syncs runs down and serves loss-curve overlays, hyperparameter filtering, and cross-run comparison (Python stdlib only). |
 
 ## Setup
 

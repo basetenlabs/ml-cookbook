@@ -36,7 +36,7 @@ Each run directory under the prefix is expected to contain:
 - `hyperparams.json` — a (possibly nested) dict of hyperparameters. Nested keys get dot-flattened (`optimizer.lr`).
 - `meta.json` — written once at launch: `source` (e.g. `"ec2"` or `"baseten"`), `started_at`, `git_sha`, free-form extras.
 
-`build_manifests.py` implements detection phases 1–5 for exactly this layout. For run directories that *don't* conform (extra rollout files, other metric formats), the full detection logic in [rollout-dashboard's SKILL.md](../rollout-dashboard/SKILL.md) applies unchanged — score the files, identify the fields, and hand-edit that run's `run.json`; the renderer treats it like any other run.
+`build_manifests.py` implements detection phases 1–5 for exactly this layout. For run directories that *don't* conform (extra rollout files, other metric formats), the full detection logic in [rollout-dashboard's SKILL.md](../loops/rollout-dashboard/SKILL.md) applies unchanged — score the files, identify the fields, and hand-edit that run's `run.json`; the renderer treats it like any other run.
 
 ### Training Jobs v1 producer
 
