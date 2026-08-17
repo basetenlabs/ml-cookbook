@@ -17,7 +17,7 @@ as the `hf_access_token` secret, then launch the job:
 
 ```bash
 pip install -U truss
-cd examples/qwen3-asr-transformers
+cd examples/qwen3-asr-transformers/training
 truss train push config.py
 ```
 
@@ -28,7 +28,7 @@ submission:
 TRAINING_PROJECT_NAME="My Qwen3-ASR fine-tune" truss train push config.py
 ```
 
-The default compute profile in `config.py` is:
+The default compute profile in `training/config.py` is:
 
 | Resource | Value | Why |
 | --- | ---: | --- |
@@ -54,8 +54,9 @@ truss train push config.py
 ```
 
 The training config accepts `GPU_COUNT=1`, `2`, `4`, or `8`. On Baseten,
-`run.sh` reads the injected `BT_NUM_GPUS` value and launches one Hugging Face
-Trainer process per GPU. For a local single-node run, use the equivalent:
+`training/run.sh` reads the injected `BT_NUM_GPUS` value and launches one
+Hugging Face Trainer process per GPU. For a local single-node run, use the
+equivalent:
 
 ```bash
 NUM_GPUS=2 GRAD_ACC=8 ./run.sh
@@ -69,13 +70,14 @@ is intentional.
 
 ## What the recipe does
 
-`run.sh` executes the complete pipeline:
+`training/run.sh` executes the complete pipeline:
 
 1. Creates an isolated virtual environment and installs Qwen3-ASR plus a
    prebuilt FlashAttention 2 wheel.
-2. Runs `prepare.py` to download and resample a Hugging Face audio dataset,
-   filter long clips, materialize 16 kHz WAV files, and write train/eval JSONL.
-3. Runs the adapted upstream `qwen3_asr_sft.py` trainer in BF16 with
+2. Runs `training/prepare.py` to download and resample a Hugging Face audio
+   dataset, filter long clips, materialize 16 kHz WAV files, and write
+   train/eval JSONL.
+3. Runs the adapted upstream `training/qwen3_asr_sft.py` trainer in BF16 with
    FlashAttention 2.
 4. Saves periodic Trainer checkpoints and a stable, self-contained
    `$BT_CHECKPOINT_DIR/final` checkpoint.
@@ -192,7 +194,7 @@ own per-device batch.
 The same pipeline runs locally on a CUDA machine:
 
 ```bash
-cd examples/qwen3-asr-transformers
+cd examples/qwen3-asr-transformers/training
 ./run.sh
 ```
 
@@ -285,7 +287,7 @@ training_checkpoints:
 Push the deployment from the Truss directory:
 
 ```bash
-cd truss
+cd examples/qwen3-asr-transformers/truss
 truss push
 ```
 
@@ -312,9 +314,10 @@ response has the native
 ### Where the checkpoint is stored
 
 During a Baseten training job, `$BT_CHECKPOINT_DIR` is a mounted local path in
-the training container. The checkpointing configuration in `config.py`
-automatically synchronizes files written there to Baseten-managed cloud
-storage, so they remain available after the training machine is torn down.
+the training container. The checkpointing configuration in
+`training/config.py` automatically synchronizes files written there to
+Baseten-managed cloud storage, so they remain available after the training
+machine is torn down.
 
 At deploy time, `training_checkpoints` downloads the selected cloud artifact
 into the inference container. For example, job `abc123` is available to the
@@ -327,8 +330,9 @@ server at:
 This is therefore not only a local-on-disk checkpoint, and you do not need to
 download it and upload it again. Baseten's documentation describes the backing
 store as Baseten storage or cloud storage rather than promising a
-user-managed S3 bucket. If you run this recipe locally instead, `run.sh` falls
-back to `output/`; that local directory is not uploaded automatically.
+user-managed S3 bucket. If you run this recipe locally instead,
+`training/run.sh` falls back to `training/output/`; that local directory is not
+uploaded automatically.
 
 ## Upstream basis
 
