@@ -230,6 +230,79 @@ print(result[0].language)
 print(result[0].text)
 ```
 
+## Deploy a fine-tuned checkpoint with Truss
+
+The [`truss/`](truss) directory serves the persisted `final/` checkpoint with
+the same pinned vLLM stack and OpenAI-compatible chat-completions API as
+Baseten's
+[`qwen3-asr-1.7b` model-registry preset](https://github.com/basetenlabs/model-registry/tree/main/stt/qwen3-asr-1.7b/latency).
+
+First, get the completed training job ID from the training logs or CLI:
+
+```bash
+truss train view
+```
+
+Then replace both occurrences of `abc123` in `truss/config.yaml` with that job
+ID. The artifact path for this single-node recipe is `rank-0/final`:
+
+```yaml
+training_checkpoints:
+  download_folder: /models/training_checkpoints
+  artifact_references:
+    - training_job_id: YOUR_JOB_ID
+      paths:
+        - "rank-0/final"
+```
+
+Push the deployment from the Truss directory:
+
+```bash
+cd truss
+truss push
+```
+
+After the model finishes deploying, install the OpenAI client, put its model ID
+and deployment ID into `call.py`, then transcribe the included public test URL:
+
+```bash
+pip install openai
+python call.py
+```
+
+To transcribe a local file, `call.py` converts it to an audio data URL before
+sending it:
+
+```bash
+AUDIO_PATH=path/to/test.wav python call.py
+```
+
+You can also set `AUDIO_URL` to a directly accessible audio URL. The deployment
+uses vLLM's native Qwen3-ASR support and exposes `/v1/chat/completions`; its
+response has the native
+`language <LANGUAGE><asr_text><TRANSCRIPT>` format.
+
+### Where the checkpoint is stored
+
+During a Baseten training job, `$BT_CHECKPOINT_DIR` is a mounted local path in
+the training container. The checkpointing configuration in `config.py`
+automatically synchronizes files written there to Baseten-managed cloud
+storage, so they remain available after the training machine is torn down.
+
+At deploy time, `training_checkpoints` downloads the selected cloud artifact
+into the inference container. For example, job `abc123` is available to the
+server at:
+
+```text
+/models/training_checkpoints/abc123/rank-0/final
+```
+
+This is therefore not only a local-on-disk checkpoint, and you do not need to
+download it and upload it again. Baseten's documentation describes the backing
+store as Baseten storage or cloud storage rather than promising a
+user-managed S3 bucket. If you run this recipe locally instead, `run.sh` falls
+back to `output/`; that local directory is not uploaded automatically.
+
 ## Upstream basis
 
 The training loop retains the upstream Qwen recipe's processor-driven audio

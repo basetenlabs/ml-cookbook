@@ -1,0 +1,37 @@
+model_name: Qwen3 ASR 1.7B Finetuned
+model_metadata:
+  tags:
+    - openai-compatible
+base_image:
+  image: vllm/vllm-openai:v0.22.0-cu129
+requirements:
+  - vllm[audio]
+  - librosa
+  - torch
+  - torchaudio
+  - pynvml
+  - ffmpeg-python
+system_packages:
+  - python3.10-venv
+  - ffmpeg
+  - openmpi-bin
+  - libopenmpi-dev
+resources:
+  accelerator: H100
+  cpu: "1"
+  memory: 10Gi
+  use_gpu: true
+training_checkpoints:
+  download_folder: /models/training_checkpoints
+  artifact_references:
+    - training_job_id: abc123 # Replace with your training job ID
+      paths:
+        - "rank-0/final"
+docker_server:
+  start_command: sh -c "vllm serve /models/training_checkpoints/abc123/rank-0/final --tensor-parallel-size 1 --served-model-name Qwen/Qwen3-ASR-1.7B --gpu-memory-utilization 0.8 --host 0.0.0.0 --port 8000 --load-format runai_streamer"
+  server_port: 8000
+  liveness_endpoint: /health
+  readiness_endpoint: /health
+  predict_endpoint: /v1/chat/completions
+runtime:
+  predict_concurrency: 256
