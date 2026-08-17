@@ -28,9 +28,15 @@ TRAIN_JSONL="./train.jsonl"
 EVAL_JSONL="./eval.jsonl"
 OUTPUT_DIR="${BT_CHECKPOINT_DIR:-./output}"
 INIT_MODEL_PATH="${INIT_MODEL_PATH:-Qwen/Qwen3-ASR-1.7B}"
+GPU_COUNT="${BT_NUM_GPUS:-${NUM_GPUS:-1}}"
 
-# Single-H100 preset. BATCH_SIZE is the per-device micro-batch; gradient
-# accumulation preserves an effective batch of 128 without holding 128 audio
+if ! [[ "${GPU_COUNT}" =~ ^[1-9][0-9]*$ ]]; then
+    echo "GPU count must be a positive integer; got: ${GPU_COUNT}" >&2
+    exit 1
+fi
+
+# BATCH_SIZE is the per-device micro-batch. The Baseten config adjusts GRAD_ACC
+# with GPU count to preserve an effective batch of 128 without holding 128 audio
 # samples in VRAM simultaneously.
 BATCH_SIZE="${BATCH_SIZE:-8}"
 GRAD_ACC="${GRAD_ACC:-16}"
@@ -93,4 +99,13 @@ if [ "${EVAL_SAMPLES}" -gt 0 ]; then
 fi
 
 echo "Starting Qwen3-ASR fine-tuning..."
-python qwen3_asr_sft.py "${TRAIN_ARGS[@]}"
+if [ "${GPU_COUNT}" -gt 1 ]; then
+    echo "Launching single-node DDP with ${GPU_COUNT} GPUs..."
+    torchrun \
+      --standalone \
+      --nnodes=1 \
+      --nproc-per-node="${GPU_COUNT}" \
+      qwen3_asr_sft.py "${TRAIN_ARGS[@]}"
+else
+    python qwen3_asr_sft.py "${TRAIN_ARGS[@]}"
+fi

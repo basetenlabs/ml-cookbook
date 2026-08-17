@@ -32,7 +32,7 @@ The default compute profile in `config.py` is:
 
 | Resource | Value | Why |
 | --- | ---: | --- |
-| GPU | `1x H100` | 80 GB VRAM for full-parameter BF16 training |
+| GPU | `1x H100` | Default; set `GPU_COUNT=2`, `4`, or `8` for single-node DDP |
 | CPU | `16` cores | Parallel audio loading and preprocessing |
 | RAM | `96Gi` | Matches the threshold called out by the upstream FlashAttention installation guidance |
 | FlashAttention build jobs | `MAX_JOBS=4` | Prevents an accidental source build from exhausting host RAM |
@@ -40,6 +40,32 @@ The default compute profile in `config.py` is:
 The model weights are mounted at `/app/models/Qwen/Qwen3-ASR-1.7B`, dataset
 artifacts use the Baseten read/write cache, and checkpoints are written under
 `$BT_CHECKPOINT_DIR` so they survive job teardown.
+
+### Multi-GPU training with torchrun
+
+Multi-GPU training follows the same `torchrun --nproc-per-node=$BT_NUM_GPUS`
+pattern used by the repository's other distributed recipes. Request two H100s
+by setting `GPU_COUNT` while submitting the config:
+
+```bash
+GPU_COUNT=2 \
+TRAINING_PROJECT_NAME="Qwen3-ASR-1.7B Finetuning (2x H100 DDP)" \
+truss train push config.py
+```
+
+The training config accepts `GPU_COUNT=1`, `2`, `4`, or `8`. On Baseten,
+`run.sh` reads the injected `BT_NUM_GPUS` value and launches one Hugging Face
+Trainer process per GPU. For a local single-node run, use the equivalent:
+
+```bash
+NUM_GPUS=2 GRAD_ACC=8 ./run.sh
+```
+
+The config scales the default gradient accumulation from `16` on one GPU to
+`8`, `4`, or `2` on 2, 4, or 8 GPUs, respectively. With the default per-device
+batch size of 8, every preset therefore keeps the global effective batch at
+128. Override `GRAD_ACC` when submitting the config if a different global batch
+is intentional.
 
 ## What the recipe does
 
@@ -109,7 +135,7 @@ language name and concatenate the resulting JSONL files before training.
 | Variable | Default | Description |
 | --- | ---: | --- |
 | `BATCH_SIZE` | `8` | Per-device micro-batch size |
-| `GRAD_ACC` | `16` | Gradient accumulation steps |
+| `GRAD_ACC` | `16 / GPU_COUNT` | Gradient accumulation steps; the config preserves global batch 128 |
 | `LR` | `2e-5` | AdamW learning rate from the upstream recipe |
 | `EPOCHS` | `1` | Dataset passes |
 | `WARMUP_RATIO` | `0.02` | Linear warmup fraction |
@@ -124,9 +150,10 @@ The effective batch size is:
 BATCH_SIZE × GRAD_ACC × number_of_GPUs
 ```
 
-The default is therefore `8 × 16 × 1 = 128`, matching the effective
-single-GPU batch of the upstream `batch_size=32, grad_acc=4` example while
-using much less peak activation memory.
+The default is therefore `8 × 16 × 1 = 128`. The two-GPU preset uses
+`8 × 8 × 2 = 128`, matching the effective single-GPU batch of the upstream
+`batch_size=32, grad_acc=4` example while using much less peak activation
+memory per device.
 
 ### Batch size and VRAM
 
