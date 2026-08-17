@@ -12,14 +12,31 @@ The default running example prepares 800 utterances from LibriSpeech
 
 ## Baseten quickstart
 
-Install Truss, configure a Hugging Face access token in the Baseten workspace
-as the `hf_access_token` secret, then launch the job:
+The default Qwen3-ASR model and LibriSpeech dataset are public, so the default
+job does not require a Hugging Face token. Install Truss and launch it directly:
 
 ```bash
 pip install -U truss
 cd examples/qwen3-asr-transformers/training
 truss train push config.py
 ```
+
+### Hugging Face authentication (optional)
+
+For a gated or private Hugging Face dataset, first create a secret containing
+your Hugging Face token in the Baseten workspace. Then set
+`HF_TOKEN_SECRET_NAME` to that secret's name when submitting the job:
+
+```bash
+HF_TOKEN_SECRET_NAME=hf_access_token truss train push config.py
+```
+
+`HF_TOKEN_SECRET_NAME` is read while `training/config.py` is loaded. When it is
+set, the config exposes the referenced Baseten secret to the training container
+as `HF_TOKEN`; the token value is not stored in this recipe. When it is unset,
+the `HF_TOKEN` environment variable is omitted entirely. A secret named
+`hf_access_token` is only a convention—you can use any existing Baseten secret
+name.
 
 If that project name already exists in your organization, override it only for
 submission:
