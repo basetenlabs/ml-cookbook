@@ -12,12 +12,12 @@ python -m pip install -q -r requirements.txt
 # Dataset defaults: a bounded slice of LibriSpeech train-clean-100. Override
 # these for another Hugging Face audio dataset.
 DATASET_REPO="${DATASET_REPO:-openslr/librispeech_asr}"
-DATASET_CONFIG="${DATASET_CONFIG:-clean}"
+DATASET_CONFIG="${DATASET_CONFIG-clean}"
 DATASET_SPLIT="${DATASET_SPLIT:-train.100}"
 AUDIO_COLUMN="${AUDIO_COLUMN:-audio}"
 TEXT_COLUMN="${TEXT_COLUMN:-text}"
 ID_COLUMN="${ID_COLUMN:-id}"
-LANGUAGE="${LANGUAGE:-English}"
+LANGUAGE="${LANGUAGE-English}"
 MAX_SAMPLES="${MAX_SAMPLES-800}"
 MAX_DURATION_SECONDS="${MAX_DURATION_SECONDS:-30}"
 EVAL_SAMPLES="${EVAL_SAMPLES:-40}"
