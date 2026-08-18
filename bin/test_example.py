@@ -488,6 +488,7 @@ def deploy_and_infer(
         deploy_config,
         project_id=project_id,
         job_id=job_id,
+        run_id=None,
         dry_run=False,
     )
 
