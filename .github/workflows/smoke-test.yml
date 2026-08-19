@@ -135,6 +135,7 @@ jobs:
         id: slack
         run: |
           all_passed=true
+          failure_mention='<!subteam^S0APREXGYJ2>'
           blocks='[{"type":"header","text":{"type":"plain_text","text":"Training Smoke Test Results"}}]'
 
           for dir in /tmp/summaries/smoke-test-summary-*/; do
@@ -173,8 +174,8 @@ jobs:
             '. + [{"type":"section","text":{"type":"mrkdwn","text":("<" + $url + "|View workflow run>")}}]')
 
           if [ "$all_passed" != "true" ]; then
-            # Prepend @here mention so it actually fires in the channel (text field is ignored when blocks are present)
-            blocks=$(echo "$blocks" | jq '[{"type":"section","text":{"type":"mrkdwn","text":"<!here> *Training Smoke Test Failed*"}}] + .')
+            # Prepend the owner mention because Slack ignores text when blocks are present.
+            blocks=$(echo "$blocks" | jq --arg mention "$failure_mention" '[{"type":"section","text":{"type":"mrkdwn","text":($mention + " *Training Smoke Test Failed*")}}] + .')
             blocks=$(echo "$blocks" | jq '. + [{"type":"context","elements":[{"type":"mrkdwn","text":"Failed projects are preserved for investigation."}]}]')
           fi
 
@@ -184,7 +185,8 @@ jobs:
           jq -n --argjson blocks "$blocks" \
             --arg channel "${{ secrets.SLACK_CHANNEL_ID }}" \
             --arg all_passed "$all_passed" \
-            '{channel: $channel, blocks: $blocks} + (if $all_passed == "false" then {text: "<!here> Training Smoke Test Failed"} else {} end)' \
+            --arg failure_mention "$failure_mention" \
+            '{channel: $channel, blocks: $blocks} + (if $all_passed == "false" then {text: ($failure_mention + " Training Smoke Test Failed")} else {} end)' \
             > /tmp/slack-payload.json
 
       - name: Notify Slack
