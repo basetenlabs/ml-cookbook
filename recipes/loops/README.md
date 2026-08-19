@@ -12,6 +12,7 @@ These recipes use [tinker-cookbook](https://pypi.org/project/tinker-cookbook/)'s
 | [`sft/train_sft_glm.py`](sft/train_sft_glm.py) | SFT for [GLM-5.2](https://huggingface.co/zai-org/GLM-5.2-FP8) — a Loops-supported model tinker-cookbook doesn't know. Shows the bring-your-own-model pattern: a custom renderer matching GLM's chat template (verified token-for-token against `apply_chat_template` before any GPU spend), registered via tinker-cookbook's renderer/tokenizer registries. |
 | [`rl/train_grpo.py`](rl/train_grpo.py) | GRPO on GSM8K math problems — synchronous sample-then-train loop. |
 | [`rl/train_grpo_async.py`](rl/train_grpo_async.py) | Async GRPO with bounded off-policy sampling — rollouts and optimizer steps run concurrently. |
+| [`rl/train_math_async.py`](rl/train_math_async.py) | Async RL on [DeepMath](https://huggingface.co/datasets/zwhe99/DeepMath-103K) — combines bounded off-policy training with warm-start sampler provisioning, so long variable-length solutions never stall the trainer. |
 | [`multiturn_rl/train_twenty_questions.py`](multiturn_rl/train_twenty_questions.py) | Multi-turn RL: the policy plays twenty questions against a frozen answerer model served by a second sampler. [`env.py`](multiturn_rl/env.py) is the template for building your own multi-turn environment. |
 | [`multiturn_rl/train_twenty_questions_async.py`](multiturn_rl/train_twenty_questions_async.py) | Async multi-turn RL: the same twenty-questions environment with rollout workers playing games continuously while the trainer takes optimizer steps. |
 
@@ -31,6 +32,7 @@ uv sync
 uv run sft/train_sft.py
 uv run rl/train_grpo.py
 uv run rl/train_grpo_async.py
+uv run rl/train_math_async.py
 uv run multiturn_rl/train_twenty_questions.py
 uv run multiturn_rl/train_twenty_questions_async.py
 ```
@@ -47,7 +49,7 @@ Training metrics land in the recipe's `log_path` (under `/tmp/loops-cookbook/` b
 
 ## Async RL and off-policy bounds
 
-In `rl/train_grpo_async.py` and `multiturn_rl/train_twenty_questions_async.py`, rollout workers generate trajectory groups continuously while the training loop consumes them — sampling never waits for the optimizer and vice versa. The cost is staleness: a rollout may have been sampled from a policy several optimizer steps old. Async mode pays off most for multi-turn tasks, where each episode takes many sequential sampler calls and a synchronous loop would leave the trainer idle for the duration of the slowest game in every batch.
+In `rl/train_grpo_async.py`, `rl/train_math_async.py`, and `multiturn_rl/train_twenty_questions_async.py`, rollout workers generate trajectory groups continuously while the training loop consumes them — sampling never waits for the optimizer and vice versa. The cost is staleness: a rollout may have been sampled from a policy several optimizer steps old. Async mode pays off most when rollout wall-clock varies widely across a batch — multi-turn tasks, where each episode takes many sequential sampler calls, and long-form reasoning tasks like DeepMath, where solution length spans a wide range — since a synchronous loop would leave the trainer idle for the duration of the slowest rollout in every batch.
 
 `max_steps_off_policy` bounds that staleness. Each trajectory group is tagged with the policy version it was sampled from; groups more than `max_steps_off_policy` steps behind the current trainer step are requeued instead of trained on. This rides on Loops' weight-versioning semantics:
 
@@ -57,7 +59,7 @@ In `rl/train_grpo_async.py` and `multiturn_rl/train_twenty_questions_async.py`, 
 
 `max_steps_off_policy=2` is a reasonable default; raise it for more pipelining throughput, lower it to stay closer to on-policy.
 
-`train_twenty_questions_async.py` also sets `LOOPS_WARM_START_SAMPLER=true`, which makes the SDK provision the paired sampler alongside the trainer at run creation instead of at the first sampling request, so the two cold starts overlap. Leave it unset in train-only scripts (like the SFT recipe) so no sampler GPU is provisioned.
+`train_twenty_questions_async.py` and `train_math_async.py` also set `LOOPS_WARM_START_SAMPLER=true`, which makes the SDK provision the paired sampler alongside the trainer at run creation instead of at the first sampling request, so the two cold starts overlap. Leave it unset in train-only scripts (like the SFT recipe) so no sampler GPU is provisioned.
 
 ## Choosing a base model
 
