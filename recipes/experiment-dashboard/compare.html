@@ -1,0 +1,428 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>s3-experiment-dashboard · compare</title>
+  <link rel="stylesheet" href="/style.css">
+  <!-- Chart.js is vendored (chart.umd.min.js, MIT) so the dashboard works in
+       browsers that block CDNs -->
+  <script src="/chart.umd.min.js"></script>
+  <style>
+    /* Compare-page additions — built on the existing style.css variables. */
+    .compare-chart-card { /* one wide chart, not the grid */
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-large);
+      padding: var(--gap-loose);
+    }
+    .compare-chart-wrap { position: relative; height: 300px; }
+
+    .chip-row {
+      display: flex; flex-wrap: wrap; align-items: center;
+      gap: var(--gap); margin-bottom: var(--gap);
+    }
+    .chip-key { color: var(--fg-muted); font-size: var(--fs-small); min-width: 90px; }
+    .chip {
+      font-size: var(--fs-small);
+      padding: 2px 10px;
+      border: 1px solid var(--border-strong);
+      border-radius: 999px;
+      background: var(--bg-card);
+      color: var(--fg-muted);
+      cursor: pointer;
+      font-family: var(--font-mono);
+    }
+    .chip:hover { color: var(--fg); border-color: var(--fg-muted); }
+    .chip.active {
+      background: var(--accent-soft);
+      border-color: var(--accent);
+      color: var(--accent);
+    }
+
+    .runs-table { width: 100%; border-collapse: collapse; font-size: var(--fs-body); }
+    .runs-table th {
+      text-align: left; font-weight: normal; color: var(--fg-muted);
+      font-size: var(--fs-small); padding: var(--gap-tight) var(--gap);
+      border-bottom: 1px solid var(--border-strong);
+      white-space: nowrap;
+    }
+    .runs-table td {
+      padding: var(--gap-tight) var(--gap);
+      border-bottom: 1px solid var(--border);
+      font-variant-numeric: tabular-nums;
+      white-space: nowrap;
+    }
+    .runs-table tr:hover td { background: var(--bg-hover); }
+    .runs-table tr.no-metric td { opacity: 0.45; } /* run doesn't log the selected metric */
+    .runs-table .num { text-align: right; }
+    .run-swatch {
+      display: inline-block; width: 10px; height: 10px;
+      border-radius: 2px; margin-right: var(--gap-tight); vertical-align: baseline;
+    }
+    .source-badge {
+      font-size: var(--fs-small);
+      padding: 1px 8px; border-radius: 999px;
+      border: 1px solid var(--border-strong); color: var(--fg-muted);
+    }
+    .source-badge.ec2     { border-color: #d97706; color: #d97706; }
+    .source-badge.baseten { border-color: #2563eb; color: #2563eb; }
+    .best-val { color: var(--accent); }
+  </style>
+</head>
+<body>
+
+  <div class="run-header">
+    <div>
+      <div class="run-id">experiments</div>
+      <div class="run-meta" id="exp-meta">loading…</div>
+    </div>
+    <div>
+      <button id="theme-toggle" title="Toggle dark mode">◐</button>
+    </div>
+  </div>
+
+  <div class="stat-strip" id="stat-strip"></div>
+
+  <!-- Runs table + hyperparam filter chips -->
+  <div class="section">
+    <div class="section-header">
+      <div class="section-title">Runs</div>
+      <div class="section-meta" id="runs-meta"></div>
+    </div>
+    <div id="chip-bar"></div>
+    <div style="overflow-x:auto"><table class="runs-table" id="runs-table"></table></div>
+  </div>
+
+  <!-- One overlay chart -->
+  <div class="section">
+    <div class="section-header">
+      <div class="section-title">Compare</div>
+      <div class="section-meta">
+        <label for="metric-select" style="color:var(--fg-muted)">metric</label>
+        <!-- options = union of every logged series across runs; filled at boot -->
+        <select id="metric-select"></select>
+      </div>
+    </div>
+    <div class="compare-chart-card">
+      <div class="chart-title" id="compare-title">eval_loss vs step</div>
+      <div class="compare-chart-wrap"><canvas id="compare-canvas"></canvas></div>
+    </div>
+  </div>
+
+  <script>
+    // ---- state -------------------------------------------------------------
+    let EXPERIMENTS = null;          // /experiments payload
+    const runData = new Map();       // run_id -> /run/<id>/data payload (cached)
+    const checked = new Map();       // run_id -> bool (plot this run?)
+    const chipFilters = new Map();   // hparam key -> Set of selected values (stringified)
+    let metric = 'eval_loss';    // real value picked in initMetricSelect()
+    let chart = null;
+
+    // Categorical palette, fixed order — the first 5 are validated for CVD +
+    // contrast on both the light (#fafafa) and dark (#0b0e13) surfaces of
+    // style.css. Runs 6+ get golden-angle-spaced hues at mid lightness (never
+    // very light or very dark, so lines stay visible on both themes), derived
+    // from the run index so each run's color is stable across renders.
+    // Color follows the run (assignment by index in experiments.json order)
+    // and never gets repainted when filters change.
+    const RUN_COLORS = ['#16a34a', '#2563eb', '#d97706', '#7c3aed', '#dc2626'];
+    const runColor = i => i < RUN_COLORS.length
+      ? RUN_COLORS[i]
+      : `hsl(${Math.round((i * 137.508) % 360)}, 65%, 45%)`;
+
+    function esc(s) {
+      return String(s).replace(/[&<>"']/g, c =>
+        ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+    }
+    const fmtNum = v => (v === null || v === undefined) ? '—' : String(v);
+
+    // ---- theme toggle (same cookie as index.html) ---------------------------
+    const themeBtn = document.getElementById('theme-toggle');
+    const savedTheme = document.cookie.match(/te-theme=(\w+)/);
+    if (savedTheme) document.documentElement.dataset.theme = savedTheme[1];
+    themeBtn.addEventListener('click', () => {
+      const next = document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark';
+      document.documentElement.dataset.theme = next;
+      document.cookie = `te-theme=${next}; path=/; max-age=31536000`;
+      styleChartForTheme();
+    });
+
+    // ---- filtering ----------------------------------------------------------
+    // Chips are built from hparam keys whose value VARIES across runs.
+    function varyingHparamKeys() {
+      const keys = new Map(); // key -> Set of distinct values
+      for (const r of EXPERIMENTS.runs) {
+        for (const [k, v] of Object.entries(r.hparams || {})) {
+          if (!keys.has(k)) keys.set(k, new Set());
+          keys.get(k).add(String(v));
+        }
+      }
+      return [...keys.entries()].filter(([, vals]) => vals.size > 1);
+    }
+
+    function runVisible(r) {
+      for (const [key, vals] of chipFilters.entries()) {
+        if (vals.size === 0) continue;
+        if (!vals.has(String((r.hparams || {})[key]))) return false;
+      }
+      return true;
+    }
+    const visibleRuns = () => EXPERIMENTS.runs.filter(runVisible);
+    const plottedRuns = () => visibleRuns().filter(r => checked.get(r.run_id) !== false);
+
+    // Does this run log the given series? Manifests without a series list
+    // (built by an older build_manifests.py) are assumed to log everything.
+    const runHasSeries = (r, s) => !r.series || r.series.includes(s);
+
+    // Union of every logged series across runs, in first-seen order.
+    function allSeries() {
+      const seen = new Set(), out = [];
+      for (const r of EXPERIMENTS.runs) {
+        for (const s of (r.series || [])) {
+          if (!seen.has(s)) { seen.add(s); out.push(s); }
+        }
+      }
+      return out.length ? out : ['eval_loss', 'train_loss'];
+    }
+
+    function initMetricSelect() {
+      const series = allSeries();
+      metric = series.includes('eval_loss') ? 'eval_loss'
+             : series.includes('train_loss') ? 'train_loss'
+             : series[0];
+      document.getElementById('metric-select').innerHTML = series.map(s =>
+        `<option value="${esc(s)}" ${s === metric ? 'selected' : ''}>${esc(s)}</option>`
+      ).join('');
+    }
+
+    function toggleChip(key, value) {
+      if (!chipFilters.has(key)) chipFilters.set(key, new Set());
+      const s = chipFilters.get(key);
+      s.has(value) ? s.delete(value) : s.add(value);
+      renderAll();
+    }
+    function toggleRun(runId) {
+      checked.set(runId, !(checked.get(runId) !== false));
+      renderTable();
+      updateChart();
+    }
+
+    // ---- renderers ----------------------------------------------------------
+    function renderHeader() {
+      const el = document.getElementById('exp-meta');
+      if (EXPERIMENTS._error) {
+        el.textContent =
+          `${EXPERIMENTS._error} — run \`./sync.sh && python3 build_manifests.py\`, then reload`;
+        return;
+      }
+      el.textContent =
+        `${EXPERIMENTS.s3_prefix || ''} · indexed ${EXPERIMENTS.generated_at || '?'}`;
+    }
+
+    function renderStatStrip() {
+      const runs = EXPERIMENTS.runs;
+      const best = runs.reduce((a, r) =>
+        (r.summary?.best_eval_loss != null && (a === null || r.summary.best_eval_loss < a.summary.best_eval_loss)) ? r : a, null);
+      const sources = [...new Set(runs.map(r => r.source).filter(Boolean))];
+      const stats = [
+        ['runs', runs.length],
+        ['best eval_loss', best ? `${best.summary.best_eval_loss} (${best.run_id})` : '—'],
+        ['sources', sources.join(' + ') || '—'],
+        ['showing', `${visibleRuns().length} / ${runs.length}`],
+      ];
+      document.getElementById('stat-strip').innerHTML = stats.map(([label, value]) => `
+        <div class="stat">
+          <div class="stat-label">${esc(label)}</div>
+          <div class="stat-value">${esc(String(value))}</div>
+        </div>`).join('<div class="stat-divider"></div>');
+    }
+
+    function renderChips() {
+      const rows = varyingHparamKeys().map(([key, vals]) => {
+        const sorted = [...vals].sort((a, b) => (Number(a) || 0) - (Number(b) || 0));
+        const chips = sorted.map(v => {
+          const on = chipFilters.get(key)?.has(v);
+          // No inline handler — the delegated click listener on #chip-bar
+          // reads these data attributes back out (entity-decoded) at click time.
+          return `<button class="chip ${on ? 'active' : ''}"
+                     data-key="${esc(key)}" data-val="${esc(v)}">${esc(v)}</button>`;
+        }).join('');
+        return `<div class="chip-row"><span class="chip-key">${esc(key)}</span>${chips}</div>`;
+      });
+      document.getElementById('chip-bar').innerHTML = rows.join('');
+    }
+
+    function renderTable() {
+      const runs = visibleRuns();
+      document.getElementById('runs-meta').textContent =
+        `${runs.length} run(s)` + (chipFilters.size && [...chipFilters.values()].some(s => s.size)
+          ? ' · filtered' : '');
+      const hparamKeys = [...new Set(EXPERIMENTS.runs.flatMap(r => Object.keys(r.hparams || {})))];
+      const head = `<tr>
+        <th></th><th>run</th><th>source</th>
+        ${hparamKeys.map(k => `<th class="num">${esc(k)}</th>`).join('')}
+        <th class="num">last step</th><th class="num">final eval</th><th class="num">best eval</th>
+      </tr>`;
+      const runIndex = new Map(EXPERIMENTS.runs.map((run, i) => [run.run_id, i]));
+      const body = runs.map(r => {
+        const i = runIndex.get(r.run_id);   // color by identity, not filtered rank
+        const s = r.summary || {};
+        const on = checked.get(r.run_id) !== false;
+        return `<tr class="${runHasSeries(r, metric) ? '' : 'no-metric'}">
+          <td><input type="checkbox" ${on ? 'checked' : ''}
+                     data-run="${esc(r.run_id)}" title="plot this run"></td>
+          <td><span class="run-swatch" style="background:${runColor(i)}"></span>
+              <a href="/run/${encodeURIComponent(r.run_id)}/">${esc(r.run_id)}</a></td>
+          <td><span class="source-badge ${esc(r.source || '')}">${esc(r.source || '?')}</span></td>
+          ${hparamKeys.map(k => `<td class="num">${esc(fmtNum((r.hparams || {})[k]))}</td>`).join('')}
+          <td class="num">${esc(fmtNum(s.last_step))}</td>
+          <td class="num">${esc(fmtNum(s.final_eval_loss))}</td>
+          <td class="num best-val">${esc(fmtNum(s.best_eval_loss))}</td>
+        </tr>`;
+      }).join('');
+      document.getElementById('runs-table').innerHTML = head + body;
+    }
+
+    // ---- chart --------------------------------------------------------------
+    async function fetchRunData(runId) {
+      if (!runData.has(runId)) {
+        const r = await fetch(`/run/${encodeURIComponent(runId)}/data`);
+        runData.set(runId, await r.json());
+      }
+      return runData.get(runId);
+    }
+
+    function seriesPoints(data, series) {
+      const recs = data.metrics?._records || [];
+      const x = data.metrics?.x_axis || 'step';
+      return recs.filter(r => r[series] != null && r[x] != null)
+                 .map(r => ({x: r[x], y: r[series]}));
+    }
+
+    function cssVar(name) {
+      return getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+    }
+
+    function styleChartForTheme() {
+      if (!chart) return;
+      const fg = cssVar('--fg-muted'), grid = cssVar('--border');
+      chart.options.scales.x.ticks.color = fg;
+      chart.options.scales.y.ticks.color = fg;
+      chart.options.scales.x.title.color = fg;
+      chart.options.scales.y.title.color = fg;
+      chart.options.scales.x.grid.color = grid;
+      chart.options.scales.y.grid.color = grid;
+      chart.options.plugins.legend.labels.color = cssVar('--fg');
+      chart.update('none');
+    }
+
+    async function updateChart() {
+      // Runs that don't log the selected metric just don't plot.
+      const runs = plottedRuns().filter(r => runHasSeries(r, metric));
+      document.getElementById('compare-title').textContent = `${metric} vs step`;
+
+      const runIndex = new Map(EXPERIMENTS.runs.map((run, i) => [run.run_id, i]));
+      // Fetch all needed runs in parallel (cached after the first load), then
+      // build the datasets synchronously from the cache.
+      await Promise.all(runs.map(r => fetchRunData(r.run_id)));
+      const datasets = [];
+      for (const r of runs) {
+        const i = runIndex.get(r.run_id);   // color by identity, not filtered rank
+        const data = runData.get(r.run_id);
+        // Legend label: append the learning rate when the run logs one —
+        // it's usually the hyperparameter people sweep.
+        const hp = r.hparams || {};
+        const lr = hp.lr ?? hp.learning_rate;
+        datasets.push({
+          label: lr !== undefined ? `${r.run_id} (lr=${lr})` : r.run_id,
+          data: seriesPoints(data, metric),
+          borderColor: runColor(i),
+          backgroundColor: runColor(i),
+          borderWidth: 2,
+          pointRadius: 0,
+          pointHoverRadius: 4,
+          tension: 0.15,
+          fill: false,
+        });
+      }
+
+      if (chart) {
+        chart.data.datasets = datasets;
+        chart.options.scales.y.title.text = metric;
+        chart.update('none');
+        return;
+      }
+
+      const fg = cssVar('--fg-muted'), grid = cssVar('--border');
+      chart = new Chart(document.getElementById('compare-canvas').getContext('2d'), {
+        type: 'line',
+        data: {datasets},
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          animation: false,
+          parsing: false,
+          interaction: {mode: 'nearest', axis: 'x', intersect: false},
+          plugins: {
+            legend: {
+              display: true, position: 'bottom',
+              labels: {usePointStyle: true, pointStyle: 'line', boxWidth: 24,
+                       color: cssVar('--fg'), font: {size: 11}},
+            },
+            tooltip: {
+              callbacks: {
+                title: items => items.length ? `step ${items[0].parsed.x}` : '',
+                label: item => ` ${item.dataset.label}: ${item.parsed.y.toFixed(4)}`,
+              },
+            },
+          },
+          scales: {
+            x: {type: 'linear',
+                title: {display: true, text: 'step', color: fg, font: {size: 11}},
+                ticks: {color: fg, font: {size: 10}, maxTicksLimit: 10},
+                grid: {color: grid}},
+            y: {title: {display: true, text: metric, color: fg, font: {size: 11}},
+                ticks: {color: fg, font: {size: 10}},
+                grid: {color: grid}},
+          },
+        },
+      });
+    }
+
+    document.getElementById('metric-select').addEventListener('change', e => {
+      metric = e.target.value;
+      renderTable();   // re-grey rows that don't log the new metric
+      updateChart();
+    });
+
+    // Delegated listeners: chips and run checkboxes are re-rendered via
+    // innerHTML, so listen once on their stable containers and read the
+    // target's data attributes instead of using inline handlers.
+    document.getElementById('chip-bar').addEventListener('click', e => {
+      const chip = e.target.closest('.chip');
+      if (chip) toggleChip(chip.dataset.key, chip.dataset.val);
+    });
+    document.getElementById('runs-table').addEventListener('change', e => {
+      const box = e.target.closest('input[type="checkbox"][data-run]');
+      if (box) toggleRun(box.dataset.run);
+    });
+
+    function renderAll() {
+      renderHeader();
+      renderStatStrip();
+      renderChips();
+      renderTable();
+      updateChart();
+    }
+
+    async function boot() {
+      const r = await fetch('/experiments');
+      EXPERIMENTS = await r.json();
+      for (const run of EXPERIMENTS.runs) checked.set(run.run_id, true);
+      initMetricSelect();
+      renderAll();
+    }
+    boot();
+  </script>
+</body>
+</html>

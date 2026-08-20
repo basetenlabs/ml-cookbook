@@ -4,13 +4,16 @@
   <meta charset="utf-8">
   <title>training-explorer</title>
   <link rel="stylesheet" href="/style.css">
-  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <!-- Chart.js is vendored (chart.umd.min.js, MIT) so the dashboard works in
+       browsers that block CDNs -->
+  <script src="/chart.umd.min.js"></script>
 </head>
 <body>
 
   <!-- Top: run header + stat strip -->
   <div class="run-header">
     <div>
+      <div style="margin-bottom: var(--gap-tight)"><a href="/">← all experiments</a></div>
       <div class="run-id" id="run-id">—</div>
       <div class="run-meta" id="run-meta"></div>
     </div>
@@ -81,6 +84,8 @@
       <div id="panel-loader" class="panel-loader" aria-hidden="true">
         <div class="panel-loader-spinner"></div>
       </div>
+      <!-- window.onPanelLoad guard: the initial about:blank load fires before
+           the script below defines the handler -->
       <iframe id="side-panel-iframe" src="about:blank" onload="window.onPanelLoad && onPanelLoad()"></iframe>
     </div>
   </div>
@@ -114,8 +119,10 @@
       const panel = document.getElementById('side-panel');
       document.getElementById('side-panel-title').textContent = title || rolloutId || '—';
       document.getElementById('panel-loader').classList.add('active');
+      // Relative URL: this page is served at /run/<run_id>/, so the detail
+      // route resolves to /run/<run_id>/detail/...
       document.getElementById('side-panel-iframe').src =
-        `/detail/${encodeURIComponent(sourceIdx)}/${encodeURIComponent(rolloutId)}`;
+        `detail/${encodeURIComponent(sourceIdx)}/${encodeURIComponent(rolloutId)}`;
       panel.classList.add('open');
     }
     function onPanelLoad() {
@@ -135,7 +142,8 @@
 
     // --- main render ---
     async function loadAndRender() {
-      const r = await fetch('/data');
+      // Relative: resolves to /run/<run_id>/data
+      const r = await fetch('data');
       RUN = await r.json();
       renderHeader();
       renderStatStrip();

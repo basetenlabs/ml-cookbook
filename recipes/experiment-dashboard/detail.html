@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>detail</title>
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body style="padding: 0; height: 100vh; overflow: hidden;">
+  <div id="detail-root">Loading…</div>
+  <script src="/renderers.js"></script>
+  <script>
+    // The URL is /detail/<sourceIdx>/<rolloutId>. The server returns JSON here:
+    //   { source: {...}, record: {...} }
+    // We then render via renderDetail().
+    const path = window.location.pathname;
+    fetch(path + '?json=1')
+      .then(r => r.json())
+      .then(detail => {
+        document.getElementById('detail-root').innerHTML = renderDetail(detail);
+        // If renderers injected <script> via innerHTML, browsers don't execute them.
+        // Find and re-execute them so showTurn() etc. work.
+        document.querySelectorAll('#detail-root script').forEach(s => {
+          const ns = document.createElement('script');
+          ns.text = s.textContent;
+          s.parentNode.replaceChild(ns, s);
+        });
+      })
+      .catch(err => {
+        document.getElementById('detail-root').innerHTML =
+          '<div class="raw-text" style="color: var(--score-0)">Failed to load detail: ' + err + '</div>';
+      });
+
+    // Inherit theme from parent window via cookie
+    const saved = document.cookie.match(/te-theme=(\w+)/);
+    if (saved) document.documentElement.dataset.theme = saved[1];
+  </script>
+</body>
+</html>
