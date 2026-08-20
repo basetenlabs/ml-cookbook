@@ -29,7 +29,8 @@ One directory per run under the shared prefix:
 ```
 s3://<bucket>/<prefix>/
   sft-llama8b-lr3e5-2026-07-28-1412/
-    metrics.jsonl      # one JSON object per logged step
+    metrics.jsonl      # one JSON object per logged step (loggers may instead
+                       # roll chunks: metrics-00001.jsonl, metrics-00002.jsonl, ...)
     hyperparams.json   # flat dict of hyperparameters, e.g. json.dump(vars(args))
     meta.json          # written once at start: {"source": "ec2", "started_at": ..., "git_sha": ...}
 ```

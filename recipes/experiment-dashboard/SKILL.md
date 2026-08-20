@@ -32,7 +32,7 @@ This skill is three things:
 
 Each run directory under the prefix is expected to contain:
 
-- `metrics.jsonl` — one JSON object per logged step: `{"step": 120, "time": 1753...9, "train_loss": 1.83, "learning_rate": 2.4e-5, ...}` with `eval_loss` on eval steps. Every numeric key except `step`/`time` becomes a plottable series (a chart in the single-run view, an entry in the compare page's metric selector) — the loss keys are just the convention the summary stats and the selector default use.
+- `metrics.jsonl` — or size-rolled chunks `metrics-00001.jsonl`, `metrics-00002.jsonl`, ... (the manifests index both via the `metrics*.jsonl` glob) — one JSON object per logged step: `{"step": 120, "time": 1753...9, "train_loss": 1.83, "learning_rate": 2.4e-5, ...}` with `eval_loss` on eval steps. Every numeric key except `step`/`time` becomes a plottable series (a chart in the single-run view, an entry in the compare page's metric selector) — the loss keys are just the convention the summary stats and the selector default use.
 - `hyperparams.json` — a (possibly nested) dict of hyperparameters. Nested keys get dot-flattened (`optimizer.lr`).
 - `meta.json` — written once at launch: `source` (e.g. `"ec2"` or `"baseten"`), `started_at`, `git_sha`, free-form extras.
 
@@ -58,7 +58,7 @@ The rollout-dashboard schema, unchanged, plus three optional extension keys. Old
   "started_at": "2026-07-28T14:12:03Z",
   "last_updated": "2026-07-28T19:44:10Z",
   "rollout_sources": [],
-  "metrics": {"file": "metrics.jsonl", "x_axis": "step",
+  "metrics": {"file": "metrics*.jsonl", "x_axis": "step",
               "series": ["train_loss", "eval_loss", "learning_rate", "grad_norm"]},
   "config": {"file": "hyperparams.json",
              "values": {"lr": 3e-05, "batch_size": 64}},

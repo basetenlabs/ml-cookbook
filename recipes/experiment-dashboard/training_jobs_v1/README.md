@@ -16,6 +16,19 @@ The helper also checks `RANK` and `LOCAL_RANK`. Only the primary process writes 
 
 Create Baseten workspace secrets for a customer-managed S3 bucket. Grant write access only to the experiment prefix.
 
+Also add an `AbortIncompleteMultipartUpload` lifecycle rule to the bucket. The logger keeps every upload under the 8 MB threshold where `boto3` switches to multipart, but any multipart upload that does happen (for example after raising the chunk size) and gets interrupted leaves incomplete parts that bill until aborted:
+
+```json
+{
+  "Rules": [{
+    "ID": "abort-incomplete-multipart",
+    "Status": "Enabled",
+    "Filter": {},
+    "AbortIncompleteMultipartUpload": {"DaysAfterInitiation": 7}
+  }]
+}
+```
+
 Add these values to the `Runtime` in the Training Jobs v1 `config.py`:
 
 ```python
@@ -69,7 +82,7 @@ with S3ExperimentLogger(hyperparameters, sync_every_seconds=60) as experiment:
 
 Call `experiment.log(...)` after evaluation to add `eval_loss`, accuracy, reward, or other numeric values. The dashboard charts every numeric key.
 
-The helper uploads all three files at startup, uploads only `metrics.jsonl` every 60 seconds while metrics arrive (`hyperparams.json` and `meta.json` never change after startup), and uploads all three files again at normal process exit or on `SIGTERM` (scheduler preemption). Upload failures produce training logs and do not stop training by default. Pass `strict_uploads=True` if the experiment record must be complete. At startup the helper prints one line to stderr stating whether logging is enabled, the run ID, and the destination S3 URI.
+Metrics are written to size-bounded chunk files (`metrics-00001.jsonl`, `metrics-00002.jsonl`, ...) that roll at 4 MB, so every upload is a small single-part PUT that stays under boto3's 8 MB multipart threshold. The helper uploads everything at startup, then every 60 seconds uploads only the chunks with new data (the active chunk re-uploads until it rolls; sealed chunks upload once; `hyperparams.json` and `meta.json` never change after startup), and does a final full pass at normal process exit or on `SIGTERM` (scheduler preemption). The S3 client uses explicit timeouts (10s connect, 30s read, 2 retry attempts) so a network stall cannot block the training loop for minutes. Upload failures produce training logs and do not stop training by default; a chunk whose upload failed is retried on the next pass. Pass `strict_uploads=True` if the experiment record must be complete. At startup the helper prints one line to stderr stating whether logging is enabled, the run ID, and the destination S3 URI.
 
 ## 3. Open the dashboard
 

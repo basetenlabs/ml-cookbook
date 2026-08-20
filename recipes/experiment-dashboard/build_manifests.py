@@ -3,7 +3,8 @@
 experiments.json.
 
 This script plays the role the skill's detection phases (1-5) play: for each
-run dir under ./runs it detects the metrics file (metrics.jsonl), the config
+run dir under ./runs it detects the metrics files (a single metrics.jsonl or
+rolled metrics-00001.jsonl, ... chunks), the config
 file (hyperparams.json), merges meta.json, and writes a run.json following the
 rollout-dashboard schema (SKILL.md Phase 4) plus the s3-experiment-dashboard
 extension keys: source, s3_uri, meta. Then it writes experiments.json — the
@@ -49,14 +50,17 @@ def read_jsonl(path: Path):
 
 def detect_run(run_dir: Path):
     """Phases 1-4 for this store's fast path. Returns (run_json, summary)."""
-    metrics_path = run_dir / "metrics.jsonl"
+    # Loggers either write a single metrics.jsonl or roll size-bounded chunks
+    # (metrics-00001.jsonl, ...). Zero-padded names sort lexicographically in
+    # write order, so sorted() concatenates records in step order.
+    metrics_paths = sorted(run_dir.glob("metrics*.jsonl"))
     hparams_path = run_dir / "hyperparams.json"
     meta_path = run_dir / "meta.json"
 
     meta = json.loads(meta_path.read_text()) if meta_path.exists() else {}
     hparams = json.loads(hparams_path.read_text()) if hparams_path.exists() else {}
 
-    records = read_jsonl(metrics_path) if metrics_path.exists() else []
+    records = [record for path in metrics_paths for record in read_jsonl(path)]
     # series = every numeric key seen, minus the x axis and wall clock
     series, seen = [], set()
     for r in records:
@@ -81,7 +85,9 @@ def detect_run(run_dir: Path):
         # (SKILL.md) may fill this in when a run dir has rollout files.
         "rollout_sources": [],
         "metrics": {
-            "file": "metrics.jsonl",
+            # A glob, so both layouts resolve: dashboard.py's resolve_paths()
+            # sorts matches, keeping chunked records in step order.
+            "file": "metrics*.jsonl",
             "x_axis": "step",
             "series": series,
         } if records else None,
