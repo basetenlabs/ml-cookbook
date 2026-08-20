@@ -52,7 +52,9 @@ def detect_run(run_dir: Path):
     """Phases 1-4 for this store's fast path. Returns (run_json, summary)."""
     # Loggers either write a single metrics.jsonl or roll size-bounded chunks
     # (metrics-00001.jsonl, ...). Zero-padded names sort lexicographically in
-    # write order, so sorted() concatenates records in step order.
+    # write order, so sorted() concatenates records in step order — but only
+    # within a single layout (all-chunked or a single legacy file); a dir
+    # mixing both would sort chunks before the legacy file.
     metrics_paths = sorted(run_dir.glob("metrics*.jsonl"))
     hparams_path = run_dir / "hyperparams.json"
     meta_path = run_dir / "meta.json"
