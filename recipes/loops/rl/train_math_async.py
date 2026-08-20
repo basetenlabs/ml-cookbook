@@ -1,27 +1,12 @@
 # Adapted from tinker-cookbook (https://github.com/thinking-machines-lab/tinker-cookbook),
 # Copyright 2025 Thinking Machines Lab, licensed under Apache-2.0. Modified by Baseten.
 
-"""Async math RL on DeepMath with warm-start sampler provisioning.
+"""Async math RL on DeepMath.
 
-Combines the two async mechanisms in this cookbook:
-
-- **Async RL** (as in train_grpo_async.py): rollout workers generate math
-  solutions continuously against the Loops sampler while the training loop
-  takes optimizer steps concurrently, instead of alternating sample/train
-  phases. Off-policy staleness is bounded by `max_steps_off_policy` — every
-  trajectory group is tagged with the policy version it was sampled from, and
-  groups more than that many optimizer steps behind the current trainer step
-  are requeued instead of trained on.
-
-- **Asynchronous instantiation** (as in
-  multiturn_rl/train_twenty_questions_async.py): `LOOPS_WARM_START_SAMPLER`
-  provisions the paired sampler in parallel with the trainer instead of at the
-  first sampling request, so neither deployment waits on the other before the
-  first rollout.
-
-DeepMath problems are harder than GSM8K and solutions are long, so rollout
-wall-clock varies widely across a batch — exactly the regime where async mode
-pays off: the trainer never idles waiting for the slowest solution.
+As in train_grpo_async.py, rollouts and optimizer steps run concurrently
+instead of alternating, with `max_steps_off_policy` bounding how stale a
+trajectory group may be. DeepMath solutions are long and vary widely in
+length, so the trainer never idles waiting for the slowest one.
 
 Set BASETEN_API_KEY before running:
 
@@ -41,8 +26,7 @@ from tinker_cookbook import cli_utils, model_info
 from tinker_cookbook.recipes.math_rl.math_env import DeepMathDatasetBuilder
 from tinker_cookbook.rl.train import AsyncConfig, Config, main
 
-# Provision the paired sampler in parallel with the trainer instead of at
-# the first sampling request.
+# Provision the paired sampler alongside the trainer instead of at first use.
 os.environ.setdefault("LOOPS_WARM_START_SAMPLER", "true")
 
 
@@ -55,12 +39,10 @@ class CLIConfig:
     group_size: int = 16
     groups_per_batch: int = 64
     learning_rate: float = 4e-5
-    # DeepMath solutions are long chains of reasoning; don't cap them the way
-    # the GSM8K recipe does.
+    # DeepMath solutions are long; don't cap them like the GSM8K recipes do.
     max_tokens: int = 2048
 
-    # Trajectory groups sampled more than this many optimizer steps behind
-    # the current policy are requeued rather than trained on.
+    # Max optimizer steps a trajectory group may lag the current policy.
     max_steps_off_policy: int = 2
 
     log_path: str = "/tmp/loops-cookbook/math_async"
