@@ -23,8 +23,7 @@ Two GLM-specific wrinkles this file handles:
    `tokenizer.apply_chat_template` before any GPU time is spent, so template
    drift fails fast.
 
-Trains on the HuggingFaceH4/no_robots chat dataset. Set BASETEN_API_KEY and
-LOOPS_PROJECT_ID before running:
+Trains on the HuggingFaceH4/no_robots chat dataset. Set BASETEN_API_KEY before running:
 
     uv run sft/train_sft_glm.py
 
