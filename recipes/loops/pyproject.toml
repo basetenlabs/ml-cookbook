@@ -8,7 +8,7 @@ dependencies = [
     "baseten-loops-tinker>=0.12.0",
     "chz",
     "wandb>=0.16.0",
-    "baseten-loops>=0.16.0",
+    "baseten-loops>=0.18.0",
 ]
 
 [tool.uv]

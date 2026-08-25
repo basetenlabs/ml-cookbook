@@ -18,7 +18,7 @@ that staleness: every trajectory group is tagged with the policy version it
 was sampled from, and groups more than `max_steps_off_policy` optimizer steps
 behind the current trainer step are requeued instead of trained on.
 
-Set BASETEN_API_KEY and LOOPS_PROJECT_ID before running:
+Set BASETEN_API_KEY before running:
 
     uv run multiturn_rl/train_twenty_questions_async.py
 
