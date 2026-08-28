@@ -5,6 +5,8 @@ CACHE_DIR = os.environ.get("BT_PROJECT_CACHE_DIR")
 if CACHE_DIR:
     os.environ["HF_HOME"] = CACHE_DIR
 
+# Imported after HF_HOME is set so the hub cache constants resolve to it.
+from huggingface_hub import HfApi
 from axolotl.utils.dict import DictDefault
 from axolotl.cli.config import load_cfg
 from axolotl.common.datasets import load_datasets
@@ -12,10 +14,34 @@ from axolotl.train import train
 
 OUTPUT_DIR = os.environ.get("BT_CHECKPOINT_DIR", "outputs/qwen3-0.6b")
 
+MODEL_MOUNT_PATH = os.environ["MODEL_MOUNT_PATH"]
+MODEL_ID = "Qwen/Qwen3-0.6B"
+
+
+def seed_hf_cache_from_mount(model_id: str, mount_path: str) -> None:
+    """Expose the BDN-mounted weights to HF under the canonical repo id.
+
+    Lets from_pretrained(model_id) load the weights from the mount instead of
+    downloading them, while still recording the HF repo id in the saved LoRA
+    adapter — a deployable checkpoint needs base_model to be 'namespace/model'
+    (resolved from the BDN mirror), not a local path. Recording it at train
+    time avoids the post-hoc re-sync/re-discovery race a later rewrite hits."""
+    hub = Path(os.environ.get("HF_HOME", Path.home() / ".cache" / "huggingface")) / "hub"
+    repo_dir = hub / f"models--{model_id.replace('/', '--')}"
+    commit = HfApi().model_info(model_id).sha
+    snapshot = repo_dir / "snapshots" / commit
+    (repo_dir / "refs").mkdir(parents=True, exist_ok=True)
+    (repo_dir / "refs" / "main").write_text(commit)
+    snapshot.parent.mkdir(parents=True, exist_ok=True)
+    if not snapshot.exists():
+        snapshot.symlink_to(mount_path)
+
+
 def main():
+    seed_hf_cache_from_mount(MODEL_ID, MODEL_MOUNT_PATH)
     config = DictDefault(
         adapter="qlora",
-        base_model="Qwen/Qwen3-0.6B",
+        base_model=MODEL_ID,
         bf16=True,
         # chat_template="tokenizer_default_fallback_chatml",
 

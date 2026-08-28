@@ -1,8 +1,10 @@
 # Import necessary classes from the Baseten Training SDK
-from truss_train import definitions
+from truss_train import definitions, WeightsSource
 from truss.base import truss_config
 
 project_name = "demo/qwen3-0.6b"
+
+MODEL_MOUNT_PATH = "/mnt/user/Qwen3-0.6B"
 
 # 1. Define a base image for your training job
 BASE_IMAGE = "axolotlai/axolotl:main-20250811-py3.11-cu126-2.7.1"
@@ -19,8 +21,9 @@ training_runtime = definitions.Runtime(
         f"axolotl fetch deepspeed_configs && torchrun --nproc-per-node={NUM_GPUS} train.py",
     ],
     environment_variables={
-        # Secrets (ensure these are configured in your Baseten workspace)
-        # Include other environment variables as needed
+        # train.py seeds the HF cache from this mount so the model loads from
+        # the mirror instead of HuggingFace, while keeping its canonical repo id.
+        "MODEL_MOUNT_PATH": MODEL_MOUNT_PATH,
     },
     cache_config=definitions.CacheConfig(
         enabled=True,
@@ -45,6 +48,12 @@ my_training_job = definitions.TrainingJob(
     image=definitions.Image(base_image=BASE_IMAGE),
     compute=training_compute,
     runtime=training_runtime,
+    weights=[
+        WeightsSource(
+            source="hf://Qwen/Qwen3-0.6B",
+            mount_location=MODEL_MOUNT_PATH,
+        )
+    ],
 )
 
 
