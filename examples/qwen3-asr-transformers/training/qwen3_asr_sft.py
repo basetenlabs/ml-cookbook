@@ -215,6 +215,7 @@ def parse_args():
     parser = argparse.ArgumentParser("Qwen3-ASR fine-tuning")
 
     parser.add_argument("--model_path", default="Qwen/Qwen3-ASR-1.7B")
+    parser.add_argument("--base_model_name_or_path", default="Qwen/Qwen3-ASR-1.7B")
     parser.add_argument("--train_file", default="train.jsonl")
     parser.add_argument("--eval_file", default="")
     parser.add_argument("--output_dir", default="./output")
@@ -326,7 +327,9 @@ def main():
         data_collator=collator,
         processing_class=processor.tokenizer,
         callbacks=[
-            MakeEveryCheckpointInferableCallback(model_path, args_cli.model_path)
+            MakeEveryCheckpointInferableCallback(
+                model_path, args_cli.base_model_name_or_path
+            )
         ],
     )
 
@@ -343,7 +346,9 @@ def main():
     final_dir = os.path.join(args_cli.output_dir, "final")
     trainer.save_model(final_dir)
     if trainer.args.process_index == 0:
-        copy_required_hf_files_for_qwen_asr(model_path, final_dir, args_cli.model_path)
+        copy_required_hf_files_for_qwen_asr(
+            model_path, final_dir, args_cli.base_model_name_or_path
+        )
         if hasattr(processor, "save_pretrained"):
             processor.save_pretrained(final_dir)
         print(f"Final checkpoint: {final_dir}")
