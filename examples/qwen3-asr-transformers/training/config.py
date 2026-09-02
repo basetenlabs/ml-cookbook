@@ -30,6 +30,7 @@ environment_variables: dict[str, str | definitions.SecretReference] = {
     "MAX_JOBS": "4",
     # run.sh uses the pre-mounted model on Baseten and the Hub ID locally.
     "INIT_MODEL_PATH": INIT_MODEL_MOUNT,
+    "INIT_MODEL_ID": INIT_MODEL,
     # Keep the global batch at 128 as the DDP process count changes:
     # 8 samples/device * accumulation * GPU_COUNT.
     "GRAD_ACC": str(GRAD_ACC),

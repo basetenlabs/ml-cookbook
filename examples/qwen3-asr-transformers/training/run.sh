@@ -28,6 +28,7 @@ TRAIN_JSONL="./train.jsonl"
 EVAL_JSONL="./eval.jsonl"
 OUTPUT_DIR="${BT_CHECKPOINT_DIR:-./output}"
 INIT_MODEL_PATH="${INIT_MODEL_PATH:-Qwen/Qwen3-ASR-1.7B}"
+INIT_MODEL_ID="${INIT_MODEL_ID:-Qwen/Qwen3-ASR-1.7B}"
 GPU_COUNT="${BT_NUM_GPUS:-${NUM_GPUS:-1}}"
 
 if ! [[ "${GPU_COUNT}" =~ ^[1-9][0-9]*$ ]]; then
@@ -79,6 +80,7 @@ python prepare.py "${PREPARE_ARGS[@]}"
 
 TRAIN_ARGS=(
   --model_path "${INIT_MODEL_PATH}"
+  --base_model_name_or_path "${INIT_MODEL_ID}"
   --train_file "${TRAIN_JSONL}"
   --output_dir "${OUTPUT_DIR}"
   --batch_size "${BATCH_SIZE}"

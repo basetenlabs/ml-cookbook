@@ -4,6 +4,7 @@
 #
 # Adapted from QwenLM/Qwen3-ASR's official finetuning/qwen3_asr_sft.py.
 import argparse
+import json
 import os
 import re
 import shutil
@@ -161,7 +162,9 @@ class CastFloatInputsTrainer(Trainer):
         return inputs
 
 
-def copy_required_hf_files_for_qwen_asr(src_dir: str, dst_dir: str):
+def copy_required_hf_files_for_qwen_asr(
+    src_dir: str, dst_dir: str, base_model_name_or_path: str
+):
     os.makedirs(dst_dir, exist_ok=True)
     required = [
         "config.json",
@@ -180,10 +183,19 @@ def copy_required_hf_files_for_qwen_asr(src_dir: str, dst_dir: str):
         if os.path.exists(src):
             shutil.copy2(src, os.path.join(dst_dir, filename))
 
+    config_path = os.path.join(dst_dir, "config.json")
+    with open(config_path) as config_file:
+        config = json.load(config_file)
+    config["_name_or_path"] = base_model_name_or_path
+    with open(config_path, "w") as config_file:
+        json.dump(config, config_file, indent=2)
+        config_file.write("\n")
+
 
 class MakeEveryCheckpointInferableCallback(TrainerCallback):
-    def __init__(self, base_model_path: str):
+    def __init__(self, base_model_path: str, base_model_name_or_path: str):
         self.base_model_path = base_model_path
+        self.base_model_name_or_path = base_model_name_or_path
 
     def on_save(self, args: TrainingArguments, state, control, **kwargs):
         if args.process_index != 0:
@@ -193,7 +205,9 @@ class MakeEveryCheckpointInferableCallback(TrainerCallback):
         )
         if not os.path.isdir(checkpoint_dir):
             checkpoint_dir = kwargs.get("checkpoint", checkpoint_dir)
-        copy_required_hf_files_for_qwen_asr(self.base_model_path, checkpoint_dir)
+        copy_required_hf_files_for_qwen_asr(
+            self.base_model_path, checkpoint_dir, self.base_model_name_or_path
+        )
         return control
 
 
@@ -201,6 +215,7 @@ def parse_args():
     parser = argparse.ArgumentParser("Qwen3-ASR fine-tuning")
 
     parser.add_argument("--model_path", default="Qwen/Qwen3-ASR-1.7B")
+    parser.add_argument("--base_model_name_or_path", default="Qwen/Qwen3-ASR-1.7B")
     parser.add_argument("--train_file", default="train.jsonl")
     parser.add_argument("--eval_file", default="")
     parser.add_argument("--output_dir", default="./output")
@@ -311,7 +326,11 @@ def main():
         eval_dataset=dataset.get("validation"),
         data_collator=collator,
         processing_class=processor.tokenizer,
-        callbacks=[MakeEveryCheckpointInferableCallback(model_path)],
+        callbacks=[
+            MakeEveryCheckpointInferableCallback(
+                model_path, args_cli.base_model_name_or_path
+            )
+        ],
     )
 
     resume_from = args_cli.resume_from.strip()
@@ -327,7 +346,9 @@ def main():
     final_dir = os.path.join(args_cli.output_dir, "final")
     trainer.save_model(final_dir)
     if trainer.args.process_index == 0:
-        copy_required_hf_files_for_qwen_asr(model_path, final_dir)
+        copy_required_hf_files_for_qwen_asr(
+            model_path, final_dir, args_cli.base_model_name_or_path
+        )
         if hasattr(processor, "save_pretrained"):
             processor.save_pretrained(final_dir)
         print(f"Final checkpoint: {final_dir}")
