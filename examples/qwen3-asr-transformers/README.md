@@ -276,14 +276,53 @@ print(result[0].language)
 print(result[0].text)
 ```
 
-## Deploy a fine-tuned checkpoint with Truss
+## Deploy a fine-tuned checkpoint
+
+After the training job completes and the `final` FULL checkpoint finishes
+syncing, deploy it directly from the Baseten Training UI:
+
+1. Open the completed job's **Overview** page and click **Deploy** next to the
+   `final` checkpoint. Prefer `final` over a periodic checkpoint because it
+   omits optimizer state and is smaller to materialize for inference.
+2. Enter the model name. Using an existing model name in the same team creates
+   a new model version; a new name creates a new model.
+3. Select **Non-streaming (OpenAI chat completions)** or **Streaming
+   (WebSocket)**. The menu contains only serving templates compatible with the
+   checkpoint's exact base model, architecture, and FULL checkpoint type.
+4. Select a supported GPU and click **Deploy checkpoint**. The deployment is
+   created in the Training job's team, and the GPU menu contains only the
+   instance types supported by the selected template.
+
+| Select the checkpoint | Select the serving mode | Select a supported GPU |
+| --- | --- | --- |
+| <img src="assets/deploy-checkpoint.png" alt="Select the final FULL checkpoint" width="300"> | <img src="assets/deploy-serving-mode.png" alt="Select non-streaming or streaming serving mode" width="300"> | <img src="assets/deploy-gpu.png" alt="Select a supported GPU" width="300"> |
+
+The deployment automatically replaces the template's public base-model weight
+with the selected Training checkpoint and points `BASETEN_MODEL_PATH` at the
+materialized checkpoint directory. You do not need to download the checkpoint,
+edit a Truss config, or add a Hugging Face secret for this public model.
+
+For a non-streaming deployment, send an audio input to
+`/v1/chat/completions` from the model Playground or an OpenAI-compatible
+client. For a streaming deployment, connect a WebSocket client to the selected
+deployment:
+
+```text
+wss://model-<MODEL_ID>.api.baseten.co/deployment/<DEPLOYMENT_ID>/websocket
+```
+
+Use different model names if the non-streaming and streaming deployments need
+to remain active at the same time.
+
+### Manual deployment with Truss
 
 The [`truss/`](truss) directory serves the persisted `final/` checkpoint with
 the same pinned vLLM stack and OpenAI-compatible chat-completions API as
 Baseten's
 [`qwen3-asr-1.7b` model-registry preset](https://github.com/basetenlabs/model-registry/tree/main/stt/qwen3-asr-1.7b/latency).
 
-First, get the completed training job ID from the training logs or CLI:
+Use this path when developing or customizing the serving Truss. First, get the
+completed training job ID from the training logs or CLI:
 
 ```bash
 truss train view
