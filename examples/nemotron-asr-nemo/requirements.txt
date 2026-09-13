@@ -1,0 +1,4 @@
+# The NeMo container already provides nemo_toolkit[asr] and its full ASR stack
+# (lightning, numba, kaldialign, librosa, ...). Only add the small extra used to
+# speed up the Hugging Face checkpoint download in the local-dev fallback.
+hf_transfer
