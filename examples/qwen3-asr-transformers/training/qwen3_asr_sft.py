@@ -226,6 +226,9 @@ def parse_args():
     parser.add_argument("--lr", type=float, default=2e-5)
     parser.add_argument("--epochs", type=float, default=1)
     parser.add_argument("--log_steps", type=int, default=1)
+    parser.add_argument("--max_steps", type=int, default=-1)
+    parser.add_argument("--report_to", choices=("none", "wandb", "tensorboard"), default="none")
+    parser.add_argument("--run_name", default=None)
     parser.add_argument("--lr_scheduler_type", default="linear")
     parser.add_argument("--warmup_ratio", type=float, default=0.02)
     parser.add_argument("--gradient_checkpointing", type=int, choices=(0, 1), default=0)
@@ -296,6 +299,7 @@ def main():
         gradient_accumulation_steps=args_cli.grad_acc,
         learning_rate=args_cli.lr,
         num_train_epochs=args_cli.epochs,
+        max_steps=args_cli.max_steps,
         logging_steps=args_cli.log_steps,
         lr_scheduler_type=args_cli.lr_scheduler_type,
         warmup_ratio=args_cli.warmup_ratio,
@@ -316,7 +320,9 @@ def main():
         fp16=not use_bf16,
         ddp_find_unused_parameters=False,
         remove_unused_columns=False,
-        report_to="none",
+        report_to=args_cli.report_to,
+        run_name=args_cli.run_name,
+        logging_dir=os.path.join(args_cli.output_dir, "tensorboard"),
     )
 
     trainer = CastFloatInputsTrainer(

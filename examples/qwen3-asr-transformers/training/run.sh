@@ -1,5 +1,12 @@
 #!/bin/bash
-set -euxo pipefail
+set +x
+set -euo pipefail
+
+REPORT_TO="${REPORT_TO:-none}"
+case "${REPORT_TO}" in
+    none|wandb|tensorboard) ;;
+    *) echo "REPORT_TO must be none, wandb, or tensorboard" >&2; exit 1 ;;
+esac
 
 if [ ! -d ".venv" ]; then
     echo "Creating virtual environment..."
@@ -8,6 +15,9 @@ fi
 
 source .venv/bin/activate
 python -m pip install -q -r requirements.txt
+if [ "${REPORT_TO}" != none ]; then
+    python -m pip install -q -r "requirements.${REPORT_TO}.txt"
+fi
 
 # Dataset defaults: a bounded slice of LibriSpeech train-clean-100. Override
 # these for another Hugging Face audio dataset.
@@ -92,9 +102,15 @@ TRAIN_ARGS=(
   --save_steps "${SAVE_STEPS}"
   --save_total_limit "${SAVE_TOTAL_LIMIT}"
   --log_steps "${LOG_STEPS}"
+  --max_steps "${MAX_STEPS:--1}"
+  --report_to "${REPORT_TO}"
   --num_workers "${NUM_WORKERS}"
   --gradient_checkpointing "${GRADIENT_CHECKPOINTING}"
 )
+
+if [ "${REPORT_TO}" != none ]; then
+    TRAIN_ARGS+=(--run_name "${RUN_NAME:-qwen3-asr-sft}")
+fi
 
 if [ "${EVAL_SAMPLES}" -gt 0 ]; then
   TRAIN_ARGS+=(--eval_file "${EVAL_JSONL}")
