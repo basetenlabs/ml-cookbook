@@ -193,7 +193,7 @@ virtual environment:
 
 ```bash
 python3 -m venv .tensorboard-venv
-.tensorboard-venv/bin/python -m pip install tensorboard==2.20.0
+.tensorboard-venv/bin/python -m pip install tensorboard==2.20.0 setuptools==80.9.0
 .tensorboard-venv/bin/tensorboard --logdir ./downloaded-events --host 127.0.0.1
 ```
 
