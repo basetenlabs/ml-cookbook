@@ -346,6 +346,39 @@ it retains gradients while processing each micro-batch sequentially. Ordinary
 DDP also does not pool VRAM: each GPU stores a complete model and processes its
 own per-device batch.
 
+The trainer uses `use_reentrant=False` when gradient checkpointing is enabled.
+Qwen's audio encoder is called once per audio sample; reentrant checkpointing
+can mark the same parameter ready twice under DDP when a micro-batch contains
+multiple clips. Keep this setting when adapting the trainer.
+
+Training batches explicitly use right padding so the collator masks the prompt
+and padding while supervising the reference tokens. Qwen's processor otherwise
+defaults to left padding. The model also declares `accepts_loss_kwargs=False`:
+its loss is a micro-batch mean and does not use Trainer's `num_items_in_batch`,
+so Trainer must apply gradient-accumulation normalization.
+
+Before a full run, test the actual GPU count, per-device batch size, gradient
+accumulation, checkpointing setting, and pinned dependencies on a small portion
+of the intended training and development splits. Use `MAX_STEPS` to bound the
+run and `SAVE_STRATEGY=steps SAVE_STEPS=2` to exercise evaluation and checkpoint
+writing. Confirm finite losses, completed optimizer steps, TensorBoard events
+when enabled, and a successful reload of `final/`. A tracking test with
+checkpointing disabled does not validate the checkpointed DDP path.
+
+### Dataset download progress
+
+The launcher unsets `HF_HUB_ENABLE_HF_TRANSFER` so Hub snapshot downloads can
+parallelize across files. In `huggingface-hub` 0.36.x, enabling that flag selects
+a serial file loop even when `snapshot_download(max_workers=16)` is requested.
+Keep download progress enabled and log the start, completion, and duration of
+data acquisition separately from validation and optimization. Performance
+depends on the file layout, cache state, and network; measure it on the dataset
+being used.
+
+For custom dataset loaders, set a preparation timeout and monitor downloaded
+files or bytes. The platform's `RUNNING` status includes preparation; require
+an optimizer-step record before reporting training throughput or an ETA.
+
 ## Local usage
 
 The same pipeline runs locally on a CUDA machine:

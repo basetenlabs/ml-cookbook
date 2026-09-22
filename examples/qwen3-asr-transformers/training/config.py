@@ -26,7 +26,6 @@ if REPORT_TO not in ("none", "wandb", "tensorboard"):
     raise ValueError("REPORT_TO must be none, wandb, or tensorboard")
 
 environment_variables: dict[str, str | definitions.SecretReference] = {
-    "HF_HUB_ENABLE_HF_TRANSFER": "true",
     "REPORT_TO": REPORT_TO,
     # The Qwen guide recommends limiting parallel FlashAttention build jobs
     # on machines with less than 96 GB RAM. Keep the same conservative cap

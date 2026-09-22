@@ -129,6 +129,7 @@ class DataCollatorForQwen3ASRFinetuning:
             audio=audios,
             return_tensors="pt",
             padding=True,
+            padding_side="right",
             truncation=False,
         )
         prefix_inputs = self.processor(
@@ -136,6 +137,7 @@ class DataCollatorForQwen3ASRFinetuning:
             audio=audios,
             return_tensors="pt",
             padding=True,
+            padding_side="right",
             truncation=False,
         )
 
@@ -227,7 +229,9 @@ def parse_args():
     parser.add_argument("--epochs", type=float, default=1)
     parser.add_argument("--log_steps", type=int, default=1)
     parser.add_argument("--max_steps", type=int, default=-1)
-    parser.add_argument("--report_to", choices=("none", "wandb", "tensorboard"), default="none")
+    parser.add_argument(
+        "--report_to", choices=("none", "wandb", "tensorboard"), default="none"
+    )
     parser.add_argument("--run_name", default=None)
     parser.add_argument("--lr_scheduler_type", default="linear")
     parser.add_argument("--warmup_ratio", type=float, default=0.02)
@@ -266,9 +270,13 @@ def main():
     processor = asr_wrapper.processor
 
     patch_outer_forward(model)
+    # Qwen returns a micro-batch mean loss and does not consume num_items_in_batch.
+    model.accepts_loss_kwargs = False
     model.generation_config = GenerationConfig.from_model_config(model.config)
     if args_cli.gradient_checkpointing:
-        model.gradient_checkpointing_enable()
+        model.gradient_checkpointing_enable(
+            gradient_checkpointing_kwargs={"use_reentrant": False}
+        )
         model.config.use_cache = False
 
     raw_dataset = load_dataset(
