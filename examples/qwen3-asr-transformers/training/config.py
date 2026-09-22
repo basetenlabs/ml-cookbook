@@ -27,6 +27,7 @@ if REPORT_TO not in ("none", "wandb", "tensorboard"):
 
 environment_variables: dict[str, str | definitions.SecretReference] = {
     "REPORT_TO": REPORT_TO,
+    "EXPECTED_GPU_COUNT": str(GPU_COUNT),
     # The Qwen guide recommends limiting parallel FlashAttention build jobs
     # on machines with less than 96 GB RAM. Keep the same conservative cap
     # even though requirements.txt uses a prebuilt wheel.
@@ -74,8 +75,8 @@ training_runtime = definitions.Runtime(
 
 training_compute = definitions.Compute(
     node_count=1,
-    cpu_count=16,
-    memory="96Gi",
+    cpu_count=8 if GPU_COUNT == 1 else 16,
+    memory="64Gi" if GPU_COUNT == 1 else "96Gi",
     accelerator=truss_config.AcceleratorSpec(
         accelerator=truss_config.Accelerator.H100,
         count=GPU_COUNT,

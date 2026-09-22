@@ -346,6 +346,12 @@ it retains gradients while processing each micro-batch sequentially. Ordinary
 DDP also does not pool VRAM: each GPU stores a complete model and processes its
 own per-device batch.
 
+The single-GPU preset requests 8 CPUs and 64 GiB RAM. Baseten selects an instance
+that satisfies the entire compute request; larger CPU/RAM requirements can
+result in additional GPUs. The launcher checks the allocated GPU count against
+`GPU_COUNT` before installing dependencies or training, so an unexpected
+allocation fails instead of changing the effective batch size.
+
 The trainer uses `use_reentrant=False` when gradient checkpointing is enabled.
 Qwen's audio encoder is called once per audio sample; reentrant checkpointing
 can mark the same parameter ready twice under DDP when a micro-batch contains

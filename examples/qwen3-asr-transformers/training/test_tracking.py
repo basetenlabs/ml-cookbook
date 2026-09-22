@@ -12,6 +12,39 @@ ROOT = Path(__file__).parent
 
 
 class TrackingTest(unittest.TestCase):
+    def test_gpu_request_and_effective_batch(self):
+        for count in (1, 2, 4, 8):
+            with (
+                self.subTest(count=count),
+                patch.dict(os.environ, {"GPU_COUNT": str(count)}, clear=True),
+            ):
+                config = runpy.run_path(str(ROOT / "config.py"))
+                compute = config["training_compute"]
+                env = config["training_runtime"].environment_variables
+                self.assertEqual(compute.accelerator.count, count)
+                self.assertEqual(env["EXPECTED_GPU_COUNT"], str(count))
+                self.assertEqual(8 * int(env["GRAD_ACC"]) * count, 128)
+                if count == 1:
+                    self.assertEqual(compute.cpu_count, 8)
+                    self.assertEqual(compute.memory, "64Gi")
+
+    def test_unexpected_gpu_allocation_fails_before_setup(self):
+        with tempfile.TemporaryDirectory() as directory:
+            result = subprocess.run(
+                ["bash", str(ROOT / "run.sh")],
+                cwd=directory,
+                env={
+                    "PATH": os.environ["PATH"],
+                    "EXPECTED_GPU_COUNT": "1",
+                    "BT_NUM_GPUS": "2",
+                },
+                text=True,
+                capture_output=True,
+            )
+            self.assertNotEqual(result.returncode, 0)
+            self.assertIn("Expected 1 GPUs, allocated 2", result.stderr)
+            self.assertFalse((Path(directory) / ".venv").exists())
+
     def config(self, **env):
         with patch.dict(os.environ, env, clear=True):
             return runpy.run_path(str(ROOT / "config.py"))[
