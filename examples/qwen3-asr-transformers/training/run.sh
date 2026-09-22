@@ -1,5 +1,22 @@
 #!/bin/bash
-set -euxo pipefail
+set +x
+set -euo pipefail
+
+REPORT_TO="${REPORT_TO:-none}"
+case "${REPORT_TO}" in
+    none|wandb|tensorboard) ;;
+    *) echo "REPORT_TO must be none, wandb, or tensorboard" >&2; exit 1 ;;
+esac
+
+GPU_COUNT="${BT_NUM_GPUS:-${NUM_GPUS:-1}}"
+if ! [[ "${GPU_COUNT}" =~ ^[1-9][0-9]*$ ]]; then
+    echo "GPU count must be a positive integer; got: ${GPU_COUNT}" >&2
+    exit 1
+fi
+if [ -n "${EXPECTED_GPU_COUNT:-}" ] && [ "${GPU_COUNT}" != "${EXPECTED_GPU_COUNT}" ]; then
+    echo "Expected ${EXPECTED_GPU_COUNT} GPUs, allocated ${GPU_COUNT}; check the compute request" >&2
+    exit 1
+fi
 
 if [ ! -d ".venv" ]; then
     echo "Creating virtual environment..."
@@ -7,7 +24,11 @@ if [ ! -d ".venv" ]; then
 fi
 
 source .venv/bin/activate
-python -m pip install -q -r requirements.txt
+REQUIREMENTS=(-r requirements.txt)
+if [ "${REPORT_TO}" != none ]; then
+    REQUIREMENTS+=(-r "requirements.${REPORT_TO}.txt")
+fi
+python -m pip install -q "${REQUIREMENTS[@]}"
 
 # Dataset defaults: a bounded slice of LibriSpeech train-clean-100. Override
 # these for another Hugging Face audio dataset.
@@ -29,13 +50,6 @@ EVAL_JSONL="./eval.jsonl"
 OUTPUT_DIR="${BT_CHECKPOINT_DIR:-./output}"
 INIT_MODEL_PATH="${INIT_MODEL_PATH:-Qwen/Qwen3-ASR-1.7B}"
 INIT_MODEL_ID="${INIT_MODEL_ID:-Qwen/Qwen3-ASR-1.7B}"
-GPU_COUNT="${BT_NUM_GPUS:-${NUM_GPUS:-1}}"
-
-if ! [[ "${GPU_COUNT}" =~ ^[1-9][0-9]*$ ]]; then
-    echo "GPU count must be a positive integer; got: ${GPU_COUNT}" >&2
-    exit 1
-fi
-
 # BATCH_SIZE is the per-device micro-batch. The Baseten config adjusts GRAD_ACC
 # with GPU count to preserve an effective batch of 128 without holding 128 audio
 # samples in VRAM simultaneously.
@@ -51,7 +65,7 @@ LOG_STEPS="${LOG_STEPS:-1}"
 NUM_WORKERS="${NUM_WORKERS:-4}"
 GRADIENT_CHECKPOINTING="${GRADIENT_CHECKPOINTING:-0}"
 
-export HF_HUB_ENABLE_HF_TRANSFER=1
+unset HF_HUB_ENABLE_HF_TRANSFER
 
 PREPARE_ARGS=(
   --dataset_repo "${DATASET_REPO}"
@@ -92,9 +106,15 @@ TRAIN_ARGS=(
   --save_steps "${SAVE_STEPS}"
   --save_total_limit "${SAVE_TOTAL_LIMIT}"
   --log_steps "${LOG_STEPS}"
+  --max_steps "${MAX_STEPS:--1}"
+  --report_to "${REPORT_TO}"
   --num_workers "${NUM_WORKERS}"
   --gradient_checkpointing "${GRADIENT_CHECKPOINTING}"
 )
+
+if [ "${REPORT_TO}" != none ]; then
+    TRAIN_ARGS+=(--run_name "${RUN_NAME:-qwen3-asr-sft}")
+fi
 
 if [ "${EVAL_SAMPLES}" -gt 0 ]; then
   TRAIN_ARGS+=(--eval_file "${EVAL_JSONL}")

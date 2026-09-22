@@ -21,9 +21,13 @@ PROJECT_NAME = os.environ.get("TRAINING_PROJECT_NAME", DEFAULT_PROJECT_NAME)
 INIT_MODEL = "Qwen/Qwen3-ASR-1.7B"
 INIT_MODEL_MOUNT = f"/app/models/{INIT_MODEL}"
 HF_TOKEN_SECRET_NAME = os.environ.get("HF_TOKEN_SECRET_NAME")
+REPORT_TO = os.environ.get("REPORT_TO", "none")
+if REPORT_TO not in ("none", "wandb", "tensorboard"):
+    raise ValueError("REPORT_TO must be none, wandb, or tensorboard")
 
 environment_variables: dict[str, str | definitions.SecretReference] = {
-    "HF_HUB_ENABLE_HF_TRANSFER": "true",
+    "REPORT_TO": REPORT_TO,
+    "EXPECTED_GPU_COUNT": str(GPU_COUNT),
     # The Qwen guide recommends limiting parallel FlashAttention build jobs
     # on machines with less than 96 GB RAM. Keep the same conservative cap
     # even though requirements.txt uses a prebuilt wheel.
@@ -42,6 +46,26 @@ if HF_TOKEN_SECRET_NAME:
         name=HF_TOKEN_SECRET_NAME
     )
 
+if REPORT_TO != "none":
+    environment_variables["RUN_NAME"] = os.environ.get("RUN_NAME", PROJECT_NAME)
+if REPORT_TO == "wandb":
+    for name in ("WANDB_API_KEY_SECRET_NAME", "WANDB_ENTITY", "WANDB_PROJECT"):
+        if not os.environ.get(name, "").strip():
+            raise ValueError(f"{name} is required when REPORT_TO=wandb")
+    environment_variables.update(
+        {
+            "WANDB_API_KEY": definitions.SecretReference(
+                name=os.environ["WANDB_API_KEY_SECRET_NAME"]
+            ),
+            "WANDB_ENTITY": os.environ["WANDB_ENTITY"],
+            "WANDB_PROJECT": os.environ["WANDB_PROJECT"],
+            "WANDB_LOG_MODEL": "false",
+            "WANDB_WATCH": "false",
+            "WANDB_CONSOLE": "off",
+            "WANDB_DISABLE_CODE": "true",
+        }
+    )
+
 training_runtime = definitions.Runtime(
     start_commands=["/bin/sh -c 'chmod +x ./run.sh && ./run.sh'"],
     environment_variables=environment_variables,
@@ -51,8 +75,8 @@ training_runtime = definitions.Runtime(
 
 training_compute = definitions.Compute(
     node_count=1,
-    cpu_count=16,
-    memory="96Gi",
+    cpu_count=8 if GPU_COUNT == 1 else 16,
+    memory="64Gi" if GPU_COUNT == 1 else "96Gi",
     accelerator=truss_config.AcceleratorSpec(
         accelerator=truss_config.Accelerator.H100,
         count=GPU_COUNT,
