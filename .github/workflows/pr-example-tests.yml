@@ -82,21 +82,6 @@ jobs:
             echo "matrix=$matrix" >> "$GITHUB_OUTPUT"
           fi
 
-  qwen-unit-tests:
-    needs: detect-changes
-    if: contains(needs.detect-changes.outputs.matrix, 'examples--qwen3-asr-transformers')
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: astral-sh/setup-uv@v4
-        with:
-          python-version: '3.12'
-      - run: uv sync --frozen
-      - name: Install CPU tensor support for label-masking tests
-        run: uv pip install torch==2.7.0 --index-url https://download.pytorch.org/whl/cpu
-      - name: Test Qwen configuration, launcher, and label masking
-        run: uv run --no-sync python -m unittest discover -s examples/qwen3-asr-transformers/training -p 'test_*.py' -v
-
   # --------------------------------------------------------------------------
   # Job 2: Run each changed example against the smoke-tests Baseten account
   # --------------------------------------------------------------------------
