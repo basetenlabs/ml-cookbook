@@ -24,10 +24,11 @@ if [ ! -d ".venv" ]; then
 fi
 
 source .venv/bin/activate
-python -m pip install -q -r requirements.txt
+REQUIREMENTS=(-r requirements.txt)
 if [ "${REPORT_TO}" != none ]; then
-    python -m pip install -q -r "requirements.${REPORT_TO}.txt"
+    REQUIREMENTS+=(-r "requirements.${REPORT_TO}.txt")
 fi
+python -m pip install -q "${REQUIREMENTS[@]}"
 
 # Dataset defaults: a bounded slice of LibriSpeech train-clean-100. Override
 # these for another Hugging Face audio dataset.

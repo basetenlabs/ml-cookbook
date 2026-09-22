@@ -1,9 +1,11 @@
 """CPU checks for submission configuration and the shell-to-trainer contract."""
 
+import json
 import os
 from pathlib import Path
 import runpy
 import subprocess
+import sys
 import tempfile
 import unittest
 from unittest.mock import patch
@@ -101,7 +103,10 @@ class TrackingTest(unittest.TestCase):
                 (venv / "bin/activate").write_text(f'export PATH="{venv}/bin:$PATH"\n')
                 fake_python = venv / "bin/python"
                 fake_python.write_text(
-                    '#!/bin/bash\nprintf "%s\\n" "$*" >> calls.txt\n'
+                    f"#!{sys.executable}\n"
+                    "import json, sys\n"
+                    "with open('calls.jsonl', 'a') as handle:\n"
+                    "    handle.write(json.dumps(sys.argv[1:]) + '\\n')\n"
                 )
                 fake_python.chmod(0o755)
                 env = {
@@ -120,18 +125,30 @@ class TrackingTest(unittest.TestCase):
                     capture_output=True,
                     check=True,
                 )
-                calls = (root / "calls.txt").read_text()
-                self.assertIn(f"--report_to {mode}", calls)
-                self.assertIn("--max_steps 2", calls)
-                self.assertEqual("requirements.wandb.txt" in calls, mode == "wandb")
-                self.assertEqual(
-                    "requirements.tensorboard.txt" in calls, mode == "tensorboard"
-                )
+                calls = [
+                    json.loads(line)
+                    for line in (root / "calls.jsonl").read_text().splitlines()
+                ]
+                installs = [
+                    call for call in calls if call[:3] == ["-m", "pip", "install"]
+                ]
+                self.assertEqual(len(installs), 1)
+                expected = ["-m", "pip", "install", "-q", "-r", "requirements.txt"]
+                if mode != "none":
+                    expected += ["-r", f"requirements.{mode}.txt"]
+                self.assertEqual(installs[0], expected)
+                train = next(call for call in calls if call[0] == "qwen3_asr_sft.py")
+                self.assertEqual(train[train.index("--report_to") + 1], mode)
+                self.assertEqual(train[train.index("--max_steps") + 1], "2")
                 self.assertNotIn(
-                    "sentinel-secret", result.stdout + result.stderr + calls
+                    "sentinel-secret", result.stdout + result.stderr + repr(calls)
                 )
                 if mode != "none":
-                    self.assertIn("--run_name run with spaces", calls)
+                    self.assertEqual(
+                        train[train.index("--run_name") + 1], "run with spaces"
+                    )
+                else:
+                    self.assertNotIn("--run_name", train)
 
 
 if __name__ == "__main__":

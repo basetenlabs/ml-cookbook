@@ -56,8 +56,8 @@ The default compute profile in `training/config.py` is:
 | Resource | Value | Why |
 | --- | ---: | --- |
 | GPU | `1x H100` | Default; set `GPU_COUNT=2`, `4`, or `8` for single-node DDP |
-| CPU | `16` cores | Parallel audio loading and preprocessing |
-| RAM | `96Gi` | Matches the threshold called out by the upstream FlashAttention installation guidance |
+| CPU | `8` cores | Single-GPU request; multi-GPU presets request 16 |
+| RAM | `64Gi` | Single-GPU request; multi-GPU presets request 96 GiB |
 | FlashAttention build jobs | `MAX_JOBS=4` | Prevents an accidental source build from exhausting host RAM |
 
 The model weights are mounted at `/app/models/Qwen/Qwen3-ASR-1.7B`, dataset
@@ -196,6 +196,9 @@ python3 -m venv .tensorboard-venv
 .tensorboard-venv/bin/python -m pip install tensorboard==2.20.0 setuptools==80.9.0
 .tensorboard-venv/bin/tensorboard --logdir ./downloaded-events --host 127.0.0.1
 ```
+
+TensorBoard 2.20.0 still imports `pkg_resources`, which setuptools removed in
+version 82. The setuptools pin keeps this local viewer compatible.
 
 Open the localhost URL printed by TensorBoard. `--logdir` must contain the
 downloaded `events.out.tfevents.*` files. Live viewing requires a separate event
@@ -363,6 +366,10 @@ defaults to left padding. The model also declares `accepts_loss_kwargs=False`:
 its loss is a micro-batch mean and does not use Trainer's `num_items_in_batch`,
 so Trainer must apply gradient-accumulation normalization.
 
+Losses from runs with left-padded, mixed-length batches are not directly
+comparable with corrected runs: the old mask included prompt tokens in the
+loss. Successful training and finite loss alone do not verify label masking.
+
 Before a full run, test the actual GPU count, per-device batch size, gradient
 accumulation, checkpointing setting, and pinned dependencies on a small portion
 of the intended training and development splits. Use `MAX_STEPS` to bound the
@@ -373,13 +380,16 @@ checkpointing disabled does not validate the checkpointed DDP path.
 
 ### Dataset download progress
 
-The launcher unsets `HF_HUB_ENABLE_HF_TRANSFER` so Hub snapshot downloads can
-parallelize across files. In `huggingface-hub` 0.36.x, enabling that flag selects
-a serial file loop even when `snapshot_download(max_workers=16)` is requested.
-Keep download progress enabled and log the start, completion, and duration of
-data acquisition separately from validation and optimization. Performance
-depends on the file layout, cache state, and network; measure it on the dataset
-being used.
+The launcher leaves `HF_HUB_ENABLE_HF_TRANSFER` unset and uses the Hub's default
+transfer behavior. This recipe prepares datasets through `load_dataset` in
+`prepare.py`; it does not configure snapshot file-download workers. No dataset
+download speedup has been established for this default path.
+
+Custom loaders using `snapshot_download` have different behavior: in
+`huggingface-hub` 0.36.x, enabling that flag selects a serial file loop instead
+of the thread pool controlled by `max_workers`. This distinction matters for
+datasets with many small files. Measure acquisition separately from validation
+and training, record cache state, and keep download progress enabled.
 
 For custom dataset loaders, set a preparation timeout and monitor downloaded
 files or bytes. The platform's `RUNNING` status includes preparation; require
