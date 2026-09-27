@@ -31,6 +31,7 @@ From data preprocessing to checkpointed and trained models, these recipes cover 
   - [Train and deploy an MNIST digit classifier with Pytorch](#train-and-deploy-an-mnist-digit-classifier-with-pytorch)
     - [Training](#training-2)
   - [Fine-tune NVIDIA Isaac-GR00T N1](#fine-tune-nvidia-isaac-gr00t-n1)
+  - [Fine-tune NVIDIA Nemotron embedding models](#fine-tune-nvidia-nemotron-embedding-models)
 - [Contributing](#contributing)
 - [License](#license)
 
@@ -215,6 +216,12 @@ truss train get_checkpoint_urls --job-id $JOB_ID
 [NVIDIA Isaac-GR00T](https://github.com/NVIDIA/Isaac-GR00T) is a ~3B Vision-Language-Action foundation model for humanoid robots. This recipe fine-tunes it on a LeRobot-format dataset. Training is pure PyTorch on pre-recorded demonstrations — no simulator or rendering stack. It defaults to a full fine-tune on a single H100; to run on a 24GB GPU (A10G), use LoRA (`--lora-rank 64`).
 
 [`recipes/isaac-groot/README.md`](recipes/isaac-groot/README.md)
+
+### Fine-tune NVIDIA Nemotron embedding models
+
+NVIDIA's [Nemotron embedding fine-tuning recipe](https://github.com/NVIDIA-NeMo/Nemotron/tree/preview/embed-finetune-recipe-2607/docs/nemotron/embed) adapts an embedding model to a domain-specific retrieval task with synthetic data generation and contrastive learning, typically gaining 5–20 points of nDCG@10 over the base model. The six-stage pipeline (SDG → data prep → fine-tune → eval → export → deploy) runs on a single 80GB GPU (H100/A100). This recipe frames how to run it interactively on a Baseten SSH-enabled GPU workstation.
+
+[`recipes/embeddings/README.md`](recipes/embeddings/README.md)
 
 ## Contributing
 
