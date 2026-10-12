@@ -310,8 +310,17 @@ transcriptions:  <|im_start|>user\n<audio><|im_end|>\n<|im_start|>assistant\n
 When a request does not force a language, the first token the model generates
 is its language tag, so that decision is the one most exposed to a prompt the
 model never saw in training. `PROMPT_FORMAT=transcriptions` (the default)
-trains on the transcriptions prefix. Set `PROMPT_FORMAT=chat` if you will serve
-through `/v1/chat/completions` instead.
+trains on the transcriptions prefix. Set `PROMPT_FORMAT=chat` if you will
+deploy with **Streaming (WebSocket)** or serve through `/v1/chat/completions`:
+
+| Deploy option | Prompt it builds | Matching `PROMPT_FORMAT` |
+| --- | --- | --- |
+| Non-streaming (OpenAI transcriptions) | no system turn unless a `prompt` is given | `transcriptions` |
+| Streaming (WebSocket) | chat template, always with a system turn | `chat` |
+| `/v1/chat/completions` on either deployment | chat template, always with a system turn | `chat` |
+
+The two prefixes differ by five tokens. The accuracy effect of training on one
+and serving with the other has not been measured.
 
 ## H100 training preset
 
@@ -516,8 +525,11 @@ edit a Truss config, or add a Hugging Face secret for this public model.
 For a non-streaming deployment, upload audio to `/v1/audio/transcriptions`
 with any OpenAI-compatible client. Leave `language` unset to let the model
 detect it, or pass an ISO 639-1 code such as `es` to force it. Audio longer
-than 30 s is transcribed in 30 s chunks, so hour-long files work in one
-request:
+than 30 s is transcribed in 30 s chunks, so files up to about an hour work in
+one request. vLLM's decode limit is measured at the file's native sample rate:
+with the default 256 MiB limit, about 70 min of 16 kHz mono fits but only
+about 13 min of 44.1 kHz stereo. The one-click deployment uses that default;
+the [manual Truss](#manual-deployment-with-truss) raises it. For example:
 
 ```python
 from openai import OpenAI

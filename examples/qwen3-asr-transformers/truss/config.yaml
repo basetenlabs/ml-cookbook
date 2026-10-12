@@ -32,6 +32,10 @@ environment_variables:
   # 30 s chunks. Raise vLLM's default 600 s / 25 MB limits so hour-long files work.
   VLLM_MAX_AUDIO_DECODE_DURATION_S: "3900"
   VLLM_MAX_AUDIO_CLIP_FILESIZE_MB: "120"
+  # vLLM also caps decoded PCM at 256 MiB, measured at the file's native rate
+  # before resampling: about 13 min of 44.1 kHz stereo. 1.6 GB covers 65 min of
+  # 48 kHz stereo; each such request holds that much RAM while it decodes.
+  VLLM_MAX_AUDIO_DECODE_BYTES: "1600000000"
 docker_server:
   # --override-generation-config caps tokens per 30 s chunk when the caller sets
   # no limit, so non-speech audio cannot decode until the context limit.
