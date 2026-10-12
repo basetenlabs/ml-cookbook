@@ -526,10 +526,11 @@ For a non-streaming deployment, upload audio to `/v1/audio/transcriptions`
 with any OpenAI-compatible client. Leave `language` unset to let the model
 detect it, or pass an ISO 639-1 code such as `es` to force it. Audio longer
 than 30 s is transcribed in 30 s chunks, so files up to about an hour work in
-one request. vLLM's decode limit is measured at the file's native sample rate:
-with the default 256 MiB limit, about 70 min of 16 kHz mono fits but only
-about 13 min of 44.1 kHz stereo. The one-click deployment uses that default;
-the [manual Truss](#manual-deployment-with-truss) raises it. For example:
+one request. Unpatched vLLM measures its 256 MiB decode limit at the file's
+native rate, which is about 13 min of 44.1 kHz stereo. The
+[manual Truss](#manual-deployment-with-truss) raises that limit, and the
+one-click deployment decodes straight to 16 kHz mono, so both accept up to
+65 min. For example:
 
 ```python
 from openai import OpenAI

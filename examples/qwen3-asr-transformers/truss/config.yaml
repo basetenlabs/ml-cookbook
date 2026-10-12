@@ -19,7 +19,9 @@ system_packages:
 resources:
   accelerator: H100
   cpu: "1"
-  memory: 10Gi
+  # Headroom for concurrent long uploads: one 65 min 48 kHz stereo file holds
+  # up to ~2.4 GB while it decodes (see VLLM_MAX_AUDIO_DECODE_BYTES below).
+  memory: 24Gi
   use_gpu: true
 training_checkpoints:
   download_folder: /models/training_checkpoints
