@@ -39,39 +39,10 @@ environment_variables: dict[str, str | definitions.SecretReference] = {
     # 8 samples/device * accumulation * GPU_COUNT.
     "GRAD_ACC": str(GRAD_ACC),
 }
-# Dataset and prompt settings read by run.sh. Forward any that are set at
-# submission time so `VAR=value baseten train push` reaches the job, not just
-# local ./run.sh invocations. Unset variables keep run.sh's defaults.
-FORWARDED_SETTINGS = (
-    "DATASET_REPO",
-    "DATASET_CONFIG",
-    "DATASET_SPLIT",
-    "AUDIO_COLUMN",
-    "TEXT_COLUMN",
-    "ID_COLUMN",
-    "LANGUAGE",
-    "LANGUAGE_COLUMN",
-    "UNLABELED_POLICY",
-    "MIXED_LANGUAGE_POLICY",
-    "PROMPT_FORMAT",
-    "MAX_SAMPLES",
-    "MAX_DURATION_SECONDS",
-    "EVAL_SAMPLES",
-    "DATASET_SEED",
-    "BATCH_SIZE",
-    "LR",
-    "EPOCHS",
-    "WARMUP_RATIO",
-    "SAVE_STRATEGY",
-    "SAVE_STEPS",
-    "MAX_STEPS",
-    "GRADIENT_CHECKPOINTING",
-)
-for name in FORWARDED_SETTINGS:
-    if name in os.environ:
-        environment_variables[name] = os.environ[name]
-if os.environ.get("PROMPT_FORMAT", "transcriptions") not in ("transcriptions", "chat"):
+PROMPT_FORMAT = os.environ.get("PROMPT_FORMAT", "transcriptions")
+if PROMPT_FORMAT not in ("transcriptions", "chat"):
     raise ValueError("PROMPT_FORMAT must be transcriptions or chat")
+environment_variables["PROMPT_FORMAT"] = PROMPT_FORMAT
 
 if HF_TOKEN_SECRET_NAME:
     # The public defaults need no token. Opt in for gated/private datasets by

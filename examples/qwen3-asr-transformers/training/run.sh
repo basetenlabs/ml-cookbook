@@ -39,10 +39,6 @@ AUDIO_COLUMN="${AUDIO_COLUMN:-audio}"
 TEXT_COLUMN="${TEXT_COLUMN:-text}"
 ID_COLUMN="${ID_COLUMN:-id}"
 LANGUAGE="${LANGUAGE-English}"
-# Multilingual data: name the column holding each clip's language. See README.
-LANGUAGE_COLUMN="${LANGUAGE_COLUMN:-}"
-UNLABELED_POLICY="${UNLABELED_POLICY:-drop}"
-MIXED_LANGUAGE_POLICY="${MIXED_LANGUAGE_POLICY:-drop}"
 # transcriptions: match /v1/audio/transcriptions (default). chat: match /v1/chat/completions.
 PROMPT_FORMAT="${PROMPT_FORMAT:-transcriptions}"
 MAX_SAMPLES="${MAX_SAMPLES-800}"
@@ -80,8 +76,6 @@ PREPARE_ARGS=(
   --text_column "${TEXT_COLUMN}"
   --id_column "${ID_COLUMN}"
   --language "${LANGUAGE}"
-  --unlabeled_policy "${UNLABELED_POLICY}"
-  --mixed_language_policy "${MIXED_LANGUAGE_POLICY}"
   --cache_dir "${CACHE_DIR}"
   --train_jsonl "${TRAIN_JSONL}"
   --eval_jsonl "${EVAL_JSONL}"
@@ -95,9 +89,6 @@ if [ -n "${DATASET_CONFIG}" ]; then
 fi
 if [ -n "${MAX_SAMPLES}" ]; then
   PREPARE_ARGS+=(--max_samples "${MAX_SAMPLES}")
-fi
-if [ -n "${LANGUAGE_COLUMN}" ]; then
-  PREPARE_ARGS+=(--language_column "${LANGUAGE_COLUMN}")
 fi
 
 echo "Preparing ${DATASET_REPO} (${DATASET_SPLIT})..."
