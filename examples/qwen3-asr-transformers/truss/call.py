@@ -1,67 +1,60 @@
-import base64
-import mimetypes
+"""Transcribe audio with a deployed Qwen3-ASR checkpoint via /v1/audio/transcriptions.
+
+Usage:
+    BASETEN_API_KEY=... MODEL_ID=... DEPLOYMENT_ID=... python call.py
+    AUDIO_PATH=clip.wav python call.py        # local file
+    AUDIO_URL=https://... python call.py      # remote file (downloaded first)
+    LANGUAGE=es python call.py                # force a language; omit to auto-detect
+"""
+
 import os
+import tempfile
+import urllib.request
 from pathlib import Path
 
 from openai import OpenAI
 
-
-MODEL_ID = "..."
-DEPLOYMENT_ID = "..."
 SERVED_MODEL_NAME = "Qwen/Qwen3-ASR-1.7B"
 DEFAULT_AUDIO_URL = (
     "https://qianwen-res.oss-cn-beijing.aliyuncs.com/Qwen3-ASR-Repo/asr_en.wav"
 )
 
 
-def audio_url() -> str:
+def audio_file() -> Path:
     if path_value := os.getenv("AUDIO_PATH"):
         path = Path(path_value)
         if not path.is_file():
             raise FileNotFoundError(f"AUDIO_PATH does not exist: {path}")
-
-        mime_type = mimetypes.guess_type(path.name)[0] or "audio/wav"
-        encoded = base64.b64encode(path.read_bytes()).decode("ascii")
-        return f"data:{mime_type};base64,{encoded}"
-
-    return os.getenv("AUDIO_URL", DEFAULT_AUDIO_URL)
-
-
-def parse_content(content: str) -> dict[str, str]:
-    prefix = "language "
-    separator = "<asr_text>"
-    if content.startswith(prefix) and separator in content:
-        language, text = content[len(prefix) :].split(separator, maxsplit=1)
-        return {"language": language, "text": text}
-    return {"raw_output": content}
+        return path
+    url = os.getenv("AUDIO_URL", DEFAULT_AUDIO_URL)
+    suffix = Path(url.split("?")[0]).suffix or ".wav"
+    handle = tempfile.NamedTemporaryFile(suffix=suffix, delete=False)
+    with urllib.request.urlopen(url) as response:
+        handle.write(response.read())
+    handle.close()
+    return Path(handle.name)
 
 
 def main() -> None:
+    model_id = os.environ["MODEL_ID"]
+    deployment_id = os.environ.get("DEPLOYMENT_ID")
+    # Target a specific deployment, or the production environment by default.
+    route = (
+        f"deployment/{deployment_id}" if deployment_id else "environments/production"
+    )
     client = OpenAI(
         api_key=os.environ["BASETEN_API_KEY"],
-        base_url=(
-            f"https://model-{MODEL_ID}.api.baseten.co/deployment/"
-            f"{DEPLOYMENT_ID}/sync/v1"
-        ),
+        base_url=f"https://model-{model_id}.api.baseten.co/{route}/sync/v1",
     )
 
-    response = client.chat.completions.create(
-        model=SERVED_MODEL_NAME,
-        stream=False,
-        messages=[
-            {
-                "role": "user",
-                "content": [
-                    {
-                        "type": "audio_url",
-                        "audio_url": {"url": audio_url()},
-                    }
-                ],
-            }
-        ],
-    )
-    content = response.choices[0].message.content or ""
-    print(parse_content(content))
+    optional = {}
+    if language := os.getenv("LANGUAGE"):
+        optional["language"] = language  # ISO 639-1 code, e.g. "en", "es", "zh"
+    with audio_file().open("rb") as handle:
+        transcription = client.audio.transcriptions.create(
+            model=SERVED_MODEL_NAME, file=handle, **optional
+        )
+    print(transcription.text)
 
 
 if __name__ == "__main__":

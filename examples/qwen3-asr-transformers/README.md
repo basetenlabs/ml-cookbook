@@ -238,7 +238,9 @@ and [TensorBoard's guide](https://www.tensorflow.org/tensorboard/get_started).
    dataset, filter long clips, materialize 16 kHz WAV files, and write
    train/eval JSONL.
 3. Runs the adapted upstream `training/qwen3_asr_sft.py` trainer in BF16 with
-   FlashAttention 2.
+   FlashAttention 2. By default the trainer builds each prompt exactly as
+   `/v1/audio/transcriptions` does at serving time; see
+   [Training prompt format](#training-prompt-format).
 4. Saves periodic Trainer checkpoints and a stable, self-contained
    `$BT_CHECKPOINT_DIR/final` checkpoint.
 
@@ -256,9 +258,16 @@ The prepared manifest follows Qwen3-ASR's native target format:
 {"audio":"/absolute/path/0000000-84-121123-0000.wav","text":"language English<asr_text>CHAPTER ONE ..."}
 ```
 
-If language labels are unavailable, set `LANGUAGE=`. The target will use
-`language None<asr_text>...`; as the upstream guide notes, the model then does
-not learn language detection from that prefix.
+The `language English` prefix is not decoration. When a request does not force
+a language, the model generates this tag first and then transcribes in that
+language, so the tag in every training target must name the language actually
+spoken in the clip. For a single-language dataset, set `LANGUAGE` to its Qwen
+name. For multilingual data, see
+[Multilingual data and automatic language detection](#multilingual-data-and-automatic-language-detection).
+
+Avoid `LANGUAGE=` (empty) for speech. It writes `language None<asr_text>...`,
+which Qwen3-ASR uses for audio with no speech, and the model stops learning
+language detection.
 
 ### Dataset controls
 
@@ -270,13 +279,19 @@ not learn language detection from that prefix.
 | `AUDIO_COLUMN` | `audio` | Audio feature column |
 | `TEXT_COLUMN` | `text` | Transcript column |
 | `ID_COLUMN` | `id` | Optional stable sample identifier |
-| `LANGUAGE` | `English` | Qwen output-language label |
+| `LANGUAGE` | `English` | Qwen language label for a single-language dataset; fallback for `UNLABELED_POLICY=fallback` |
+| `LANGUAGE_COLUMN` | empty | Column with each clip's language, for multilingual data |
+| `UNLABELED_POLICY` | `drop` | With `LANGUAGE_COLUMN`: `drop`, `error`, or `fallback` to `LANGUAGE` for empty or unknown labels |
+| `MIXED_LANGUAGE_POLICY` | `drop` | With `LANGUAGE_COLUMN`: `drop` or `dominant` for clips labeled with more than one language |
+| `PROMPT_FORMAT` | `transcriptions` | Training prompt: `transcriptions` or `chat`; match the route you serve |
 | `MAX_SAMPLES` | `800` | Maximum accepted examples; empty means all |
 | `MAX_DURATION_SECONDS` | `30` | Skip clips above this duration |
 | `EVAL_SAMPLES` | `40` | Deterministic validation holdout; `0` disables eval |
 | `DATASET_SEED` | `42` | Train/eval split seed |
 
-For another dataset:
+Every variable in this table is forwarded to the Baseten job when set at
+submission (`VAR=value baseten train push --config config.py`) and read by
+`./run.sh` for local runs. For another dataset:
 
 ```bash
 DATASET_REPO=mozilla-foundation/common_voice_17_0 \
@@ -289,8 +304,96 @@ MAX_SAMPLES=2000 \
 ./run.sh
 ```
 
-For multilingual data, prepare each language separately with its correct Qwen
-language name and concatenate the resulting JSONL files before training.
+## Multilingual data and automatic language detection
+
+Qwen3-ASR detects the language itself when a request does not set `language`:
+it generates `language Spanish<asr_text>` and then the transcript. Fine-tuning
+keeps that ability only if every training target carries the right tag.
+Running the default recipe on multilingual audio labels every clip
+`language English`, which teaches the model to declare English for everything
+and to transcribe other languages as if they were English.
+
+### Label each clip
+
+Add a column with each clip's language and point `LANGUAGE_COLUMN` at it:
+
+```bash
+DATASET_REPO=your-org/your-multilingual-asr \
+TEXT_COLUMN=transcript \
+LANGUAGE_COLUMN=language \
+HF_TOKEN_SECRET_NAME=hf_access_token \
+baseten train push --config config.py
+```
+
+`prepare.py` accepts ISO 639 codes (`es`, `zh`, `cmn`, `en-US`) or names and
+writes Qwen's canonical spelling. Qwen supports 30 languages: Chinese, English,
+Cantonese, Arabic, German, French, Spanish, Portuguese, Indonesian, Italian,
+Korean, Russian, Thai, Vietnamese, Japanese, Turkish, Hindi, Malay, Dutch,
+Swedish, Danish, Finnish, Polish, Czech, Filipino, Persian, Greek, Romanian,
+Hungarian, and Macedonian. Mandarin is `Chinese`; Cantonese is separate. A label
+outside this list is treated as unknown, because training an unrecognized
+spelling teaches the model a tag the serving stack cannot interpret.
+
+Clips with an empty or unknown label are dropped by default
+(`UNLABELED_POLICY=drop`); `error` stops on the first one. `fallback` assigns
+`LANGUAGE` and silently mislabels any clip in another language, so use it only
+when you know the unlabeled clips are in that language. `prepare.py` prints the
+number of clips per language and holds out evaluation clips from every
+language in proportion to its share.
+
+If your dataset has no language labels, generate them before training: run a
+text language-ID model over the transcripts, or an audio language-ID model over
+each clip, and spot-check the non-majority languages.
+
+### Clips with more than one language
+
+Qwen3-ASR emits one language tag per output, and the transcriptions route keeps
+only the text after the last `<asr_text>` tag. A target with two tags would
+train the model to produce output that the server silently truncates, so
+`prepare.py` never writes one. Handle mixed clips at the data level instead:
+
+- **Long switches** (whole turns, such as an interpreter or family member):
+  split the audio at the switch, using word timestamps from a forced aligner,
+  so each piece is a single-language clip.
+- **Short switches inside a sentence**: label the clip with the dominant
+  language listed first (`English+Spanish`) and set
+  `MIXED_LANGUAGE_POLICY=dominant`. Keep the transcript as spoken, with the
+  switched words in their own script; do not translate or romanize them.
+- **Everything else** is dropped (`MIXED_LANGUAGE_POLICY=drop`, the default).
+  Keep those clips for evaluation.
+
+### Balance and evaluate
+
+Most real-world audio is dominated by one language. Oversample the minority
+languages or cap the majority so each language appears often enough for the
+model to keep detecting it, while keeping enough of the majority language to
+avoid regressing it. Hold out whole recordings or speakers, not individual
+clips, so evaluation is not inflated by speaker overlap.
+
+Validation loss does not measure language detection. Before shipping a
+checkpoint, transcribe a held-out multilingual set through the deployed
+`/v1/audio/transcriptions` route **without** `language`, and report per
+language: word error rate, the share of clips whose detected language is
+correct, and the share of non-English clips returned as English text.
+
+## Training prompt format
+
+At serving time the two OpenAI-compatible routes build different prompts for
+the same audio. `/v1/chat/completions` applies the model's chat template, which
+always emits a system turn, even an empty one. `/v1/audio/transcriptions`, like
+the official `qwen_asr` SDK, emits a system turn only when the request includes
+a `prompt`:
+
+```text
+chat:            <|im_start|>system\n<|im_end|>\n<|im_start|>user\n<audio><|im_end|>\n<|im_start|>assistant\n
+transcriptions:  <|im_start|>user\n<audio><|im_end|>\n<|im_start|>assistant\n
+```
+
+The language tag is the first token the model generates, so it is the
+decision most exposed to a prompt the model never saw in training.
+`PROMPT_FORMAT=transcriptions` (the default) trains on the transcriptions
+prefix; set `PROMPT_FORMAT=chat` if you will serve through
+`/v1/chat/completions` instead.
 
 ## H100 training preset
 
@@ -475,8 +578,9 @@ syncing, deploy it directly from the Baseten Training UI:
    omits optimizer state and is smaller to materialize for inference.
 2. Enter the model name. Using an existing model name in the same team creates
    a new model version; a new name creates a new model.
-3. Select **Non-streaming (OpenAI chat completions)** or **Streaming
-   (WebSocket)**. The menu contains only serving templates compatible with the
+3. Select **Non-streaming (OpenAI transcriptions)** or **Streaming
+   (WebSocket)**. Screenshots below may show the earlier label for the
+   non-streaming option. The menu contains only serving templates compatible with the
    checkpoint's exact base model, architecture, and FULL checkpoint type.
 4. Select a supported GPU and click **Deploy checkpoint**. The deployment is
    created in the Training job's team, and the GPU menu contains only the
@@ -491,9 +595,30 @@ with the selected Training checkpoint and points `BASETEN_MODEL_PATH` at the
 materialized checkpoint directory. You do not need to download the checkpoint,
 edit a Truss config, or add a Hugging Face secret for this public model.
 
-For a non-streaming deployment, send an audio input to
-`/v1/chat/completions` from the model Playground or an OpenAI-compatible
-client. For a streaming deployment, connect a WebSocket client to the selected
+For a non-streaming deployment, upload audio to `/v1/audio/transcriptions`
+with any OpenAI-compatible client. Leave `language` unset to let the model
+detect it, or pass an ISO 639-1 code such as `es` to force it. Audio longer
+than 30 s is transcribed in 30 s chunks, so hour-long files work in one
+request:
+
+```python
+from openai import OpenAI
+
+client = OpenAI(
+    api_key="YOUR_BASETEN_API_KEY",
+    base_url="https://model-<MODEL_ID>.api.baseten.co/deployment/<DEPLOYMENT_ID>/sync/v1",
+)
+with open("audio.wav", "rb") as audio:
+    result = client.audio.transcriptions.create(model="Qwen/Qwen3-ASR-1.7B", file=audio)
+print(result.text)
+```
+
+The same deployment also accepts `/v1/chat/completions` with an `audio_url`
+content part. That route returns the raw `language X<asr_text>...` output,
+does not chunk long audio, and uses the chat prompt described in
+[Training prompt format](#training-prompt-format), so prefer transcriptions.
+
+For a streaming deployment, connect a WebSocket client to the selected
 deployment:
 
 ```text
@@ -505,10 +630,10 @@ to remain active at the same time.
 
 ### Manual deployment with Truss
 
-The [`truss/`](truss) directory serves the persisted `final/` checkpoint with
-the same pinned vLLM stack and OpenAI-compatible chat-completions API as
-Baseten's
-[`qwen3-asr-1.7b` model-registry preset](https://github.com/basetenlabs/model-registry/tree/main/stt/qwen3-asr-1.7b/latency).
+The [`truss/`](truss) directory serves the persisted `final/` checkpoint on the
+same vLLM release and `/v1/audio/transcriptions` route as Baseten's
+[`qwen3-asr-1.7b` model-registry preset](https://github.com/basetenlabs/model-registry/tree/main/stt/qwen3-asr-1.7b/rtx-pro-6000/batch),
+which the one-click deploy uses, without the preset's throughput patches.
 
 Use this path when developing or customizing the serving Truss. First, get the
 completed training job ID from the training logs or CLI:
@@ -536,25 +661,20 @@ cd examples/qwen3-asr-transformers/truss
 baseten truss push
 ```
 
-After the model finishes deploying, install the OpenAI client, put its model ID
-and deployment ID into `call.py`, then transcribe the included public test URL:
+After the model finishes deploying, install the OpenAI client and transcribe
+the included public test URL with automatic language detection:
 
 ```bash
 pip install openai
-python call.py
+BASETEN_API_KEY=... MODEL_ID=... DEPLOYMENT_ID=... python call.py
 ```
 
-To transcribe a local file, `call.py` converts it to an audio data URL before
-sending it:
+Set `AUDIO_PATH` for a local file, `AUDIO_URL` for another remote file, or
+`LANGUAGE=es` to force a language:
 
 ```bash
 AUDIO_PATH=path/to/test.wav python call.py
 ```
-
-You can also set `AUDIO_URL` to a directly accessible audio URL. The deployment
-uses vLLM's native Qwen3-ASR support and exposes `/v1/chat/completions`; its
-response has the native
-`language <LANGUAGE><asr_text><TRANSCRIPT>` format.
 
 ### Where the checkpoint is stored
 

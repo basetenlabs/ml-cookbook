@@ -2,8 +2,11 @@ model_name: Qwen3 ASR 1.7B Finetuned
 model_metadata:
   tags:
     - openai-compatible
+# Mirrors the serving stack of Baseten's Qwen3-ASR preset (model-registry
+# stt/qwen3-asr-1.7b/rtx-pro-6000/batch), which the Training UI's one-click
+# deploy uses, minus its throughput patches to vLLM.
 base_image:
-  image: vllm/vllm-openai:v0.22.0-cu129
+  image: vllm/vllm-openai:v0.29.0-cu129
 requirements:
   - vllm[audio]
   - librosa
@@ -12,10 +15,7 @@ requirements:
   - pynvml
   - ffmpeg-python
 system_packages:
-  - python3.10-venv
   - ffmpeg
-  - openmpi-bin
-  - libopenmpi-dev
 resources:
   accelerator: H100
   cpu: "1"
@@ -27,11 +27,18 @@ training_checkpoints:
     - training_job_id: abc123 # Replace with your training job ID
       paths:
         - "rank-0/final"
+environment_variables:
+  # /v1/audio/transcriptions decodes the whole upload, then transcribes it in
+  # 30 s chunks. Raise vLLM's default 600 s / 25 MB limits so hour-long files work.
+  VLLM_MAX_AUDIO_DECODE_DURATION_S: "3900"
+  VLLM_MAX_AUDIO_CLIP_FILESIZE_MB: "120"
 docker_server:
-  start_command: sh -c "vllm serve /models/training_checkpoints/abc123/rank-0/final --tensor-parallel-size 1 --served-model-name Qwen/Qwen3-ASR-1.7B --gpu-memory-utilization 0.8 --host 0.0.0.0 --port 8000 --load-format runai_streamer"
+  # --override-generation-config caps tokens per 30 s chunk when the caller sets
+  # no limit, so non-speech audio cannot decode until the context limit.
+  start_command: sh -c "vllm serve /models/training_checkpoints/abc123/rank-0/final --tensor-parallel-size 1 --served-model-name Qwen/Qwen3-ASR-1.7B --gpu-memory-utilization 0.8 --host 0.0.0.0 --port 8000 --load-format runai_streamer --override-generation-config.max_new_tokens 4096"
   server_port: 8000
   liveness_endpoint: /health
   readiness_endpoint: /health
-  predict_endpoint: /v1/chat/completions
+  predict_endpoint: /v1/audio/transcriptions
 runtime:
   predict_concurrency: 256
