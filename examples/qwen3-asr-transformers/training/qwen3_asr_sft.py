@@ -84,6 +84,9 @@ def load_audio(path: str, sr: int = 16_000):
     return wav
 
 
+_AUDIO_PLACEHOLDER = "<|audio_start|><|audio_pad|><|audio_end|>"
+
+
 def build_prefix_messages(prompt: str, audio_array):
     return [
         {"role": "system", "content": prompt or ""},
@@ -91,13 +94,32 @@ def build_prefix_messages(prompt: str, audio_array):
     ]
 
 
-def make_preprocess_fn_prefix_only(processor):
+def transcriptions_prefix(prompt: str) -> str:
+    """Prompt as vLLM's /v1/audio/transcriptions route builds it for Qwen3-ASR.
+
+    The route (and the official qwen_asr SDK) emits a system turn only when a
+    prompt is given. The chat template always emits one, even when empty, so a
+    model trained on the chat-template prefix is served through a prompt shape
+    it never saw. With automatic language detection the first generated token
+    is the language tag, so the prefix should match serving exactly.
+    """
+    system = f"<|im_start|>system\n{prompt}<|im_end|>\n" if prompt else ""
+    return (
+        f"{system}<|im_start|>user\n{_AUDIO_PLACEHOLDER}<|im_end|>\n"
+        "<|im_start|>assistant\n"
+    )
+
+
+def make_preprocess_fn_prefix_only(processor, prompt_format: str = "transcriptions"):
     def _preprocess(example: Dict[str, Any]) -> Dict[str, Any]:
-        prompt = example.get("prompt", "")
-        prefix_messages = build_prefix_messages(prompt, None)
-        prefix_text = processor.apply_chat_template(
-            [prefix_messages], add_generation_prompt=True, tokenize=False
-        )[0]
+        prompt = (example.get("prompt") or "").strip()
+        if prompt_format == "transcriptions":
+            prefix_text = transcriptions_prefix(prompt)
+        else:
+            prefix_messages = build_prefix_messages(prompt, None)
+            prefix_text = processor.apply_chat_template(
+                [prefix_messages], add_generation_prompt=True, tokenize=False
+            )[0]
         return {
             "prompt": prompt,
             "audio": example["audio"],
@@ -222,6 +244,16 @@ def parse_args():
     parser.add_argument("--eval_file", default="")
     parser.add_argument("--output_dir", default="./output")
     parser.add_argument("--sr", type=int, default=16_000)
+    parser.add_argument(
+        "--prompt_format",
+        choices=("transcriptions", "chat"),
+        default="transcriptions",
+        help=(
+            "Prefix to train on. 'transcriptions' matches /v1/audio/transcriptions "
+            "(recommended); 'chat' matches the chat template used by "
+            "/v1/chat/completions."
+        ),
+    )
 
     parser.add_argument("--batch_size", type=int, default=8)
     parser.add_argument("--grad_acc", type=int, default=16)
@@ -286,7 +318,9 @@ def main():
             **({"validation": args_cli.eval_file} if args_cli.eval_file else {}),
         },
     )
-    dataset = raw_dataset.map(make_preprocess_fn_prefix_only(processor), num_proc=1)
+    dataset = raw_dataset.map(
+        make_preprocess_fn_prefix_only(processor, args_cli.prompt_format), num_proc=1
+    )
 
     keep = {"prompt", "audio", "target", "prefix_text"}
     for split in dataset:

@@ -238,7 +238,9 @@ and [TensorBoard's guide](https://www.tensorflow.org/tensorboard/get_started).
    dataset, filter long clips, materialize 16 kHz WAV files, and write
    train/eval JSONL.
 3. Runs the adapted upstream `training/qwen3_asr_sft.py` trainer in BF16 with
-   FlashAttention 2.
+   FlashAttention 2. By default the trainer builds each prompt exactly as
+   `/v1/audio/transcriptions` does at serving time; see
+   [Training prompt format](#training-prompt-format).
 4. Saves periodic Trainer checkpoints and a stable, self-contained
    `$BT_CHECKPOINT_DIR/final` checkpoint.
 
@@ -291,6 +293,34 @@ MAX_SAMPLES=2000 \
 
 For multilingual data, prepare each language separately with its correct Qwen
 language name and concatenate the resulting JSONL files before training.
+
+## Training prompt format
+
+At serving time the two OpenAI-compatible routes build different prompts for
+the same audio. `/v1/chat/completions` applies the model's chat template, which
+always emits a system turn, even an empty one. `/v1/audio/transcriptions`, like
+the official `qwen_asr` SDK, emits a system turn only when the request includes
+a `prompt`:
+
+```text
+chat:            <|im_start|>system\n<|im_end|>\n<|im_start|>user\n<audio><|im_end|>\n<|im_start|>assistant\n
+transcriptions:  <|im_start|>user\n<audio><|im_end|>\n<|im_start|>assistant\n
+```
+
+When a request does not force a language, the first token the model generates
+is its language tag, so that decision is the one most exposed to a prompt the
+model never saw in training. `PROMPT_FORMAT=transcriptions` (the default)
+trains on the transcriptions prefix. Set `PROMPT_FORMAT=chat` if you will
+deploy with **Real-time (WebSocket)** or serve through `/v1/chat/completions`:
+
+| Deploy option | Prompt it builds | Matching `PROMPT_FORMAT` |
+| --- | --- | --- |
+| Batch (OpenAI transcriptions) | no system turn unless a `prompt` is given | `transcriptions` |
+| Real-time (WebSocket) | chat template, always with a system turn | `chat` |
+| `/v1/chat/completions` on either deployment | chat template, always with a system turn | `chat` |
+
+The two prefixes differ by five tokens. The accuracy effect of training on one
+and serving with the other has not been measured.
 
 ## H100 training preset
 
@@ -475,8 +505,7 @@ syncing, deploy it directly from the Baseten Training UI:
    omits optimizer state and is smaller to materialize for inference.
 2. Enter the model name. Using an existing model name in the same team creates
    a new model version; a new name creates a new model.
-3. Select **Non-streaming (OpenAI chat completions)** or **Streaming
-   (WebSocket)**. The menu contains only serving templates compatible with the
+3. Select **Batch (OpenAI transcriptions)** or **Real-time (WebSocket)**. The menu contains only serving templates compatible with the
    checkpoint's exact base model, architecture, and FULL checkpoint type.
 4. Select a supported GPU and click **Deploy checkpoint**. The deployment is
    created in the Training job's team, and the GPU menu contains only the
@@ -484,31 +513,56 @@ syncing, deploy it directly from the Baseten Training UI:
 
 | Select the checkpoint | Select the serving mode | Select a supported GPU |
 | --- | --- | --- |
-| <img src="assets/deploy-checkpoint.png" alt="Select the final FULL checkpoint" width="300"> | <img src="assets/deploy-serving-mode.png" alt="Select non-streaming or streaming serving mode" width="300"> | <img src="assets/deploy-gpu.png" alt="Select a supported GPU" width="300"> |
+| <img src="assets/deploy-checkpoint.png" alt="Select the final FULL checkpoint" width="300"> | <img src="assets/deploy-serving-mode.png" alt="Select Batch or Real-time serving mode" width="300"> | <img src="assets/deploy-gpu.png" alt="Select a supported GPU" width="300"> |
 
 The deployment automatically replaces the template's public base-model weight
 with the selected Training checkpoint and points `BASETEN_MODEL_PATH` at the
 materialized checkpoint directory. You do not need to download the checkpoint,
 edit a Truss config, or add a Hugging Face secret for this public model.
 
-For a non-streaming deployment, send an audio input to
-`/v1/chat/completions` from the model Playground or an OpenAI-compatible
-client. For a streaming deployment, connect a WebSocket client to the selected
+For a Batch deployment, upload audio to `/v1/audio/transcriptions`
+with any OpenAI-compatible client. Leave `language` unset to let the model
+detect it, or pass an ISO 639-1 code such as `es` to force it. Audio longer
+than 30 s is transcribed in 30 s chunks, so files up to about an hour work in
+one request. Unpatched vLLM measures its 256 MiB decode limit at the file's
+native rate, which is about 13 min of 44.1 kHz stereo. The
+[manual Truss](#manual-deployment-with-truss) raises that limit, and the
+one-click deployment decodes straight to 16 kHz mono, so both accept up to
+65 min. For example:
+
+```python
+from openai import OpenAI
+
+client = OpenAI(
+    api_key="YOUR_BASETEN_API_KEY",
+    base_url="https://model-<MODEL_ID>.api.baseten.co/deployment/<DEPLOYMENT_ID>/sync/v1",
+)
+with open("audio.wav", "rb") as audio:
+    result = client.audio.transcriptions.create(model="Qwen/Qwen3-ASR-1.7B", file=audio)
+print(result.text)
+```
+
+The same deployment also accepts `/v1/chat/completions` with an `audio_url`
+content part. That route returns the raw `language X<asr_text>...` output,
+does not chunk long audio, and uses the chat prompt described in
+[Training prompt format](#training-prompt-format), so prefer transcriptions.
+
+For a Real-time deployment, connect a WebSocket client to the selected
 deployment:
 
 ```text
 wss://model-<MODEL_ID>.api.baseten.co/deployment/<DEPLOYMENT_ID>/websocket
 ```
 
-Use different model names if the non-streaming and streaming deployments need
+Use different model names if the Batch and Real-time deployments need
 to remain active at the same time.
 
 ### Manual deployment with Truss
 
-The [`truss/`](truss) directory serves the persisted `final/` checkpoint with
-the same pinned vLLM stack and OpenAI-compatible chat-completions API as
-Baseten's
-[`qwen3-asr-1.7b` model-registry preset](https://github.com/basetenlabs/model-registry/tree/main/stt/qwen3-asr-1.7b/latency).
+The [`truss/`](truss) directory serves the persisted `final/` checkpoint on the
+same vLLM release and `/v1/audio/transcriptions` route as Baseten's
+[`qwen3-asr-1.7b` model-registry preset](https://github.com/basetenlabs/model-registry/tree/main/stt/qwen3-asr-1.7b/rtx-pro-6000/batch),
+which the one-click deploy uses, without the preset's throughput patches.
 
 Use this path when developing or customizing the serving Truss. First, get the
 completed training job ID from the training logs or CLI:
@@ -536,25 +590,20 @@ cd examples/qwen3-asr-transformers/truss
 baseten truss push
 ```
 
-After the model finishes deploying, install the OpenAI client, put its model ID
-and deployment ID into `call.py`, then transcribe the included public test URL:
+After the model finishes deploying, install the OpenAI client and transcribe
+the included public test URL with automatic language detection:
 
 ```bash
 pip install openai
-python call.py
+BASETEN_API_KEY=... MODEL_ID=... DEPLOYMENT_ID=... python call.py
 ```
 
-To transcribe a local file, `call.py` converts it to an audio data URL before
-sending it:
+Set `AUDIO_PATH` for a local file, `AUDIO_URL` for another remote file, or
+`LANGUAGE=es` to force a language:
 
 ```bash
 AUDIO_PATH=path/to/test.wav python call.py
 ```
-
-You can also set `AUDIO_URL` to a directly accessible audio URL. The deployment
-uses vLLM's native Qwen3-ASR support and exposes `/v1/chat/completions`; its
-response has the native
-`language <LANGUAGE><asr_text><TRANSCRIPT>` format.
 
 ### Where the checkpoint is stored
 

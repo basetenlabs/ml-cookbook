@@ -39,6 +39,11 @@ environment_variables: dict[str, str | definitions.SecretReference] = {
     # 8 samples/device * accumulation * GPU_COUNT.
     "GRAD_ACC": str(GRAD_ACC),
 }
+PROMPT_FORMAT = os.environ.get("PROMPT_FORMAT", "transcriptions")
+if PROMPT_FORMAT not in ("transcriptions", "chat"):
+    raise ValueError("PROMPT_FORMAT must be transcriptions or chat")
+environment_variables["PROMPT_FORMAT"] = PROMPT_FORMAT
+
 if HF_TOKEN_SECRET_NAME:
     # The public defaults need no token. Opt in for gated/private datasets by
     # setting this to the name of an existing secret in the Baseten workspace.
