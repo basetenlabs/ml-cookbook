@@ -21,9 +21,7 @@ Ready-to-use recipes for training models on Baseten. The cookbook covers Baseten
 loops/                      # Loops recipes: SFT, GRPO (sync + async), multi-turn RL, rollout dashboard
 training-jobs/
   examples/                 # runnable model/framework projects, launch with `truss train push`
-  recipes/                  # implementation guides and patterns (RL, SFT, robotics, programmatic API, ...)
-tools/
-  experiment-dashboard/     # self-hosted run dashboard for both Loops and Training Jobs
+  recipes/                  # implementation guides and patterns (RL, SFT, robotics, experiment dashboard, ...)
 .examples-index.json        # where each example lives; read by `truss train init --examples`
 ```
 
@@ -60,9 +58,9 @@ truss train push config.py
 
 See [`training-jobs/README.md`](training-jobs/README.md) for the full list of examples and recipes, and the [Training Jobs docs](https://docs.baseten.co/training/overview) for concepts.
 
-## Tools
+## Experiment dashboard
 
-[`tools/experiment-dashboard`](tools/experiment-dashboard/README.md) is a local, self-hosted dashboard over an S3 experiment store. It syncs runs down and serves loss-curve overlays, hyperparameter filtering, and cross-run comparison, using only the Python standard library. It works with any training source that writes its three-file run contract, including Loops and Training Jobs.
+[`training-jobs/recipes/experiment-dashboard`](training-jobs/recipes/experiment-dashboard/README.md) is a local, self-hosted dashboard over an S3 experiment store. It syncs runs down and serves loss-curve overlays, hyperparameter filtering, and cross-run comparison, using only the Python standard library. It works with any training source that writes its three-file run contract, including Loops and Training Jobs. For a live view of a single Loops run's rollouts, use [`loops/rollout-dashboard`](loops/rollout-dashboard/SKILL.md).
 
 ## Prerequisites
 

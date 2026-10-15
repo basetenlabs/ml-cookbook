@@ -89,7 +89,7 @@ Metrics are written to size-bounded chunk files (`metrics-00001.jsonl`, `metrics
 On a local machine with read access to the same bucket:
 
 ```bash
-cd tools/experiment-dashboard
+cd training-jobs/recipes/experiment-dashboard
 S3_URI=s3://my-bucket/my-team/experiments ./sync.sh
 S3_URI=s3://my-bucket/my-team/experiments python3 build_manifests.py
 python3 dashboard.py

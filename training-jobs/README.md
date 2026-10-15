@@ -45,6 +45,7 @@ truss train get_checkpoint_urls --job-id $JOB_ID
 | [SFT framework options](recipes/sft/framework_options/README.md) | The same task at three layers of abstraction: raw PyTorch, the Hugging Face Trainer, and Axolotl. |
 | [OCaml specialist (RL)](recipes/rl/ocaml_specialist/README.md) | RL with a compiler-in-the-loop reward, as full fine-tune and LoRA with VeRL. |
 | [Improve tool calling (RL)](recipes/rl/improve_tool_calling/qwen3-8b-instruct-lora-trl) | LoRA GRPO with TRL to improve Qwen3-8B tool calling. |
+| [Experiment dashboard](recipes/experiment-dashboard/README.md) | Self-hosted, cross-run dashboard over an S3 experiment store, with a logger for training jobs. Also works with Loops runs. |
 | [Autoresearch fine-tuning](recipes/autoresearch-finetune/README.md) | An AI agent iterates on fine-tuning experiments within the bounds you set. |
 | [Isaac Lab RL](recipes/isaac-lab/README.md) | Headless robot-learning RL with NVIDIA Isaac Lab. Needs an RT-core GPU (A10G, L4, or T4); does not run on H100, A100, or B200. |
 | [Isaac-GR00T N1 fine-tuning](recipes/isaac-groot/README.md) | Fine-tune NVIDIA's ~3B vision-language-action robotics model on a LeRobot-format dataset. |
