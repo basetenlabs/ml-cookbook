@@ -6,8 +6,7 @@ on:
   pull_request:
     branches: [main]
     paths:
-      - 'examples/**'
-      - 'recipes/**'
+      - 'training-jobs/**'
 
 permissions:
   contents: read
@@ -30,7 +29,9 @@ jobs:
       - name: Build test matrix
         id: build-matrix
         run: |
-          changed=$(git diff origin/${{ github.base_ref }}...HEAD --name-only)
+          # Pure renames (R100) and deletions don't need a re-run; list new paths only.
+          changed=$(git diff origin/${{ github.base_ref }}...HEAD --name-status --find-renames=100% \
+            | awk '$1 != "R100" && $1 != "D" {print $NF}')
           echo "Changed files:"
           echo "$changed"
 
@@ -43,14 +44,14 @@ jobs:
             config_path=""
             name=""
 
-            if [[ "$file" =~ ^examples/([^/]+)/ ]]; then
+            if [[ "$file" =~ ^training-jobs/examples/([^/]+)/ ]]; then
               example="${BASH_REMATCH[1]}"
-              config_path="examples/${example}/training/config.py"
+              config_path="training-jobs/examples/${example}/training/config.py"
               name="examples--${example}"
-            elif [[ "$file" =~ ^recipes/([^/]+)/([^/]+)/ ]]; then
+            elif [[ "$file" =~ ^training-jobs/recipes/([^/]+)/([^/]+)/ ]]; then
               part_a="${BASH_REMATCH[1]}"
               part_b="${BASH_REMATCH[2]}"
-              config_path="recipes/${part_a}/${part_b}/config.py"
+              config_path="training-jobs/recipes/${part_a}/${part_b}/config.py"
               name="recipes--${part_a}--${part_b}"
             else
               continue

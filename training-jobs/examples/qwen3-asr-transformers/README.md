@@ -19,7 +19,7 @@ to install the current Baseten CLI and `uv`, then log in and submit the recipe:
 
 ```bash
 baseten auth login
-cd examples/qwen3-asr-transformers/training
+cd training-jobs/examples/qwen3-asr-transformers/training
 baseten train push --config config.py
 ```
 
@@ -430,7 +430,7 @@ an optimizer-step record before reporting training throughput or an ETA.
 The same pipeline runs locally on a CUDA machine:
 
 ```bash
-cd examples/qwen3-asr-transformers/training
+cd training-jobs/examples/qwen3-asr-transformers/training
 ./run.sh
 ```
 
@@ -586,7 +586,7 @@ training_checkpoints:
 Push the deployment from the Truss directory:
 
 ```bash
-cd examples/qwen3-asr-transformers/truss
+cd training-jobs/examples/qwen3-asr-transformers/truss
 baseten truss push
 ```
 

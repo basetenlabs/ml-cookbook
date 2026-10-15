@@ -1,0 +1,122 @@
+{
+  "version": 1,
+  "examples": {
+    "autoresearch-finetune": {
+      "path": "training-jobs/recipes/autoresearch-finetune/training",
+      "description": "Autoresearch Fine-Tuning on Baseten"
+    },
+    "gemma-27b-axolotl": {
+      "path": "training-jobs/examples/gemma-27b-axolotl/training"
+    },
+    "glm-4-6-msswift": {
+      "path": "training-jobs/examples/glm-4-6-msswift/training"
+    },
+    "glm-4.7-flash-msswift": {
+      "path": "training-jobs/examples/glm-4.7-flash-msswift/training"
+    },
+    "glm-4.7-msswift": {
+      "path": "training-jobs/examples/glm-4.7-msswift/training"
+    },
+    "isaac-groot": {
+      "path": "training-jobs/recipes/isaac-groot",
+      "description": "Fine-tune NVIDIA Isaac-GR00T N1 on Baseten"
+    },
+    "isaac-lab": {
+      "path": "training-jobs/recipes/isaac-lab",
+      "description": "Isaac Lab RL on Baseten"
+    },
+    "kimi-k2.6-lora-merge": {
+      "path": "training-jobs/examples/kimi-k2.6-lora-merge/training"
+    },
+    "llama-8b-lora-unsloth": {
+      "path": "training-jobs/examples/llama-8b-lora-unsloth/training"
+    },
+    "minimax2_5-multinode": {
+      "path": "training-jobs/examples/minimax2_5-multinode"
+    },
+    "mnist-pytorch": {
+      "path": "training-jobs/examples/mnist-pytorch/training"
+    },
+    "nemotron3-30b-torchtitan": {
+      "path": "training-jobs/examples/nemotron3-30b-torchtitan/training"
+    },
+    "omnivoice-tts-finetuning": {
+      "path": "training-jobs/examples/omnivoice-tts-finetuning",
+      "description": "Quick smoke test (smaller subset, fewer steps):"
+    },
+    "orpheus-transformers": {
+      "path": "training-jobs/examples/orpheus-transformers/training"
+    },
+    "oss-gpt-120b-axolotl": {
+      "path": "training-jobs/examples/oss-gpt-120b-axolotl/training"
+    },
+    "oss-gpt-20b-axolotl": {
+      "path": "training-jobs/examples/oss-gpt-20b-axolotl/training"
+    },
+    "oss-gpt-20b-fft-trl": {
+      "path": "training-jobs/examples/oss-gpt-20b-fft-trl/training"
+    },
+    "oss-gpt-20b-lora-trl": {
+      "path": "training-jobs/examples/oss-gpt-20b-lora-trl/training"
+    },
+    "qwen3-0.6b-axolotl": {
+      "path": "training-jobs/examples/qwen3-0.6b-axolotl/training"
+    },
+    "qwen3-0.6b-classifier-hf-trainer": {
+      "path": "training-jobs/examples/qwen3-0.6b-classifier-hf-trainer/training"
+    },
+    "qwen3-0.6b-classifier-pytorch": {
+      "path": "training-jobs/examples/qwen3-0.6b-classifier-pytorch/training"
+    },
+    "qwen3-0.6b-pytorch": {
+      "path": "training-jobs/examples/qwen3-0.6b-pytorch/training"
+    },
+    "qwen3-235b-mswift": {
+      "path": "training-jobs/examples/qwen3-235b-mswift/training"
+    },
+    "qwen3-30b-mswift-multinode": {
+      "path": "training-jobs/examples/qwen3-30b-mswift-multinode/training"
+    },
+    "qwen3-30b-mswift-singlenode": {
+      "path": "training-jobs/examples/qwen3-30b-mswift-singlenode/training"
+    },
+    "qwen3-32b-fft-verl-multinode": {
+      "path": "training-jobs/examples/qwen3-32b-fft-verl-multinode/training"
+    },
+    "qwen3-4b-lora-sft-trl": {
+      "path": "training-jobs/examples/qwen3-4b-lora-sft-trl/training"
+    },
+    "qwen3-80b-msswift": {
+      "path": "training-jobs/examples/qwen3-80b-msswift/training"
+    },
+    "qwen3-8b-fft-verl": {
+      "path": "training-jobs/examples/qwen3-8b-fft-verl/training"
+    },
+    "qwen3-8b-instruct-lora-trl-tool-calling": {
+      "path": "training-jobs/recipes/rl/improve_tool_calling/qwen3-8b-instruct-lora-trl"
+    },
+    "qwen3-8b-lora-dpo-trl": {
+      "path": "training-jobs/examples/qwen3-8b-lora-dpo-trl/training"
+    },
+    "qwen3-8b-lora-verl": {
+      "path": "training-jobs/examples/qwen3-8b-lora-verl/training"
+    },
+    "qwen3-asr-transformers": {
+      "path": "training-jobs/examples/qwen3-asr-transformers/training",
+      "description": "Fine-tune Qwen3-ASR-1.7B with Transformers"
+    },
+    "qwen3-tts-transformers": {
+      "path": "training-jobs/examples/qwen3-tts-transformers",
+      "description": "Defaults: LJ Speech + normalized_text, capped at 800 clips (~1.5h of audio)."
+    },
+    "qwen3.6-27b-msswift": {
+      "path": "training-jobs/examples/qwen3.6-27b-msswift/training"
+    },
+    "qwen3.6-35b-msswift": {
+      "path": "training-jobs/examples/qwen3.6-35b-msswift/training"
+    },
+    "whisper-transformers": {
+      "path": "training-jobs/examples/whisper-transformers/training"
+    }
+  }
+}

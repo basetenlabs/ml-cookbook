@@ -1,0 +1,19 @@
+name: Examples Index
+
+# Validates .examples-index.json, which `truss train init --examples` reads to
+# find examples. No secrets; safe for fork PRs.
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: python3 bin/check_examples_index.py

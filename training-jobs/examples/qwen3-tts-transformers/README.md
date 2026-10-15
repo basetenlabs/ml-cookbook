@@ -198,7 +198,7 @@ The `truss/` folder packages a trained checkpoint as a Baseten deployment that s
 
 Edit `truss/config.yaml` and set `training_job_id` to the Baseten training job that produced the checkpoint, plus the relative path you want to serve:
 
-```16:22:examples/qwen3-tts-transformers/truss/config.yaml
+```16:22:training-jobs/examples/qwen3-tts-transformers/truss/config.yaml
 training_checkpoints:
   download_folder: /models/training_checkpoints
   artifact_references:
@@ -213,7 +213,7 @@ training_checkpoints:
 
 The downloaded artifacts land under `/models/training_checkpoints/<training_job_id>/<path>` inside the container. Update the vLLM `start_command` in the same file so it points at that directory:
 
-```24:24:examples/qwen3-tts-transformers/truss/config.yaml
+```24:24:training-jobs/examples/qwen3-tts-transformers/truss/config.yaml
   start_command: bash -c "vllm serve /models/training_checkpoints/abc123/rank-0/best --omni --task CustomVoice --trust-remote-code --host 0.0.0.0 --port 8091 --served-model-name qwen3-tts-12hz-1.7b"
 ```
 
@@ -221,7 +221,7 @@ Replace `abc123` with your `training_job_id` and `rank-0/best` with whichever pa
 
 **Deploy**
 
-From the `examples/qwen3-tts-transformers/truss` directory:
+From the `training-jobs/examples/qwen3-tts-transformers/truss` directory:
 
 ```bash
 truss push
@@ -233,7 +233,7 @@ This builds the image, downloads the referenced checkpoint, and brings up the vL
 
 Once the deployment is live, grab its `MODEL_ID` and `DEPLOYMENT_ID` from the Baseten UI and edit them into `truss/call.py`:
 
-```7:8:examples/qwen3-tts-transformers/truss/call.py
+```7:8:training-jobs/examples/qwen3-tts-transformers/truss/call.py
 MODEL_ID = "..."
 DEPLOYMENT_ID = "..."
 ```

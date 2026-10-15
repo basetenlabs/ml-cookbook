@@ -3,223 +3,77 @@
   </a>
 
 <p align="center">
-  <strong><a href="https://docs.baseten.co/examples/deploy-your-first-model">Inference docs</a> | <a href="https://docs.baseten.co/training/overview">Training docs</a></strong>
+  <strong><a href="https://docs.baseten.co/loops/overview">Loops docs</a> | <a href="https://docs.baseten.co/training/overview">Training Jobs docs</a> | <a href="https://docs.baseten.co/examples/deploy-your-first-model">Inference docs</a></strong>
 </p>
 
-A curated collection of ready-to-use training recipes for machine learning on Baseten. Whether you’re starting from scratch or fine-tuning an existing model, these recipes provide practical, copy-paste solutions for every stage of your ML pipeline.
+Ready-to-use recipes for training models on Baseten. The cookbook covers Baseten's two ways to train:
 
-### What's inside
+| | [**Loops**](loops/) | [**Training Jobs**](training-jobs/) |
+| --- | --- | --- |
+| What it is | An SDK for online training: you write the training loop in plain Python and Baseten runs the trainer and a paired sampler | Batch jobs: you package a training script and `config.py`, then `truss train push` runs it on GPUs to completion |
+| Best for | RL (GRPO, async and multi-turn), agent training, and SFT you want to drive step by step | SFT, DPO, full fine-tunes, and multi-node runs on the framework you choose (Axolotl, TRL, MS-Swift, VeRL, Megatron, TorchTitan, ...) |
+| You manage | The loop: data, rewards, when to step and sample | The script and the GPU config |
+| Start here | [`loops/README.md`](loops/README.md) | [`training-jobs/README.md`](training-jobs/README.md) |
 
-- Training recipes - End-to-end examples for training models from scratch
-- Fine-tuning workflows - Adapt pre-trained models to your specific use case
-- Best practices - Optimized configurations and common patterns
+## Repository layout
 
-From data preprocessing to checkpointed and trained models, these recipes cover the complete ML lifecycle on Baseten's platform.
+```
+loops/                      # Loops recipes: SFT, GRPO (sync + async), multi-turn RL, rollout dashboard
+training-jobs/
+  examples/                 # runnable model/framework projects, launch with `truss train push`
+  recipes/                  # implementation guides and patterns (RL, SFT, robotics, programmatic API, ...)
+tools/
+  experiment-dashboard/     # self-hosted run dashboard for both Loops and Training Jobs
+.examples-index.json        # where each example lives; read by `truss train init --examples`
+```
 
-### Table of contents
+## Loops
 
-- [Usage](#usage)
-  - [Examples vs Recipes](#examples-vs-recipes)
-  - [Loops: online training SDK](#loops-online-training-sdk)
-  - [Experiment Dashboard](#experiment-dashboard)
-  - [Programmatic Training API](#programmatic-training-api)
-  - [Long-context SFT](#long-context-sft)
-  - [Fine-tune GPT OSS 20B with LoRa and trl](#fine-tune-gpt-oss-20b-with-lora-and-trl)
-    - [Training](#training)
-  - [Fine-tune Qwen3 8B with LoRa and trl](#fine-tune-qwen3-8b-with-lora-and-trl)
-    - [Training](#training-1)
-  - [Train and deploy an MNIST digit classifier with Pytorch](#train-and-deploy-an-mnist-digit-classifier-with-pytorch)
-    - [Training](#training-2)
-  - [Fine-tune NVIDIA Isaac-GR00T N1](#fine-tune-nvidia-isaac-gr00t-n1)
-- [Contributing](#contributing)
-- [License](#license)
+Loops is Baseten's SDK for online training. You write the training loop in plain Python: forward-backward passes, optimizer steps, and weight sync to a live sampler. Baseten provisions and runs the trainer and sampler. The recipes cover SFT, GRPO (sync, and async with bounded off-policy sampling), and multi-turn RL.
 
-### Prerequisites
-
-Before getting started, ensure you have the following:
-
-- A Baseten account. [Sign up here](https://baseten.co/signup) if you don't have one.
-  - Add any access tokens, API keys (example: Hugging Face access token), passwords to securely access credentials from your models in [secrets](https://app.baseten.co/settings/secrets).
-  - This is required to access models on Huggingface that have gated access. More information on setting up Huggingface access tokens can be found [here](https://huggingface.co/docs/hub/en/security-tokens).
-- Python 3.8 to 3.11 installed. [Conda](https://docs.conda.io/projects/conda/en/latest/user-guide/getting-started.html) env recommended.
-
-### Run the examples
-
-#### Install `truss`
-Use the appropriate command for your package manager
 ```bash
-# pip
+cd loops
+export BASETEN_API_KEY="your-api-key"
+uv sync
+uv run rl/train_grpo.py
+```
+
+See [`loops/README.md`](loops/README.md) for every recipe and the [Loops docs](https://docs.baseten.co/loops/overview) for concepts.
+
+## Training Jobs
+
+Training jobs run a training script you package with a `config.py` on Baseten GPUs, through `truss train`. Pull any example into a fresh directory and launch it:
+
+```bash
 pip install -U truss
-# uv
-uv add truss && uv sync --upgrade-package truss
-```
-
-#### Create the workspace for your training project
-
-```bash
-# for any example (replace with the specific example name)
-truss train init --examples <example-name> && cd <example-name>
-```
-
-#### Kick off the job
-
-Make sure you've plugged in proper secrets (e.g. Hugging Face token) via Baseten Secrets and Environment Variables, and kick off your job
-
-```bash
+truss train init --examples qwen3-8b-lora-dpo-trl && cd qwen3-8b-lora-dpo-trl
 truss train push config.py
 ```
 
-For more details, take a look at the [docs](https://docs.baseten.co/training/overview)
-
-### If you'd like to fire off jobs from within this repository directly, you can clone the respository and navigagte to the approriate workspaces.
+Or clone this repo and push from the example's directory:
 
 ```bash
 git clone https://github.com/basetenlabs/ml-cookbook.git
-```
-
-## Usage
-
-### Examples vs Recipes
-
-`examples/` are runnable, model/framework-specific projects you can launch directly with `truss train push config.py`.
-
-`recipes/` are reusable implementation guides and patterns that help you choose an approach and adapt it to your own project.
-
-### Loops: online training SDK
-
-Loops is Baseten's SDK for online training: write your training loop in plain Python — forward-backward passes, optimizer steps, weight sync to a live sampler — with no infrastructure management. The Loops cookbook has starter recipes for SFT, GRPO (sync and async with bounded off-policy sampling), and multi-turn RL.
-
-[`recipes/loops/README.md`](recipes/loops/README.md)
-
-### Experiment Dashboard
-
-A local, self-hosted dashboard over an S3 experiment store — syncs runs down and serves loss-curve overlays, hyperparameter filtering, and cross-run comparison (Python stdlib only). Works with any training source that writes the three-file run contract, including Loops and Training Jobs v1.
-
-[`recipes/experiment-dashboard/README.md`](recipes/experiment-dashboard/README.md)
-
-### Programmatic Training API
-
-The Programmatic Training API lets you launch and manage machine learning training jobs directly from your Python code, rather than relying solely on CLI commands or configuration files.
-
-[`recipes/programmatic-training-api/README.md`](recipes/programmatic-training-api/README.md)
-
-### Isaac Lab RL
-
-[NVIDIA Isaac Lab](https://github.com/isaac-sim/IsaacLab) is a GPU-accelerated robot-learning framework built on Isaac Sim. This recipe runs headless reinforcement-learning training (Cartpole by default, any Isaac Lab task) as a Baseten training job. Note Isaac Sim's RTX renderer requires an RT-core GPU (A10G/L4/T4) — it does not run on H100/A100/B200.
-
-[`recipes/isaac-lab/README.md`](recipes/isaac-lab/README.md)
-
-### Long-context SFT
-
-"Long-context supervised fine-tuning (SFT)" refers to adapting large language models to handle and learn from sequences with a much greater length than standard context windows. This enables models to process, reason about, and generate long-form documents, conversations, or codebases in a single pass.
-
-This example demonstrates how to set up a supervised fine-tuning project targeting long-context models.
-
-For detailed instructions and code, see [`recipes/sft/long_context/README.md`](recipes/sft/long_context/README.md).
-
-[`recipes/sft/long_context/README.md`](recipes/sft/long_context/README.md)
-
-### Fine-tune GPT OSS 20B with LoRa and [trl](https://github.com/huggingface/trl)
-
-If using a model with gated access, make sure you have access to the model on HuggingFace and your API token uploaded to your [secrets](https://app.baseten.co/settings/secrets). This example requires an [HF access token](https://huggingface.co/docs/hub/en/security-tokens).
-
-#### Training
-
-`examples/oss-gpt-20b-lora/training/train.py` contains all training code.
-
-`examples/oss-gpt-20b-lora/training/config.py` will be the entry point to start training, where you can [define your training configuration](https://docs.baseten.co/training/getting-started#step-1%3A-define-your-training-configuration). This also includes the start commands to launch your training job. Make sure these commands also include any file permission changes to make shell scripts run. We do not change any file system permissions.
-
-Make sure to update `hf_access_token` in `config.py` with the same name for this access token saved in your [secrets](https://app.baseten.co/settings/secrets). In this example, we will be writing trained checkpoints directly to Huggingface, the Hub IDs for models and datasets are configured in `examples/oss-gpt-20b-lora/training/run.sh`. Update `run.sh` with a repo you have access to write to.
-
-```bash
-cd examples/oss-gpt-20b-lora/training
+cd ml-cookbook/training-jobs/examples/qwen3-8b-lora-dpo-trl/training
 truss train push config.py
 ```
 
-Upon successful submission, the CLI will output helpful information about your job:
+See [`training-jobs/README.md`](training-jobs/README.md) for the full list of examples and recipes, and the [Training Jobs docs](https://docs.baseten.co/training/overview) for concepts.
 
-```
-✨ Training job successfully created!
-🪵 View logs for your job via `truss train logs --job-id e3m512w [--tail]`
-🔍 View metrics for your job via `truss train metrics --job-id e3m512w`
-```
+## Tools
 
-Keep the Job ID handy, as you’ll use it for [managing and monitoring your job](https://docs.baseten.co/training/management).
+[`tools/experiment-dashboard`](tools/experiment-dashboard/README.md) is a local, self-hosted dashboard over an S3 experiment store. It syncs runs down and serves loss-curve overlays, hyperparameter filtering, and cross-run comparison, using only the Python standard library. It works with any training source that writes its three-file run contract, including Loops and Training Jobs.
 
-Alternatively, you can view all your training jobs at (https://app.baseten.co/training/)[https://app.baseten.co/training/].
+## Prerequisites
 
-- As checkpoints are generated, you can access them on Huggingface at the same location defined in `run.sh`.
-
-### Fine-tune Qwen3 8B with LoRa and [trl](https://github.com/huggingface/trl)
-
-If using a model with gated access, make sure you have access to the model on HuggingFace and your API token uploaded to your [secrets](https://app.baseten.co/settings/secrets).
-
-#### Training
-
-`examples/qwen3-8b-lora-dpo-trl/training/train.py` contains the training code.
-
-`examples/qwen3-8b-lora-dpo-trl/training/config.py` will be the entry point to start training, where you can [define your training configuration](https://docs.baseten.co/training/getting-started#step-1%3A-define-your-training-configuration). This also includes the start commands to launch your training job. Make sure these commands also include any file permission changes to make shell scripts run. We do not change any file system permissions.
-
-```bash
-cd examples/qwen3-8b-lora-dpo-trl/training
-truss train push config.py
-```
-
-Upon successful submission, the CLI will output helpful information about your job:
-
-```
-✨ Training job successfully created!
-🪵 View logs for your job via `truss train logs --job-id e3m512w [--tail]`
-🔍 View metrics for your job via `truss train metrics --job-id e3m512w`
-```
-
-Alternatively, you can view all your training jobs at (https://app.baseten.co/training/)[https://app.baseten.co/training/].
-
-In this example, since checkpointing is enabled in `config.py`, checkpoints are stored in cloud storage and can be accessed with
-
-```
-truss train get_checkpoint_urls --job-id $JOB_ID
-```
-
-### Train and deploy an MNIST digit classifier with Pytorch
-
-#### Training
-
-`examples/mnist-single-gpu/training/train_mnist.py` contains the a Pytorch example of an MNIST classifier with CNNs.
-
-`examples/mnist-single-gpu/training/config.py` will be the entry point to start training, where you can [define your training configuration](https://docs.baseten.co/training/getting-started#step-1%3A-define-your-training-configuration). This also includes the start commands to launch your training job. Make sure these commands also include any file permission changes to make shell scripts run. We do not change any file system permissions.
-
-```bash
-cd examples/mnist-single-gpu/training
-truss train push config.py
-```
-
-Upon successful submission, the CLI will output helpful information about your job:
-
-```
-✨ Training job successfully created!
-🪵 View logs for your job via `truss train logs --job-id e3m512w [--tail]`
-🔍 View metrics for your job via `truss train metrics --job-id e3m512w`
-```
-
-Keep the Job ID handy, as you’ll use it for [managing and monitoring your job](https://docs.baseten.co/training/management).
-
-In this example, since checkpointing is enabled in `config.py`, checkpoints are stored in cloud storage and can be accessed with
-
-```
-truss train get_checkpoint_urls --job-id $JOB_ID
-```
-
-### Fine-tune NVIDIA Isaac-GR00T N1
-
-[NVIDIA Isaac-GR00T](https://github.com/NVIDIA/Isaac-GR00T) is a ~3B Vision-Language-Action foundation model for humanoid robots. This recipe fine-tunes it on a LeRobot-format dataset. Training is pure PyTorch on pre-recorded demonstrations — no simulator or rendering stack. It defaults to a full fine-tune on a single H100; to run on a 24GB GPU (A10G), use LoRA (`--lora-rank 64`).
-
-[`recipes/isaac-groot/README.md`](recipes/isaac-groot/README.md)
+- A Baseten account. [Sign up here](https://baseten.co/signup) if you don't have one.
+- API keys and tokens your runs need (for example, a [Hugging Face access token](https://huggingface.co/docs/hub/en/security-tokens) for gated models), saved as [Baseten secrets](https://app.baseten.co/settings/secrets).
+- Python 3.12+ for Training Jobs tooling, and Python 3.13+ with [uv](https://docs.astral.sh/uv/) for Loops.
 
 ## Contributing
 
-Contributions are welcome! Please open issues or submit pull requests.
+Contributions are welcome. Please open issues or submit pull requests. When you add, rename, or move a Training Jobs example, update [`.examples-index.json`](.examples-index.json) so `truss train init --examples` can find it; `bin/check_examples_index.py` checks it in CI.
 
 ## License
 
-[MIT License](LICENSE)
+[MIT License](LICENSE), except [`loops/`](loops/), which is adapted from tinker-cookbook and licensed under Apache 2.0 (see [`loops/LICENSE`](loops/LICENSE)).

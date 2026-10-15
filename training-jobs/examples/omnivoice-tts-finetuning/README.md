@@ -272,7 +272,7 @@ The `truss/` folder packages a trained checkpoint as a Baseten deployment. It us
 
 Edit `truss/config.yaml` and set `training_job_id` to the Baseten training job that produced the checkpoint, plus the relative path you want to serve:
 
-```22:28:examples/omnivoice-tts-finetuning/truss/config.yaml
+```22:28:training-jobs/examples/omnivoice-tts-finetuning/truss/config.yaml
 training_checkpoints:
   download_folder: /models/training_checkpoints
   artifact_references:
@@ -284,7 +284,7 @@ training_checkpoints:
 
 The downloaded artifacts land under `/models/training_checkpoints/<training_job_id>/<path>` inside the container. Update the `CKPT` path in the `start_command` of the same file to match (it also symlinks the base repo's `audio_tokenizer/` into the checkpoint dir, since the trainer doesn't save it):
 
-```41:46:examples/omnivoice-tts-finetuning/truss/config.yaml
+```41:46:training-jobs/examples/omnivoice-tts-finetuning/truss/config.yaml
   start_command: >-
     sh -c '
     CKPT=/models/training_checkpoints/qe79ppw/rank-0/checkpoint-2000;
@@ -297,7 +297,7 @@ Replace `qe79ppw` with your `training_job_id` and `checkpoint-2000` with whichev
 
 **Deploy**
 
-From the `examples/omnivoice-tts-finetuning/truss` directory:
+From the `training-jobs/examples/omnivoice-tts-finetuning/truss` directory:
 
 ```bash
 truss push
@@ -307,7 +307,7 @@ truss push
 
 Once the deployment is live, grab its `MODEL_ID` and `DEPLOYMENT_ID` from the Baseten UI and edit them into `truss/call.py`:
 
-```29:30:examples/omnivoice-tts-finetuning/truss/call.py
+```29:30:training-jobs/examples/omnivoice-tts-finetuning/truss/call.py
 MODEL_ID = "..."
 DEPLOYMENT_ID = "..."
 ```

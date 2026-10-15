@@ -1,7 +1,7 @@
 [project]
 name = "ml-cookbook"
 version = "0.1.0"
-description = "ML Cookbook by the Baseten Training Team"
+description = "Baseten ML Cookbook: Loops and Training Jobs recipes"
 readme = "README.md"
 requires-python = ">=3.12.2"
 dependencies = [

@@ -70,8 +70,8 @@ Loops supports more base models than tinker-cookbook ships renderers for — `GE
 
 ## Visualizing your rollouts
 
-Use the `rollouts-dashboard` skill to visualize your rollouts as your training progresses. This skill helps your agents build helpful data visualizations for RL use cases.
+Use the [`rollout-dashboard`](rollout-dashboard/SKILL.md) skill to visualize your rollouts as your training progresses. This skill helps your agents build helpful data visualizations for RL use cases.
 
 ## License and attribution
 
-The recipes in this directory are adapted from [tinker-cookbook](https://github.com/thinking-machines-lab/tinker-cookbook), Copyright 2025 Thinking Machines Lab, licensed under the Apache License 2.0 (see [LICENSE](LICENSE) in this directory). Each adapted file carries an attribution header noting it was modified by Baseten. This Apache-2.0 licensing applies to the contents of `recipes/loops/`; the rest of this repository is MIT-licensed.
+The recipes in this directory are adapted from [tinker-cookbook](https://github.com/thinking-machines-lab/tinker-cookbook), Copyright 2025 Thinking Machines Lab, licensed under the Apache License 2.0 (see [LICENSE](LICENSE) in this directory). Each adapted file carries an attribution header noting it was modified by Baseten. This Apache-2.0 licensing applies to the contents of `loops/`; the rest of this repository is MIT-licensed.
