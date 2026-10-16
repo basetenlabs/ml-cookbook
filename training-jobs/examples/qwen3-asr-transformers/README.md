@@ -242,7 +242,8 @@ and [TensorBoard's guide](https://www.tensorflow.org/tensorboard/get_started).
    `/v1/audio/transcriptions` does at serving time; see
    [Training prompt format](#training-prompt-format).
 4. Saves periodic Trainer checkpoints and a stable, self-contained
-   `$BT_CHECKPOINT_DIR/final` checkpoint.
+   `$BT_CHECKPOINT_DIR/final` checkpoint, each recording its base model ID
+   (see [Base model ID](#base-model-id)).
 
 ## Dataset requirements
 
@@ -519,6 +520,30 @@ The deployment automatically replaces the template's public base-model weight
 with the selected Training checkpoint and points `BASETEN_MODEL_PATH` at the
 materialized checkpoint directory. You do not need to download the checkpoint,
 edit a Truss config, or add a Hugging Face secret for this public model.
+
+### Base model ID
+
+**Deploy** matches the checkpoint's base model ID to the serving templates.
+Baseten reads that ID from `_name_or_path` in the checkpoint's `config.json`.
+The recipe writes it into every checkpoint after saving
+(`--base_model_name_or_path`, default `Qwen/Qwen3-ASR-1.7B`).
+
+Transformers 5 `save_pretrained` doesn't write this field. If you train with
+your own script, write it after saving; without it, **Deploy** stays disabled:
+
+```python
+import json
+from pathlib import Path
+
+model.save_pretrained(out_dir)
+processor.save_pretrained(out_dir)
+config_path = Path(out_dir) / "config.json"
+config = json.loads(config_path.read_text())
+config["_name_or_path"] = "Qwen/Qwen3-ASR-1.7B"  # or "Qwen/Qwen3-ASR-1.7B-hf"
+config_path.write_text(json.dumps(config, indent=2) + "\n")
+```
+
+Supported base models are `Qwen/Qwen3-ASR-1.7B` and `Qwen/Qwen3-ASR-1.7B-hf`.
 
 For a Batch deployment, upload audio to `/v1/audio/transcriptions`
 with any OpenAI-compatible client. Leave `language` unset to let the model
