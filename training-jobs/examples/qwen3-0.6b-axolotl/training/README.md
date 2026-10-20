@@ -24,3 +24,4 @@ truss train init --examples qwen3-0.6b-axolotl
 cd qwen3-0.6b-axolotl
 truss train push config.py
 ```
+
