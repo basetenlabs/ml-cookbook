@@ -5,6 +5,7 @@ description = "Baseten ML Cookbook: Loops and Training Jobs recipes"
 readme = "README.md"
 requires-python = ">=3.12.2"
 dependencies = [
+    "certifi>=2026.10.19",
     "truss==0.18.16",
     "requests>=2.28",
 ]
