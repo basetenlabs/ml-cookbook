@@ -10,9 +10,8 @@ from truss_train import (
 )
 
 training_job = TrainingJob(
-    # torch 2.7 ships Triton 3.3; the GatedDeltaNet backward refuses Triton 3.4-3.7.0 on Hopper.
     image=Image(base_image="pytorch/pytorch:2.7.0-cuda12.8-cudnn9-devel"),
-    compute=Compute(accelerator=AcceleratorSpec(accelerator="H100", count=8)),
+    compute=Compute(accelerator=AcceleratorSpec(accelerator="H100", count=4)),
     runtime=Runtime(
         start_commands=["bash run.sh"],
         environment_variables={"ROWS": "2000"},

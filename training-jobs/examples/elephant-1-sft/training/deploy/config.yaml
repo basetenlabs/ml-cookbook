@@ -16,7 +16,7 @@ training_checkpoints:
   artifact_references:
     - training_job_id: abc123 # Replace with your training job ID
       paths:
-        - "rank-0/elephant-1-banking77/final"
+        - "rank-0/elephant-1-sft/final"
 
 docker_server:
   no_build: true # the Infinity image has no Python for Truss to build on
@@ -25,6 +25,6 @@ docker_server:
   liveness_endpoint: /health
   predict_endpoint: /v1/systemone
   start_command: >-
-    /usr/local/bin/infinity_v3 --model-id /models/training_checkpoints/abc123/rank-0/elephant-1-banking77/final
+    /usr/local/bin/infinity_v3 --model-id /models/training_checkpoints/abc123/rank-0/elephant-1-sft/final
     --torch-device cuda --dtype bfloat16 --max-batch-tokens 32768 --decision-protocol onejev
     --hostname 0.0.0.0 --port 8000
