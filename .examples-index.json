@@ -5,6 +5,9 @@
       "path": "training-jobs/recipes/autoresearch-finetune/training",
       "description": "Autoresearch Fine-Tuning on Baseten"
     },
+    "elephant-1-sft": {
+      "path": "training-jobs/examples/elephant-1-sft/training"
+    },
     "gemma-27b-axolotl": {
       "path": "training-jobs/examples/gemma-27b-axolotl/training"
     },

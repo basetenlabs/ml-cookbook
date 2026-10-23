@@ -57,6 +57,7 @@ Every example below can be pulled with `truss train init --examples <name>`. The
 | Name | Directory |
 | --- | --- |
 | `autoresearch-finetune` | [`recipes/autoresearch-finetune/training`](recipes/autoresearch-finetune/training) |
+| `elephant-1-sft` | [`examples/elephant-1-sft/training`](examples/elephant-1-sft/training) |
 | `gemma-27b-axolotl` | [`examples/gemma-27b-axolotl/training`](examples/gemma-27b-axolotl/training) |
 | `glm-4-6-msswift` | [`examples/glm-4-6-msswift/training`](examples/glm-4-6-msswift/training) |
 | `glm-4.7-flash-msswift` | [`examples/glm-4.7-flash-msswift/training`](examples/glm-4.7-flash-msswift/training) |
