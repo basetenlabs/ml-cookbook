@@ -1,0 +1,21 @@
+[project]
+name = "nemotron35-cord-v2-loops"
+version = "0.1.0"
+description = "Audited multimodal CORD-v2 LoRA SFT using the native Baseten Loops SDK"
+requires-python = ">=3.13,<3.14"
+dependencies = [
+    "certifi>=2026.10.19",
+    "baseten-loops==0.28.0",
+    "torch==2.11.0",
+    "transformers==5.19.0",
+    "pillow==12.3.0",
+    "jinja2==3.1.6",
+    "numpy==2.5.4",
+    "huggingface-hub>=1,<2",
+    "pyarrow>=20,<25",
+    "wandb==0.30.0",
+    "matplotlib>=3.9,<4",
+]
+
+[tool.uv]
+package = false

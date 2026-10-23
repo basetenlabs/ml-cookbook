@@ -1,0 +1,33 @@
+{
+  "base_model": "nvidia/NVIDIA-Nemotron-3.5-Super-VL-120B-A12B-BF16",
+  "dataset": "naver-clova-ix/cord-v2",
+  "dataset_revision": "7f0115a4b758a71d6473b8d085751692da2fef98",
+  "rank": 64,
+  "learning_rate": 0.0002,
+  "beta1": 0.9,
+  "beta2": 0.95,
+  "eps": 1e-8,
+  "weight_decay": 0.01,
+  "grad_clip_norm": 1.0,
+  "steps": 400,
+  "batch_size": 8,
+  "seed": 42,
+  "max_seq_len": 8192,
+  "validation_interval": 100,
+  "checkpoint_interval": 400,
+  "replicas": 1,
+  "wandb_project": "loops-cord-v2",
+  "wandb_prefix": "baseten_",
+  "managed_settings": {
+    "lora": "Only rank is configurable in the pinned SDK. Historical r64 run used alpha32 and included lm_head; backend settings must be audited for each new run.",
+    "mtp_training": "Not exposed by the SDK; no on/off assertion is made.",
+    "hardware_parallelism": "Managed by Baseten; GPU count and placement are not client-side recipe settings.",
+    "optimizer_precision": "Managed by Baseten; not overridden by this recipe.",
+    "image_pixels": "Audited local Nemotron grid; float bicubic resize quantized to uint8 PNG. Server processor identity is unverified.",
+    "masking": "Assistant receipt parse plus turn terminator only; prompt, images and template-injected thinking prefix masked.",
+    "validation": "Official separate 100-row validation split, each row exactly once; test split never used by training.",
+    "sample_order": "Client seed42 shuffle at each epoch boundary.",
+    "context": "8K retains complete image/text answers; historical training maximum4197 tokens.",
+    "truncation": "Fail before allocation on overlong rows; never truncate or drop an example."
+  }
+}
