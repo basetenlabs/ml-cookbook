@@ -17,7 +17,7 @@ cd elephant-1-sft
 baseten train push --config config.py
 ```
 
-To train on your data, edit `prepare_data.py` to write your rows to `train.jsonl` and `test.jsonl`. The `Row` type in `prepare_data.py` defines the row format. Set `ROWS` in `config.py` to train on more than the first 2,000 rows.
+To train on your data, edit `prepare_data.py` to write your rows to `train.jsonl` and `test.jsonl`. The `Row` type in `prepare_data.py` defines the row format. Training uses the first `ROWS` rows (2,000 by default; set it in `config.py`), so shuffle your rows first.
 
 ## Training recipe
 
@@ -44,4 +44,4 @@ The endpoint takes the same `/v1/systemone` requests as the Elephant-1 Model API
 - **Model:** [baselabs/elephant-1](https://huggingface.co/baselabs/elephant-1) (Qwen3.5-9B base)
 - **Dataset:** [BANKING77](https://huggingface.co/datasets/mteb/banking77) (CC BY 4.0)
 - **Evaluation:** accuracy, NLL and ECE on 500 test rows before and after training, in the job logs
-- **Training time:** about 11 minutes on 4x H100 for the default 2,000 rows (24 steps), including setup
+- **Training time:** about 8 minutes on 4x H100 for the default 2,000 rows (24 steps), including setup

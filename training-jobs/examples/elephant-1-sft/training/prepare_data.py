@@ -44,7 +44,7 @@ question: ChoiceQuestion = {
 }
 for split in ("train", "test"):
     with open(f"{out_dir}/{split}.jsonl", "w") as f:
-        for i, ex in enumerate(ds[split]):
+        for i, ex in enumerate(ds[split].shuffle(seed=0)):
             row: Row = {
                 "id": f"{split}/{i}",
                 "state": ex["text"],

@@ -8,7 +8,7 @@ mkdir -p $DATA
 
 # hub pins match the model repo's constraints.txt
 pip install -q huggingface_hub==2.2.0 httpx2==2.13.1 brotli==1.2.0 datasets==5.1.0
-MODEL=$(python -c "from huggingface_hub import snapshot_download as d; print(d('baselabs/elephant-1'))")
+MODEL=$(python -c "from huggingface_hub import snapshot_download as d; print(d('baselabs/elephant-1', revision='b3f8a93462fb1051a9de031e94a7ff380e254072'))")
 bash $MODEL/setup.sh $STACK
 python $HERE/prepare_data.py $DATA
 
