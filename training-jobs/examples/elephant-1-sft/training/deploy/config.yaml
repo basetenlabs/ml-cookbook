@@ -1,0 +1,30 @@
+model_name: elephant-1-finetuned
+
+resources:
+  accelerator: H100
+
+runtime:
+  predict_concurrency: 32
+  health_checks:
+    startup_threshold_seconds: 1800
+
+base_image:
+  image: ghcr.io/michaelfeil/infinity_v3:nvidia-3.0.0-alpha.12-post-mfu1
+
+training_checkpoints:
+  download_folder: /models/training_checkpoints
+  artifact_references:
+    - training_job_id: abc123 # Replace with your training job ID
+      paths:
+        - "rank-0/elephant-1-sft/final"
+
+docker_server:
+  no_build: true # the Infinity image has no Python for Truss to build on
+  server_port: 8000
+  readiness_endpoint: /health
+  liveness_endpoint: /health
+  predict_endpoint: /v1/systemone
+  start_command: >-
+    /usr/local/bin/infinity_v3 --model-id /models/training_checkpoints/abc123/rank-0/elephant-1-sft/final
+    --torch-device cuda --dtype bfloat16 --max-batch-tokens 32768 --decision-protocol onejev
+    --hostname 0.0.0.0 --port 8000
