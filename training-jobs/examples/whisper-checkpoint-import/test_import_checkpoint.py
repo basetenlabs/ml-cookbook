@@ -320,6 +320,101 @@ class ImportTest(unittest.TestCase):
         process.terminate.assert_called_once()
         process.wait.assert_called_once_with(timeout=5)
 
+    def test_monitor_rechecks_status_after_log_stream_exits(self):
+        for terminal in ("READY", "FAILED"):
+            with self.subTest(terminal=terminal):
+                process = Mock(returncode=0)
+                process.poll.return_value = 0
+                monitor = monitoring.Monitor(poll_sec=0)
+                read_state = Mock(side_effect=["RUNNING", terminal])
+                with (
+                    patch.object(monitoring.subprocess, "Popen", return_value=process),
+                    patch.object(monitor, "pause"),
+                ):
+                    if terminal == "FAILED":
+                        with self.assertRaisesRegex(RuntimeError, "status FAILED"):
+                            monitor.watch(
+                                [],
+                                read_state,
+                                lambda s: s == "READY",
+                                lambda s: s == "FAILED",
+                            )
+                    else:
+                        monitor.watch(
+                            [],
+                            read_state,
+                            lambda s: s == "READY",
+                            lambda s: s == "FAILED",
+                        )
+                self.assertEqual(read_state.call_count, 2)
+
+    def test_monitor_reports_stream_failure_after_bounded_status_recheck(self):
+        process = Mock(returncode=1)
+        process.poll.return_value = 1
+        monitor = monitoring.Monitor(poll_sec=0)
+        read_state = Mock(return_value="RUNNING")
+        with (
+            patch.object(monitoring.subprocess, "Popen", return_value=process),
+            patch.object(monitor, "pause"),
+            self.assertRaisesRegex(RuntimeError, "Log stream exited before readiness"),
+        ):
+            monitor.watch(
+                [], read_state, lambda s: s == "READY", lambda s: s == "FAILED"
+            )
+        self.assertEqual(read_state.call_count, 2)
+
+    def test_deployment_waits_through_unhealthy_and_fails_on_stopped_build(self):
+        for statuses in (["UNHEALTHY", "DEPLOYING", "ACTIVE"], ["BUILD_STOPPED"]):
+            with self.subTest(statuses=statuses):
+                process = Mock()
+                process.poll.return_value = None
+                monitor = monitoring.Monitor(poll_sec=0)
+                with (
+                    patch.object(monitoring.subprocess, "Popen", return_value=process),
+                    patch.object(
+                        monitor, "read", side_effect=[{"status": s} for s in statuses]
+                    ) as read,
+                ):
+                    if statuses[-1] == "BUILD_STOPPED":
+                        with self.assertRaisesRegex(RuntimeError, "BUILD_STOPPED"):
+                            monitor.deployment("model123", "deploy123")
+                    else:
+                        monitor.deployment("model123", "deploy123")
+                self.assertEqual(read.call_count, len(statuses))
+                process.terminate.assert_called_once()
+
+    def test_deployment_gets_a_fresh_deadline_after_training_and_ui_wait(self):
+        monitor = monitoring.Monitor(timeout_sec=3600)
+        complete = {
+            "training_job": {},
+            "checkpoints": [
+                {"checkpoint_id": "checkpoint-0", "sync_status": "COMPLETE"}
+            ],
+        }
+        with (
+            patch.object(monitor, "watch"),
+            patch.object(monitor, "read", return_value=complete),
+            patch.object(monitoring.time, "monotonic", return_value=100),
+        ):
+            monitor.training("job123", "checkpoint-0")
+        self.assertEqual(monitor.deadline, 3700)
+        with (
+            patch.object(monitor, "watch"),
+            patch.object(monitoring.time, "monotonic", return_value=10000),
+        ):
+            monitor.deployment("model123", "deploy123")
+        self.assertEqual(monitor.deadline, 13600)
+
+    def test_monitor_enforces_stage_timeout(self):
+        monitor = monitoring.Monitor(timeout_sec=1)
+        with patch.object(monitoring.time, "monotonic", return_value=100):
+            monitor.start_stage()
+        with (
+            patch.object(monitoring.time, "monotonic", return_value=102),
+            self.assertRaises(TimeoutError),
+        ):
+            monitor.pause()
+
     def test_submission_parser_and_profile_forwarding(self):
         self.assertEqual(
             monitoring.submitted_job(

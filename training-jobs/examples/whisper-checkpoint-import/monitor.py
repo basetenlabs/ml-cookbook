@@ -22,8 +22,12 @@ def submitted_job(output):
 class Monitor:
     def __init__(self, profile=None, timeout_sec=3600, poll_sec=10):
         self.profile_args = ["--profile", profile] if profile else []
-        self.deadline = time.monotonic() + timeout_sec
+        self.timeout_sec = timeout_sec
+        self.deadline = None
         self.poll_sec = poll_sec
+
+    def start_stage(self):
+        self.deadline = time.monotonic() + self.timeout_sec
 
     def read(self, *args):
         result = subprocess.run(
@@ -36,6 +40,8 @@ class Monitor:
         return json.loads(result.stdout)
 
     def pause(self):
+        if self.deadline is None:
+            raise RuntimeError("Monitoring stage has not started")
         if time.monotonic() >= self.deadline:
             raise TimeoutError(
                 "Timed out monitoring; the cloud job/deployment was not stopped."
@@ -45,6 +51,7 @@ class Monitor:
     def watch(self, log_args, read_state, ready, failed):
         process = subprocess.Popen(["baseten", *log_args, *self.profile_args, "--tail"])
         previous = None
+        stream_rechecked = False
         try:
             while True:
                 status = read_state()
@@ -59,6 +66,11 @@ class Monitor:
                     )
                     return
                 if process.poll() is not None:
+                    # The stream can observe completion before the status API does.
+                    if not stream_rechecked:
+                        stream_rechecked = True
+                        self.pause()
+                        continue
                     raise RuntimeError(
                         f"Log stream exited before readiness (exit {process.returncode}). "
                         "Resume with --monitor-job; cloud resources were not stopped."
@@ -74,6 +86,8 @@ class Monitor:
                     process.wait()
 
     def training(self, job_id, checkpoint_name):
+        self.start_stage()
+
         def job_status():
             return self.read("train", "job", "describe", "--job-id", job_id)[
                 "training_job"
@@ -131,6 +145,7 @@ class Monitor:
             self.pause()
 
     def deployment(self, model_id, deployment_id):
+        self.start_stage()
         print(
             f"Following deployment {model_id}/{deployment_id} until ready.", flush=True
         )
@@ -155,7 +170,8 @@ class Monitor:
             )["status"],
             lambda status: status in {"ACTIVE", "SCALED_TO_ZERO"},
             lambda status: (
-                "FAILED" in status or status in {"INACTIVE", "DEACTIVATED", "UNHEALTHY"}
+                "FAILED" in status
+                or status in {"INACTIVE", "DEACTIVATING", "BUILD_STOPPED"}
             ),
         )
         print(

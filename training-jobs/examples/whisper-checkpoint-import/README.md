@@ -7,7 +7,7 @@ You do not need access to any private Baseten repository or a local Hugging Face
 ## Requirements
 
 - A Baseten workspace with Training access and a team that will own the deployment.
-- Python 3, and the [Baseten CLI](https://docs.baseten.co/reference/cli/overview), with
+- Python 3, the [Baseten CLI](https://docs.baseten.co/reference/cli/overview) with
   `baseten train` support, and [uv](https://docs.astral.sh/uv/getting-started/installation/).
   The CLI uses uv to run its Python Training tooling.
 - A complete Hugging Face checkpoint matching Whisper **large-v2**, **large-v3**, or
@@ -104,7 +104,9 @@ No model repository is created or uploaded to Hugging Face.
 The script does not launch deployment itself. Press Enter at the model-ID prompt,
 or pass `--import-only`, to finish after checkpoint sync. In a noninteractive shell
 it prints the resume command instead of prompting. Ctrl-C detaches log monitoring
-without stopping the cloud job or deployment. Monitoring times out after one hour.
+without stopping the cloud job or deployment. Import plus checkpoint sync has a
+one-hour timeout. Deployment monitoring gets a separate hour after you enter the IDs;
+time spent configuring deployment in the UI does not count against it.
 
 Resume monitoring without importing again:
 
@@ -142,3 +144,4 @@ bash -n import_whisper_checkpoint.sh
 ```
 
 These checks use mocked HF downloads and do not submit a job or deploy a model.
+The runtime's `certifi` minimum matches the cookbook's root dependency floor.

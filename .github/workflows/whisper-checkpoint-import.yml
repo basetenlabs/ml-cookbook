@@ -1,0 +1,25 @@
+name: Whisper Checkpoint Import
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'training-jobs/examples/whisper-checkpoint-import/**'
+      - '.github/workflows/whisper-checkpoint-import.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'training-jobs/examples/whisper-checkpoint-import/**'
+      - '.github/workflows/whisper-checkpoint-import.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  offline-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v4
+      - run: uv run --with huggingface_hub==0.34.4 python -m unittest discover -s training-jobs/examples/whisper-checkpoint-import -p 'test_*.py'
+      - run: bash -n training-jobs/examples/whisper-checkpoint-import/import_whisper_checkpoint.sh
