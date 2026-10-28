@@ -93,6 +93,7 @@ Every example below can be pulled with `truss train init --examples <name>`. The
 | `qwen3-tts-transformers` | [`examples/qwen3-tts-transformers`](examples/qwen3-tts-transformers) |
 | `qwen3.6-27b-msswift` | [`examples/qwen3.6-27b-msswift/training`](examples/qwen3.6-27b-msswift/training) |
 | `qwen3.6-35b-msswift` | [`examples/qwen3.6-35b-msswift/training`](examples/qwen3.6-35b-msswift/training) |
+| `whisper-checkpoint-import` | [`examples/whisper-checkpoint-import`](examples/whisper-checkpoint-import) |
 | `whisper-transformers` | [`examples/whisper-transformers/training`](examples/whisper-transformers/training) |
 
 The diarization examples ([`parakeet-nemotron-diarization`](examples/parakeet-nemotron-diarization/README.md), [`qwen3-asr-nemotron-diarization`](examples/qwen3-asr-nemotron-diarization/README.md)) are inference clients for Model Library deployments rather than training projects, so they aren't in the index.
