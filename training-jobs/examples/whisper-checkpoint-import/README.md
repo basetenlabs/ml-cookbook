@@ -139,7 +139,8 @@ details.
 ## Local checks
 
 ```bash
-uv run --with huggingface_hub==0.34.4 python -m unittest discover -s . -p 'test_*.py'
+uv run --no-project --python 3.12 --with truss==0.18.16 \
+  --with-requirements requirements.txt python -m unittest discover -s . -p 'test_*.py'
 bash -n import_whisper_checkpoint.sh
 ```
 
