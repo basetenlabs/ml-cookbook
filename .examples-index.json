@@ -118,6 +118,10 @@
     "qwen3.6-35b-msswift": {
       "path": "training-jobs/examples/qwen3.6-35b-msswift/training"
     },
+    "whisper-checkpoint-import": {
+      "path": "training-jobs/examples/whisper-checkpoint-import",
+      "description": "Import a Hugging Face Whisper checkpoint and deploy through Training"
+    },
     "whisper-transformers": {
       "path": "training-jobs/examples/whisper-transformers/training"
     }
