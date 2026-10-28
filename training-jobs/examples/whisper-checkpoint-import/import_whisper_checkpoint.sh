@@ -7,9 +7,9 @@ usage() {
 Usage: import_whisper_checkpoint.sh [options]
   --repo REPO              Hugging Face repository (default: openai/whisper-large-v3)
   --revision REF           Full commit SHA, or branch/tag with an explicit --job-name
-  --hf-secret NAME         Existing Baseten workspace secret holding an HF read token
+  --hf-secret-name NAME    Existing Baseten workspace secret holding an HF read token
   --profile NAME           Baseten CLI profile for the destination workspace
-  --team NAME              Team that will own the checkpoint and deployment
+  --team NAME              Owning team (default: workspace's default team)
   --project NAME           Training project (default: HF model ID)
   --job-name NAME          Training job (default: <HF-model-id>-<sha6>)
   --checkpoint-name NAME   Checkpoint directory (default: checkpoint-0)
@@ -30,7 +30,7 @@ while [ "$#" -gt 0 ]; do
     case "$1" in
         --help|-h) usage; exit 0 ;;
         --import-only) MONITOR_ARGS+=(--import-only); shift ;;
-        --repo|--revision|--hf-secret|--profile|--team|--project|--job-name|--checkpoint-name|--monitor-job|--model-id|--deployment-id)
+        --repo|--revision|--hf-secret-name|--profile|--team|--project|--job-name|--checkpoint-name|--monitor-job|--model-id|--deployment-id)
             if [ "$#" -lt 2 ] || [ -z "$2" ] || [[ "$2" == --* ]]; then
                 echo "Error: $1 requires a value." >&2
                 exit 1
@@ -38,7 +38,7 @@ while [ "$#" -gt 0 ]; do
             case "$1" in
                 --repo) JOB_ENV+=("SOURCE_REPO=$2") ;;
                 --revision) JOB_ENV+=("SOURCE_REVISION=$2") ;;
-                --hf-secret) JOB_ENV+=("HF_SECRET_NAME=$2") ;;
+                --hf-secret-name) JOB_ENV+=("HF_SECRET_NAME=$2") ;;
                 --profile|--team) PUSH_ARGS+=("$1" "$2") ;;
                 --project) JOB_ENV+=("TRAINING_PROJECT_NAME=$2") ;;
                 --job-name) JOB_ENV+=("TRAINING_JOB_NAME=$2") ;;

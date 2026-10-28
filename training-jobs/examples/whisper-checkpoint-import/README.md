@@ -50,7 +50,7 @@ bash import_whisper_checkpoint.sh \
   --team <team-name> \
   --repo <your-hf-org/your-whisper-checkpoint> \
   --revision <full-commit-sha> \
-  --hf-secret hf_access_token
+  --hf-secret-name hf_access_token
 ```
 
 The job receives that workspace secret as `HF_TOKEN`. It resolves and downloads the
@@ -59,6 +59,8 @@ is not automatic: choose an existing secret with access to your source repositor
 
 Use a full commit SHA for repeatable imports and the default job name. The public
 large-v3 example defaults to commit `06f233fe06e710322aca913c1bc4249a0d71fce1`.
+Omitting `--revision` for another repository selects `main`, resolved to its latest
+commit when the job starts, and requires an explicit `--job-name`.
 To import a branch or tag, supply `--job-name` explicitly: the SHA is resolved inside
 the job, so it is unavailable for naming at submission time. The job then downloads
 every file from that resolved commit and records it in its provenance.
@@ -72,7 +74,7 @@ project `example/whisper` and job `example-whisper-abcdef`. Both names are custo
 bash import_whisper_checkpoint.sh \
   --profile whisper-import \
   --repo <your-hf-org/your-whisper-checkpoint> \
-  --hf-secret hf_access_token \
+  --hf-secret-name hf_access_token \
   --revision <full-commit-sha> \
   --project my-whisper-imports \
   --job-name candidate-1
@@ -80,6 +82,7 @@ bash import_whisper_checkpoint.sh \
 
 `--checkpoint-name` defaults to `checkpoint-0`.
 Without `--profile` or `--team`, the CLI uses its current workspace and default team.
+The selected team must contain the HF secret and will own the checkpoint and deployment.
 
 The import uses 4 CPU cores and 16 GiB of memory, downloads the selected weights and
 tokenizer, and saves a Training checkpoint. Weights are copied unchanged. The

@@ -218,7 +218,7 @@ class ImportTest(unittest.TestCase):
             root = Path(directory)
             stub = root / "baseten"
             stub.write_text(
-                '#!/bin/bash\nprintf "%s\\n" "$@" > "$CAPTURE_ARGS"\nprintf "%s" "$SOURCE_REPO" > "$CAPTURE_REPO"\nexit 23\n'
+                '#!/bin/bash\nprintf "%s\\n" "$@" > "$CAPTURE_ARGS"\nprintf "%s" "$SOURCE_REPO" > "$CAPTURE_REPO"\nprintf "%s" "$HF_SECRET_NAME" > "$CAPTURE_SECRET"\nexit 23\n'
             )
             stub.chmod(0o755)
             env = {
@@ -226,6 +226,7 @@ class ImportTest(unittest.TestCase):
                 "PATH": f"{root}:{os.environ['PATH']}",
                 "CAPTURE_ARGS": str(root / "args"),
                 "CAPTURE_REPO": str(root / "repo"),
+                "CAPTURE_SECRET": str(root / "secret-name"),
             }
             result = subprocess.run(
                 [
@@ -233,6 +234,8 @@ class ImportTest(unittest.TestCase):
                     str(ROOT / "import_whisper_checkpoint.sh"),
                     "--repo",
                     "example/model",
+                    "--hf-secret-name",
+                    "hf_read_token",
                     "--team",
                     "team with spaces",
                     "--profile",
@@ -259,7 +262,14 @@ class ImportTest(unittest.TestCase):
                 ],
             )
             self.assertEqual((root / "repo").read_text(), "example/model")
-            for args in (["--repo"], ["--unknown", "x"], ["--repo", "--team"]):
+            self.assertEqual((root / "secret-name").read_text(), "hf_read_token")
+            for args in (
+                ["--repo"],
+                ["--unknown", "x"],
+                ["--repo", "--team"],
+                ["--hf-secret-name"],
+                ["--hf-secret", "old-name"],
+            ):
                 with self.subTest(args=args):
                     result = subprocess.run(
                         ["bash", str(ROOT / "import_whisper_checkpoint.sh"), *args],
