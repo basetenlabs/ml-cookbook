@@ -1,0 +1,26 @@
+diff --git a/train/fsdp.py b/train/fsdp.py
+index 0de2426..dd7578b 100644
+--- a/train/fsdp.py
++++ b/train/fsdp.py
+@@ -84,9 +84,9 @@ def shard_model(model, world: int, bf16_compute: bool = True, hsdp_shard: int =
+     units = len(layers)
+     embed = model.get_input_embeddings()
+     head = model.get_output_embeddings()
+-    if head is not None and head.weight is embed.weight:
+-        raise SystemExit("--fsdp: tied input and output embeddings are not handled")
+-    for module in (embed, head):
++    # A tied embedding and head (Qwen3.5-0.8B) share one parameter, which must live in one unit: both stay in the root.
++    tied = head is not None and head.weight is embed.weight
++    for module in () if tied else (embed, head):
+         if module is not None:
+             to_fp32(module)
+             fully_shard(module, **kw)
+@@ -96,6 +96,8 @@ def shard_model(model, world: int, bf16_compute: bool = True, hsdp_shard: int =
+     torch.cuda.empty_cache()
+     n = sum(p.numel() for p in model.parameters())
+     n_train = sum(p.numel() for p in model.parameters() if p.requires_grad)
++    if tied:
++        log.info("FSDP: tied input embedding and LM head stay in the root unit")
+     log.info("FSDP: %d units + root over %d ranks, %.2fB parameters (%.2fB trained, %.2fB frozen), "
+              "%.1f GB of fp32 weights+grads+AdamW per rank", units, world, n / 1e9, n_train / 1e9, (n - n_train) / 1e9,
+              (16 * n_train + 4 * (n - n_train)) / world / 1e9)

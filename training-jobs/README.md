@@ -64,6 +64,7 @@ Every example below can be pulled with `truss train init --examples <name>`. The
 | `glm-4.7-msswift` | [`examples/glm-4.7-msswift/training`](examples/glm-4.7-msswift/training) |
 | `isaac-groot` | [`recipes/isaac-groot`](recipes/isaac-groot) |
 | `isaac-lab` | [`recipes/isaac-lab`](recipes/isaac-lab) |
+| `joey-1-sft` | [`examples/joey-1-sft/training`](examples/joey-1-sft/training) |
 | `kimi-k2.6-lora-merge` | [`examples/kimi-k2.6-lora-merge/training`](examples/kimi-k2.6-lora-merge/training) |
 | `llama-8b-lora-unsloth` | [`examples/llama-8b-lora-unsloth/training`](examples/llama-8b-lora-unsloth/training) |
 | `minimax2_5-multinode` | [`examples/minimax2_5-multinode`](examples/minimax2_5-multinode) |
