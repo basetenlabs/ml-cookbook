@@ -28,6 +28,9 @@
       "path": "training-jobs/recipes/isaac-lab",
       "description": "Isaac Lab RL on Baseten"
     },
+    "joey-1-sft": {
+      "path": "training-jobs/examples/joey-1-sft/training"
+    },
     "kimi-k2.6-lora-merge": {
       "path": "training-jobs/examples/kimi-k2.6-lora-merge/training"
     },
