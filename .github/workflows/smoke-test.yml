@@ -38,7 +38,7 @@ jobs:
             name: qwen3-0.6b-axolotl-h200
     steps:
       - uses: actions/checkout@v4
-      - uses: astral-sh/setup-uv@v4
+      - uses: chainguard-actions/astral-sh-setup-uv@0462e4edaa6724d4bec2ac410fd8fc5ddf4865e2 # v4.2.0
       - run: uv sync
 
       - name: Configure truss remote
@@ -76,7 +76,7 @@ jobs:
 
       - name: Upload summary
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: chainguard-actions/actions-upload-artifact@61ae9717c37cd5ac5fcaa5599c0dab961d043ecc # v4.6.2
         with:
           name: smoke-test-summary-${{ matrix.accelerator }}
           path: /tmp/smoke-test-summary-tagged.json
@@ -98,7 +98,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: astral-sh/setup-uv@v4
+      - uses: chainguard-actions/astral-sh-setup-uv@0462e4edaa6724d4bec2ac410fd8fc5ddf4865e2 # v4.2.0
       - run: uv sync
 
       - name: Configure truss remote
@@ -126,7 +126,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Download all summaries
-        uses: actions/download-artifact@v4
+        uses: chainguard-actions/actions-download-artifact@75db10217d80f4a4c7e15d54b2dd9adfc6c78f83 # v4.3.0
         with:
           pattern: smoke-test-summary-*
           path: /tmp/summaries
