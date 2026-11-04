@@ -1,0 +1,17 @@
+[project]
+name = "nemotron35-starcount-loops"
+version = "0.1.0"
+description = "Standalone visual star-count LoRA reinforcement learning with Baseten Loops"
+requires-python = ">=3.13,<3.14"
+dependencies = [
+  "baseten==0.11.0",
+  "baseten-loops==0.28.0",
+  "huggingface-hub==2.2.0",
+  "torch==2.11.0",
+  "transformers==5.19.0",
+  "pillow==12.3.0",
+  "wandb==0.30.0",
+]
+
+[tool.uv]
+package = false

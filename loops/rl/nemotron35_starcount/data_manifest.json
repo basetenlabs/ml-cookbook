@@ -1,0 +1,26 @@
+{
+  "dataset_version": "starcount-v1",
+  "splits": {
+    "train": {"path": "data/train.jsonl", "rows": 1024, "sha256": "6b63bf98dd2107a35b6ed442dbb5a8003ba15c8053b66dc37f9fbe617d24b307"},
+    "validation": {"path": "data/validation.jsonl", "rows": 256, "sha256": "76a8a383ab459826117bbf11699c5908b10d539d9fd21b437d0c1e9149f096b8"}
+  },
+  "tokenizer": {"path": "tokenizer",
+    "model_repository": "nvidia/NVIDIA-Nemotron-3.5-Super-VL-120B-A12B-BF16",
+    "revision": "fb0ee0bc6b3f70342afd8d84cb80dbadbaa8a1fe",
+    "file_sha256": {
+    "chat_template.jinja": "1369e90b19976f99ce2070eb21ade8fcb4af640f008e14e82af5c5e89a9cc816",
+    "tokenizer.json": "d0432ad8b1c2984a2e2dca82e1933e3fd5628df6e95c51fba4c3ee9950dce299",
+    "tokenizer_config.json": "89fa70d31734c0c75ffdcee4114449f8cf8abd64bc233d420b58e25763f91aba"
+  }},
+  "generation": {
+    "script": "generate_data.py",
+    "algorithm": "seeded-five-point-stars-rgb8",
+    "train_seed_offset": 0,
+    "validation_seed_offset": 1000000,
+    "canvas_size_range": [800, 1200],
+    "star_radius_range": [24, 48],
+    "num_stars_range": [1, 30],
+    "num_colors_range": [2, 4]
+  },
+  "data_policy": "Frozen PNG images and row order. Procedural regeneration is accepted only when both complete JSONL files match the row counts and SHA256 hashes above. Existing mismatching files are never overwritten."
+}

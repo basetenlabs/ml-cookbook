@@ -1,0 +1,14 @@
+Star-count RL on Baseten Loops
+
+This distribution includes code adapted from NVIDIA-authored sources made
+available under the Apache License, Version 2.0.
+
+Copyright (c) 2025-2026, NVIDIA CORPORATION. All rights reserved.
+
+Modifications include standalone API integration, procedural dataset packaging,
+and associated validation and test utilities. Original copyright and license
+notices are retained where present.
+
+See LICENSE for the Apache License, Version 2.0 terms. Model and tokenizer
+assets and installed third-party packages remain subject to their respective
+licenses; this notice does not relicense those materials.
