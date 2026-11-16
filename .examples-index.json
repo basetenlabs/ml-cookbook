@@ -37,6 +37,9 @@
     "llama-8b-lora-unsloth": {
       "path": "training-jobs/examples/llama-8b-lora-unsloth/training"
     },
+    "mammoth-1-sft": {
+      "path": "training-jobs/examples/mammoth-1-sft/training"
+    },
     "minimax2_5-multinode": {
       "path": "training-jobs/examples/minimax2_5-multinode"
     },
