@@ -67,6 +67,7 @@ Every example below can be pulled with `truss train init --examples <name>`. The
 | `joey-1-sft` | [`examples/joey-1-sft/training`](examples/joey-1-sft/training) |
 | `kimi-k2.6-lora-merge` | [`examples/kimi-k2.6-lora-merge/training`](examples/kimi-k2.6-lora-merge/training) |
 | `llama-8b-lora-unsloth` | [`examples/llama-8b-lora-unsloth/training`](examples/llama-8b-lora-unsloth/training) |
+| `mammoth-1-sft` | [`examples/mammoth-1-sft/training`](examples/mammoth-1-sft/training) |
 | `minimax2_5-multinode` | [`examples/minimax2_5-multinode`](examples/minimax2_5-multinode) |
 | `mnist-pytorch` | [`examples/mnist-pytorch/training`](examples/mnist-pytorch/training) |
 | `nemotron3-30b-torchtitan` | [`examples/nemotron3-30b-torchtitan/training`](examples/nemotron3-30b-torchtitan/training) |
