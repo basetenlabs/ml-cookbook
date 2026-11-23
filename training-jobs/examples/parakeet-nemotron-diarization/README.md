@@ -1,5 +1,7 @@
 # Parakeet + Nemotron 3 Diarization
 
+The demo clients print status or counts by default. Examples below use `PRINT_TRANSCRIPT=1` to display speech content; only use this with approved audio and a terminal that can handle the resulting transcripts. For URL inputs, the source storage has its own retention policy. See [Speech data handling](../../speech-data-handling.md).
+
 Speaker-attributed transcription in English: who said what, in real time or from a recording. [NVIDIA Nemotron 3 Diarization](https://www.baseten.co/library/nemotron-3-diarization/) tracks who is speaking on every 80 ms frame, and NVIDIA's multitalker Parakeet 0.6B runs one ASR instance per speaker on the same mixed audio, so fully overlapped speech is transcribed per speaker. Both presets run on one NVIDIA RTX PRO 6000 and deploy from the Model Library.
 
 | | Real-time | Batch |
@@ -100,7 +102,7 @@ The server sends one `{"type": "error", "error": "..."}` frame and closes the so
 
 ```bash
 curl -fL https://docs.baseten.co/assets/audio/jfk.wav -o jfk.wav
-uv run --python 3.11 transcribe_live.py jfk.wav
+PRINT_TRANSCRIPT=1 uv run --python 3.11 transcribe_live.py jfk.wav
 ```
 
 ## Batch
@@ -160,7 +162,7 @@ Client errors return HTTP 400 with `{"detail": "..."}`:
 [`transcribe_file.py`](transcribe_file.py) sends a URL and prints one line per segment:
 
 ```bash
-uv run --python 3.11 transcribe_file.py https://example.com/meeting.wav
+PRINT_TRANSCRIPT=1 uv run --python 3.11 transcribe_file.py https://example.com/meeting.wav
 ```
 
 ## Accuracy

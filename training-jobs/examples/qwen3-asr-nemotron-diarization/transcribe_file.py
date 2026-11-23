@@ -6,6 +6,7 @@
 
 Usage: uv run --python 3.11 transcribe_file.py https://example.com/meeting.wav [language]
 Reads BASETEN_API_KEY and BASETEN_MODEL_ID from the environment.
+Set PRINT_TRANSCRIPT=1 to print segment text to stdout.
 """
 
 import os
@@ -29,15 +30,20 @@ def main(audio_url: str, language: str) -> None:
         },
         timeout=300,
     )
-    response.raise_for_status()
+    if response.status_code != 200:
+        raise SystemExit(f"Transcription failed (HTTP {response.status_code}).")
     result = response.json()
     print("language:", result["language"]["used"])
-    for segment in result["segments"]:
-        span = f"{segment['start']:7.2f}-{segment['end']:7.2f}"
-        print(f"[{segment['speaker']} {span}] {segment['text']}")
+    if os.getenv("PRINT_TRANSCRIPT") == "1":
+        for segment in result["segments"]:
+            span = f"{segment['start']:7.2f}-{segment['end']:7.2f}"
+            print(f"[{segment['speaker']} {span}] {segment['text']}")
 
 
 if __name__ == "__main__":
     if len(sys.argv) not in (2, 3):
         sys.exit(__doc__)
-    main(sys.argv[1], sys.argv[2] if len(sys.argv) == 3 else "auto")
+    try:
+        main(sys.argv[1], sys.argv[2] if len(sys.argv) == 3 else "auto")
+    except requests.RequestException:
+        raise SystemExit("Transcription request failed.") from None

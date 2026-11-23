@@ -1,5 +1,7 @@
 # Qwen3-ASR + Nemotron 3 Diarization
 
+The demo clients print status or counts by default. Examples below use `PRINT_TRANSCRIPT=1` to display speech content; only use this with approved audio and a terminal that can handle the resulting transcripts. For URL inputs, the source storage has its own retention policy. See [Speech data handling](../../speech-data-handling.md).
+
 Speaker-attributed transcription in 18 languages: who said what, with word timings. [NVIDIA Nemotron 3 Diarization](https://www.baseten.co/library/nemotron-3-diarization/) decides who is speaking on every 80 ms frame, and a Qwen3-ASR-1.7B that Baseten fine-tuned for speaker-sliced audio transcribes each speaker. Both presets run on one NVIDIA RTX PRO 6000 and deploy from the Model Library.
 
 | | Real-time | Batch |
@@ -98,7 +100,7 @@ Errors arrive as one `{"type": "error", "error": "..."}` frame, then the socket 
 
 ```bash
 curl -fL https://docs.baseten.co/assets/audio/jfk.wav -o jfk.wav
-uv run --python 3.11 transcribe_live.py jfk.wav en
+PRINT_TRANSCRIPT=1 uv run --python 3.11 transcribe_live.py jfk.wav en
 ```
 
 ```
@@ -165,7 +167,7 @@ Nemotron 3 labels the speakers, each speaker's turns are packed into windows of 
 A malformed request, unknown `latency`, out-of-range field, or undecodable audio returns HTTP 400 with `{"detail": "..."}`. A transcription failure on one window drops that window's words, never the whole request. [`transcribe_file.py`](transcribe_file.py) sends a URL and prints one line per segment:
 
 ```bash
-uv run --python 3.11 transcribe_file.py https://example.com/meeting.wav en
+PRINT_TRANSCRIPT=1 uv run --python 3.11 transcribe_file.py https://example.com/meeting.wav en
 ```
 
 ## Language

@@ -6,6 +6,7 @@
 
 Usage: uv run --python 3.11 transcribe_live.py meeting.wav [language] [meeting|call]
 Reads BASETEN_API_KEY and BASETEN_MODEL_ID from the environment.
+Set PRINT_TRANSCRIPT=1 to print segment text to stdout.
 """
 
 import asyncio
@@ -16,6 +17,7 @@ import sys
 import wave
 
 from websockets.asyncio.client import connect
+from websockets.exceptions import WebSocketException
 
 SAMPLE_RATE = 16_000
 FRAME_BYTES = SAMPLE_RATE // 10 * 2  # 100 ms of PCM16.
@@ -30,6 +32,7 @@ def load_audio(path: str) -> bytes:
 
 
 async def transcribe(path: str, language: str, mode: str) -> None:
+    show_transcript = os.getenv("PRINT_TRANSCRIPT") == "1"
     pcm = load_audio(path)
     model_id = os.environ["BASETEN_MODEL_ID"]
     url = f"wss://model-{model_id}.api.baseten.co/environments/production/websocket"
@@ -65,18 +68,21 @@ async def transcribe(path: str, language: str, mode: str) -> None:
         async for message in ws:
             frame = json.loads(message)
             if frame.get("type") == "error":
-                raise RuntimeError(f"Server error: {frame['error']}")
-            if frame.get("relabels"):
-                # Two labels were merged into one voice; earlier turns changed.
-                printed = 0
-                print("--- labels merged; reprinting turns ---", flush=True)
-            for turn in frame["segments"][printed:]:
-                flag = " (overlap)" if turn.get("overlap") else ""
-                span = f"{turn['start']:6.2f}-{turn['end']:6.2f}"
-                print(f"[{turn['speaker']} {span}]{flag} {turn['text']}", flush=True)
-            printed = len(frame["segments"])
-            for tail in frame.get("partial", []):
-                print(f"    … {tail['speaker']}: {tail['text']}", flush=True)
+                raise SystemExit("Transcription server returned an error.")
+            if show_transcript:
+                if frame.get("relabels"):
+                    # Two labels were merged into one voice; earlier turns changed.
+                    printed = 0
+                    print("--- labels merged; reprinting turns ---", flush=True)
+                for turn in frame["segments"][printed:]:
+                    flag = " (overlap)" if turn.get("overlap") else ""
+                    span = f"{turn['start']:6.2f}-{turn['end']:6.2f}"
+                    print(
+                        f"[{turn['speaker']} {span}]{flag} {turn['text']}", flush=True
+                    )
+                printed = len(frame["segments"])
+                for tail in frame.get("partial", []):
+                    print(f"    … {tail['speaker']}: {tail['text']}", flush=True)
             if frame.get("is_final"):
                 print(
                     f"\n{frame['num_speakers']} speaker(s), "
@@ -92,4 +98,7 @@ if __name__ == "__main__":
         sys.exit(__doc__)
     language = sys.argv[2] if len(sys.argv) > 2 else "auto"
     mode = sys.argv[3] if len(sys.argv) > 3 else "meeting"
-    asyncio.run(transcribe(sys.argv[1], language, mode))
+    try:
+        asyncio.run(transcribe(sys.argv[1], language, mode))
+    except (WebSocketException, OSError):
+        raise SystemExit("Transcription connection failed.") from None

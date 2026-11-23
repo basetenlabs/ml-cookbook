@@ -5,6 +5,8 @@ Training jobs run a training script you package with a `config.py` on Baseten GP
 - **[`examples/`](examples/)** are runnable, model- and framework-specific projects. Launch one directly with `truss train push config.py`.
 - **[`recipes/`](recipes/)** are implementation guides and patterns that help you choose an approach and adapt it to your own project.
 
+For speech recipes, see [Speech data handling](speech-data-handling.md) for inference ZDR and training artifact retention.
+
 ## Run an example
 
 Install truss, pull the example into a fresh directory, and push it:

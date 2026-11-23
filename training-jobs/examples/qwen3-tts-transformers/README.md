@@ -1,5 +1,7 @@
 ## Fine Tuning Qwen3-TTS-12Hz-1.7B/0.6B-Base
 
+See [Speech data handling](../../speech-data-handling.md) for inference ZDR and the separate training artifact lifecycle.
+
 The Qwen3-TTS-12Hz-1.7B/0.6B-Base model series currently supports single-speaker fine-tuning. This recipe uses [LJ Speech](https://huggingface.co/datasets/SeanSleat/lj_speech) (~24 hours of single-speaker English from a public-domain reader, 13.1k clips) as the running example, but any HF dataset that exposes a text column and an audio column will work.
 
 **Note:** The `run.sh` script automatically creates and uses a virtual environment (`.venv`) to avoid conflicts with system Python installations. If running scripts manually, ensure you're using a virtual environment or have the required packages installed.
@@ -192,7 +194,7 @@ The `truss/` folder packages a trained checkpoint as a Baseten deployment that s
 **Files:**
 
 - `truss/config.yaml` — Truss deployment spec (image, GPU, weights, checkpoint reference, vLLM start command).
-- `truss/call.py` — Minimal Python client that streams audio from the deployed endpoint and writes `output.wav`.
+- `truss/call.py` — Minimal Python client that streams audio from the deployed endpoint with optional local WAV export.
 
 **Point the deployment at your checkpoint**
 
@@ -242,13 +244,13 @@ Then run it with your Baseten API key in the environment:
 
 ```bash
 export BASETEN_API_KEY=...
-python truss/call.py
+OUTPUT_WAV=output.wav python truss/call.py
 ```
 
-`call.py` POSTs the request, streams the WAV bytes back, and writes them to `output.wav`. Notes on the request body:
+`call.py` streams the response without saving it by default. `OUTPUT_WAV=output.wav` explicitly saves the response to a new local file; a failed stream can leave a partial file. Notes on the request body:
 
 - `voice`: must match `SPEAKER_NAME` from training (default `ft_speaker`). This is the speaker label baked into the saved model's speaker registry.
 - `task_type`: `CustomVoice` — the same task vLLM was started with in `config.yaml`.
 - `language`: source language of the `input` text (e.g. `English`).
-- `stream: true`: streams audio chunks as they're generated; `call.py` writes them to disk incrementally.
+- `stream: true`: streams audio chunks as they're generated; `call.py` only writes them to disk when `OUTPUT_WAV` is set.
 

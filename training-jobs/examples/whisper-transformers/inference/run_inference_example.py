@@ -1,19 +1,35 @@
-from openai import OpenAI
+import os
+from pathlib import Path
+
+from openai import APIError, OpenAI
 
 
-## TODO: update these with your deployment details
-API_KEY = ""
-BASE_URL = "https://model-4q9l8ejq.api.baseten.co/development/sync/v1"
-MODEL_NAME = "baseten-admin/whisper-larger-v3-turbo-minirun3"
+def main() -> None:
+    base_url = (
+        f"https://model-{os.environ['BASETEN_MODEL_ID']}.api.baseten.co"
+        f"/deployment/{os.environ['BASETEN_DEPLOYMENT_ID']}/sync/v1"
+    )
+    audio_path = Path(
+        os.getenv("AUDIO_PATH", Path(__file__).with_name("speech-94649.mp3"))
+    )
+    try:
+        with OpenAI(api_key=os.environ["BASETEN_API_KEY"], base_url=base_url) as client:
+            with audio_path.open("rb") as audio_file:
+                transcription = client.audio.transcriptions.create(
+                    model=os.environ["SERVED_MODEL_NAME"], file=audio_file
+                )
+    except APIError as exc:
+        status = getattr(exc, "status_code", None)
+        raise SystemExit(
+            f"Transcription failed (HTTP {status})."
+            if status
+            else "Transcription request failed."
+        ) from None
+
+    print("Transcription completed.")
+    if os.getenv("PRINT_TRANSCRIPT") == "1":
+        print(transcription.text)
 
 
-print("Loading audio file and sending to model for transcription...")
-audio_file = open("speech-94649.mp3", "rb")
-
-print("Sending request to model...")
-client = OpenAI(
-    api_key=API_KEY,
-    base_url=BASE_URL,
-)
-transcription = client.audio.transcriptions.create(model=MODEL_NAME, file=audio_file)
-print(transcription)
+if __name__ == "__main__":
+    main()
