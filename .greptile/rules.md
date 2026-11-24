@@ -1,20 +1,22 @@
 # Shared review rules
 
-These rules are shared across Baseten's voice, speech-to-text and model repos. Repo-specific rules can be added in their own `.greptile/` folders. For each finding, quote the offending line, say which rule it breaks, and suggest the fix.
+These rules are shared across Baseten's voice, speech-to-text and model repos; the source of truth is `basetenlabs/model-registry/.greptile/rules.md`, and this copy is adapted for ml-cookbook. Repo-specific rules can be added in their own `.greptile/` folders. For each finding, quote the offending line, say which rule it breaks, and suggest the fix.
+
+**How these apply here:** ml-cookbook holds public training and inference examples, not production serving code. Apply the rules to new or changed lines in a PR; do not ask authors to fix untouched existing examples. Where a rule says "ships to customers", read it as "an example readers copy and run".
 
 ## 1. No Hugging Face repo IDs under `baseten-admin`
 
 **Flag:** any new or changed reference to a Hugging Face repo in the `baseten-admin` namespace: `huggingface.co/baseten-admin/...` URLs, `repo_id="baseten-admin/..."`, `baseten-admin/<repo>` strings in Python, YAML (`config.yaml`, `model_cache`, presets), JSON, shell scripts and docs.
 
-**Why:** Baseten's Hugging Face org moved from `baseten-admin` to `baseten`. Old `baseten-admin/...` repos have been deleted or made private, and references to them have broken production deploys with 404/401 errors at model load (for example a `snapshot_download` of a Whisper TensorRT engine).
+**Why:** many `baseten-admin/...` repos are private or have been deleted, and references to them have broken deploys with 404/401 errors at model load (for example a `snapshot_download` of a Whisper TensorRT engine). A reader of a public example cannot download a private repo.
 
-**Good:** point at the `baseten/...` repo, or at the upstream public repo when the weights are not Baseten-built.
+**Ask the author to:** confirm the repo is public (or gated with terms readers can accept), or point at the upstream public repo when the weights are not Baseten-built. Do not tell authors to rename `baseten-admin/...` to `baseten/...`: some public repos live under `baseten-admin` today. For push targets (`hub_model_id`, `HUB_MODEL_ID`, output repos), the reader's own namespace is right, so use a placeholder such as `<your-hf-username>/<repo>`.
 
 ```python
-# Bad
-snapshot_download(repo_id="baseten-admin/<engine-repo>")
+# Bad: push target in a Baseten namespace the reader cannot write to
+hub_model_id = "baseten-admin/my-finetune"
 # Good
-snapshot_download(repo_id="baseten/<engine-repo>")
+hub_model_id = "<your-hf-username>/my-finetune"
 ```
 
 **Not a finding:** the name of the Hugging Face *account* whose token is used for downloads, code that detects or skips the old namespace (for example `repo.startswith("baseten-admin/")`), and an existing, documented path that deliberately publishes private repos there. For the last case, ask the author to confirm it is intended and that every deploy reading it has a token with access.
@@ -23,7 +25,7 @@ snapshot_download(repo_id="baseten/<engine-repo>")
 
 ## 2. No model inputs or outputs in logs (Zero Data Retention)
 
-Baseten's policy is to never log, record or store model inputs or outputs, and not to keep them after real-time processing: https://www.baseten.co/security-practices/#zero-data-retention-configurations
+Baseten's policy is to never log, record or store model inputs or outputs, and not to keep them after real-time processing: https://www.baseten.co/security-practices/#zero-data-retention
 
 **Treat as model input or output:** anything in the request body or response. That includes audio (raw bytes or base64), transcripts and other text, prompts, model parameters, caller-supplied URLs (including pre-signed or signed URLs, their query strings, paths, file names and userinfo), and output text or audio.
 
@@ -54,7 +56,7 @@ logger.warning("Probe failed: %s status=%s", type(exc).__name__, getattr(exc.res
 
 ## 3. Guard server-side fetches of caller-supplied URLs
 
-**Flag:** code that downloads, probes or hands to a subprocess (for example `ffprobe` or `ffmpeg`) a URL that came from the request, without the repo's URL guard. Also flag a new fetch path that bypasses an existing guard, `follow_redirects=True` on such a URL without re-checking each hop, and `verify=False` or other disabled TLS verification.
+**Flag:** code that downloads, probes or hands to a subprocess (for example `ffprobe` or `ffmpeg`) a URL that came from the request, without checking it as described under **Good**. This applies only to server-side code (for example a Truss `model.py`); client scripts that pass a URL to a deployed model are not a finding. Also flag `follow_redirects=True` on such a URL without re-checking each hop, and `verify=False` or other disabled TLS verification.
 
 **Why:** a caller-controlled URL can point at internal addresses or cloud metadata endpoints, either directly or through a redirect or a DNS answer that changes between check and connect. Every path that touches the URL needs the same check, including duration probes and fallbacks.
 
@@ -65,7 +67,7 @@ logger.warning("Probe failed: %s status=%s", type(exc).__name__, getattr(exc.res
 async with httpx.AsyncClient(follow_redirects=True) as client:
     r = await client.get(request.audio_url)
 # Good
-url = url_guard.check(request.audio_url)  # raises on disallowed scheme or address
+url = check_url(request.audio_url)  # your check: raises on disallowed scheme or address
 async with httpx.AsyncClient(follow_redirects=False) as client:
     r = await client.get(url)
 ```
@@ -86,20 +88,20 @@ snapshot_download(repo_id, token=os.environ["HF_TOKEN"])
 ## 5. Pin what runs in CI and what ships
 
 **Flag:**
-- Third-party GitHub Actions referenced by tag or branch (`@v4`, `@main`) in a job that has `id-token: write` or uses secrets. Also flag forks or "hardened" copies of upstream actions that add extra steps (such as telemetry) to those jobs.
+- Third-party GitHub Actions referenced by tag or branch (`@v4`, `@main`) in a job that has `id-token: write` or uses secrets. Actions must be pinned to a full commit SHA. `chainguard-actions/*` is this repo's approved hardened source; flag other forks or copies of upstream actions.
 - Images, model weights or dependencies that ship to customers referenced by a moving tag or branch: `:latest`, an unpinned Hugging Face `revision`, or an unpinned package that the production image pins.
 - `trust_remote_code=True` without a pinned `revision` (a commit SHA), because the remote code can change under a deployed model.
 - A workflow that can push over an existing production image tag.
 
 **Why:** a moved tag can run new code with the job's credentials, and an unpinned artifact can change what customers run without a code change.
 
-**Good:** upstream actions pinned to a full commit SHA with the version in a comment; images pinned by digest or an immutable version tag; model revisions pinned to a commit SHA; test dependencies at the version production runs. Reusable workflows from the same repo may use `@main` when a comment says why.
+**Good:** `chainguard-actions/*` actions pinned to a full commit SHA, with the version in a comment when known; images pinned by digest or an immutable version tag; model revisions pinned to a commit SHA; test dependencies at the version production runs. Reusable workflows from the same repo may use `@main` when a comment says why.
 
 ```yaml
 # Bad
-- uses: docker/login-action@v3
+- uses: actions/checkout@v4
 # Good
-- uses: docker/login-action@<40-char-commit-sha>  # v3.x.y
+- uses: chainguard-actions/actions-checkout@<40-char-commit-sha>  # v4.x.y
 ```
 
 ## 6. Use placeholders for customer names in examples, tests and docs
