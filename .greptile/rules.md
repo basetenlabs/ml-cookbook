@@ -4,22 +4,30 @@ These rules are shared across Baseten's voice, speech-to-text and model repos; t
 
 **How these apply here:** ml-cookbook holds public training and inference examples, not production serving code. Apply the rules to new or changed lines in a PR; do not ask authors to fix untouched existing examples. Where a rule says "ships to customers", read it as "an example readers copy and run".
 
-## 1. No Hugging Face repo IDs under `baseten-admin`
+## 1. New Hugging Face items go under `baseten/`, not `baseten-admin/`
 
-**Flag:** any new or changed reference to a Hugging Face repo in the `baseten-admin` namespace: `huggingface.co/baseten-admin/...` URLs, `repo_id="baseten-admin/..."`, `baseten-admin/<repo>` strings in Python, YAML (`config.yaml`, `model_cache`, presets), JSON, shell scripts and docs.
+Baseten is migrating its Hugging Face repos from the `baseten-admin` namespace to `baseten`. Everything new goes under `baseten/`.
 
-**Why:** many `baseten-admin/...` repos are private or have been deleted, and references to them have broken deploys with 404/401 errors at model load (for example a `snapshot_download` of a Whisper TensorRT engine). A reader of a public example cannot download a private repo.
+**Flag:** any new or changed reference to a Hugging Face repo in the `baseten-admin` namespace: `huggingface.co/baseten-admin/...` URLs, `repo_id="baseten-admin/..."`, `baseten-admin/<repo>` strings in Python, YAML (`config.yaml`, `model_cache`, presets), JSON, shell scripts and docs. This includes code, scripts or workflows that create, upload or push a repo, model, engine or dataset to `baseten-admin`.
 
-**Ask the author to:** confirm the repo is public (or gated with terms readers can accept), or point at the upstream public repo when the weights are not Baseten-built. Do not tell authors to rename `baseten-admin/...` to `baseten/...`: some public repos live under `baseten-admin` today. For push targets (`hub_model_id`, `HUB_MODEL_ID`, output repos), the reader's own namespace is right, so use a placeholder such as `<your-hf-username>/<repo>`.
+**Why:** `baseten-admin` is the old namespace. Many `baseten-admin/...` repos are private or have been deleted, and references to them have broken deploys with 404/401 errors at model load (for example a `snapshot_download` of a Whisper TensorRT engine).
+
+**Ask the author to:**
+- Publish any new repo, model, engine or dataset under `baseten/<repo>`, and reference it there.
+- Reference an existing Baseten repo by its `baseten/<repo>` path. Hugging Face redirects renamed repos, so check that the `baseten/` path resolves; if the repo has not been moved yet, move it to `baseten/` (or ask the owner to) rather than adding a new `baseten-admin/` reference.
+- Point at the upstream public repo instead when the weights are not Baseten-built.
+- For push targets in examples and docs where the reader pushes their own fine-tune (`hub_model_id`, `HUB_MODEL_ID`, output repos), use a placeholder such as `<your-hf-username>/<repo>`.
 
 ```python
-# Bad: push target in a Baseten namespace the reader cannot write to
-hub_model_id = "baseten-admin/my-finetune"
+# Bad: new reference or upload target in the old namespace
+repo_id = "baseten-admin/whisper-large-v3-trt"
 # Good
+repo_id = "baseten/whisper-large-v3-trt"
+# Good: example where the reader pushes their own model
 hub_model_id = "<your-hf-username>/my-finetune"
 ```
 
-**Not a finding:** the name of the Hugging Face *account* whose token is used for downloads, code that detects or skips the old namespace (for example `repo.startswith("baseten-admin/")`), and an existing, documented path that deliberately publishes private repos there. For the last case, ask the author to confirm it is intended and that every deploy reading it has a token with access.
+**Not a finding:** existing `baseten-admin/` references on lines the PR does not change, the name of the Hugging Face *account* whose token is used for downloads, and code that detects or skips the old namespace (for example `repo.startswith("baseten-admin/")`).
 
 **Also flag:** a new reference to any Hugging Face repo that customer deployments download from, when nothing in the PR shows the repo is public (or gated with terms accepted). Ask the author to confirm its visibility, because a private repo works on the author's machine and fails for customers.
 
