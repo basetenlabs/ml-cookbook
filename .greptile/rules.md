@@ -59,7 +59,7 @@ logger.info(f"backend: not saying {line[:40]!r}")
 logger.info(f"tool call: {name}({', '.join(args)})")
 # Good
 logger.info("Received request audio=<%d bytes> language=%s", len(audio_b64), lang_code)
-logger.warning("Probe failed: %s status=%s", type(exc).__name__, getattr(exc.response, "status_code", None))
+logger.warning("Probe failed: %s status=%s", type(exc).__name__, getattr(getattr(exc, "response", None), "status_code", None))
 ```
 
 ## 3. Guard server-side fetches of caller-supplied URLs
