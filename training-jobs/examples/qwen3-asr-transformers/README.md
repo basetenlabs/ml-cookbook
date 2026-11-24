@@ -1,5 +1,7 @@
 # Fine-tune Qwen3-ASR-1.7B with Transformers
 
+See [Speech data handling](../../speech-data-handling.md) for inference ZDR and the separate training artifact lifecycle.
+
 This example full-fine-tunes
 [`Qwen/Qwen3-ASR-1.7B`](https://huggingface.co/Qwen/Qwen3-ASR-1.7B)
 on audio/transcript pairs using the Qwen team's
@@ -556,6 +558,8 @@ one-click deployment decodes straight to 16 kHz mono, so both accept up to
 65 min. For example:
 
 ```python
+import os
+
 from openai import OpenAI
 
 client = OpenAI(
@@ -564,7 +568,8 @@ client = OpenAI(
 )
 with open("audio.wav", "rb") as audio:
     result = client.audio.transcriptions.create(model="Qwen/Qwen3-ASR-1.7B", file=audio)
-print(result.text)
+if os.getenv("PRINT_TRANSCRIPT", "").strip().lower() in {"1", "true"}:
+    print(result.text)
 ```
 
 The same deployment also accepts `/v1/chat/completions` with an `audio_url`
@@ -619,15 +624,18 @@ After the model finishes deploying, install the OpenAI client and transcribe
 the included public test URL with automatic language detection:
 
 ```bash
+# Use Python 3.10 or newer for call.py.
 pip install openai
 BASETEN_API_KEY=... MODEL_ID=... DEPLOYMENT_ID=... python call.py
 ```
+
+The client does not print transcripts by default. `PRINT_TRANSCRIPT=1` opts in to writing them to stdout.
 
 Set `AUDIO_PATH` for a local file, `AUDIO_URL` for another remote file, or
 `LANGUAGE=es` to force a language:
 
 ```bash
-AUDIO_PATH=path/to/test.wav python call.py
+AUDIO_PATH=path/to/test.wav PRINT_TRANSCRIPT=1 python call.py
 ```
 
 ### Where the checkpoint is stored

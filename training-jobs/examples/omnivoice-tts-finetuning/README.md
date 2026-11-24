@@ -1,5 +1,7 @@
 ## Fine-Tuning OmniVoice
 
+See [Speech data handling](../../speech-data-handling.md) for inference ZDR and the separate training artifact lifecycle.
+
 [OmniVoice](https://github.com/k2-fsa/OmniVoice) is a massively multilingual (600+ languages) zero-shot TTS model built on a diffusion language-model architecture. This recipe fine-tunes it from the pretrained `k2-fsa/OmniVoice` checkpoint on a single-speaker corpus to adapt it toward a specific voice/domain.
 
 Two data sources are supported:
@@ -266,7 +268,7 @@ The `truss/` folder packages a trained checkpoint as a Baseten deployment. It us
 **Files:**
 
 - `truss/config.yaml` — Truss deployment spec (server image, GPU, checkpoint reference, start command).
-- `truss/call.py` — Minimal Python client that posts text (+ optional reference clip) and writes `output.wav`.
+- `truss/call.py` — Minimal Python client that posts text (+ optional reference clip) with optional local WAV export.
 
 **Point the deployment at your checkpoint**
 
@@ -316,10 +318,10 @@ Then run it with your Baseten API key in the environment:
 
 ```bash
 export BASETEN_API_KEY=...
-python truss/call.py
+OUTPUT_WAV=output.wav python truss/call.py
 ```
 
-`call.py` POSTs the request and writes the returned WAV to `output.wav`.
+`call.py` does not save the response by default. `OUTPUT_WAV=output.wav` explicitly saves it to a new local file; existing files are not overwritten. The public reference clip is fetched in memory.
 
 OmniVoice is a zero-shot voice-clone model — fine-tuning adapts the weights toward your speaker, but the voice at inference is driven by a reference clip rather than a baked-in speaker name (unlike the Qwen3-TTS recipe). So `call.py` does **voice cloning**: it sends a short reference clip from the target speaker plus its transcript on the speech request. Set `REF_AUDIO_PATH` / `REF_TEXT` to a clip from your training corpus; when unset it falls back to pulling one LJ Speech clip (+ transcript) via the HF datasets-server, so it runs without a local copy of the training data.
 

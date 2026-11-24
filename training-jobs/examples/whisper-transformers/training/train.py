@@ -273,6 +273,7 @@ def parse_args():
         default=None,
         help="Hugging Face Hub model ID to push the trained model.",
     )
+    parser.add_argument("--hub_private_repo", action="store_true")
     parser.add_argument(
         "--hub_strategy",
         type=str,
@@ -353,6 +354,7 @@ def main(args):
         push_to_hub=args.push_to_hub,
         hub_model_id=args.hub_model_id,
         hub_strategy=args.hub_strategy,
+        hub_private_repo=args.hub_private_repo,
         dataloader_pin_memory=args.dataloader_pin_memory
         if hasattr(args, "dataloader_pin_memory")
         else False,

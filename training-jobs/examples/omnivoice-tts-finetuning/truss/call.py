@@ -15,7 +15,8 @@ datasets-server so it runs out of the box against the demo fine-tune.
 Usage:
     export BASETEN_API_KEY=...
     # Edit MODEL_ID and DEPLOYMENT_ID below, then:
-    python truss/call.py
+    python truss/call.py                     # receive without saving
+    OUTPUT_WAV=output.wav python truss/call.py  # save locally
 """
 
 import base64
@@ -40,9 +41,7 @@ DATASET_CONFIG = "main"
 DATASET_SPLIT = "train"
 REF_INDEX = 0
 
-API_BASE = (
-    f"https://model-{MODEL_ID}.api.baseten.co/deployment/{DEPLOYMENT_ID}/sync"
-)
+API_BASE = f"https://model-{MODEL_ID}.api.baseten.co/deployment/{DEPLOYMENT_ID}/sync"
 
 
 def load_reference() -> tuple[bytes, str]:
@@ -65,12 +64,8 @@ def load_reference() -> tuple[bytes, str]:
         row = client.get(rows_url).raise_for_status().json()["rows"][0]["row"]
         transcript = row.get("normalized_text") or row["text"]
 
-        cache_path = Path(__file__).parent / "lj_reference.wav"
-        if not cache_path.exists():
-            audio_src = row["audio"][0]["src"]
-            cache_path.write_bytes(client.get(audio_src).raise_for_status().content)
-            print(f"Cached reference clip {row['id']} -> {cache_path}")
-        return cache_path.read_bytes(), transcript
+        audio_src = row["audio"][0]["src"]
+        return client.get(audio_src).raise_for_status().content, transcript
 
 
 def main() -> None:
@@ -79,11 +74,14 @@ def main() -> None:
     if MODEL_ID == "..." or DEPLOYMENT_ID == "...":
         raise RuntimeError("Edit MODEL_ID and DEPLOYMENT_ID in call.py.")
 
+    output_path = os.getenv("OUTPUT_WAV")
+    if output_path and os.path.lexists(output_path):
+        raise SystemExit("OUTPUT_WAV already exists. Choose a new path.")
+
     ref_audio, ref_text = load_reference()
     ref_audio_b64 = base64.b64encode(ref_audio).decode("utf-8")
 
     text = "Wow! Isn't fine-tuning this model amazing?"
-    output_path = "output.wav"
 
     response = httpx.post(
         f"{API_BASE}/v1/audio/speech",
@@ -101,12 +99,22 @@ def main() -> None:
         timeout=300.0,
     )
     if response.status_code != 200:
-        raise RuntimeError(f"Speech request failed ({response.status_code}): {response.text}")
+        raise SystemExit(f"Speech request failed (HTTP {response.status_code}).")
 
-    with open(output_path, "wb") as f:
-        f.write(response.content)
-    print(f"Wrote {output_path} ({len(response.content):,} bytes)")
+    if output_path:
+        try:
+            with Path(output_path).open("xb") as output:
+                output.write(response.content)
+        except FileExistsError:
+            raise SystemExit("OUTPUT_WAV already exists. Choose a new path.") from None
+    print(
+        f"Received {len(response.content):,} bytes of audio."
+        + (" WAV saved locally." if output_path else "")
+    )
 
 
 if __name__ == "__main__":
-    main()
+    try:
+        main()
+    except httpx.HTTPError:
+        raise SystemExit("Speech or reference request failed.") from None
