@@ -13,6 +13,8 @@ def main() -> None:
         raise SystemExit("Edit MODEL_ID and DEPLOYMENT_ID in call.py.")
 
     output_path = os.getenv("OUTPUT_WAV")
+    if output_path and os.path.lexists(output_path):
+        raise SystemExit("OUTPUT_WAV already exists. Choose a new path.")
     try:
         with requests.post(
             f"https://model-{MODEL_ID}.api.baseten.co/deployment/{DEPLOYMENT_ID}/sync/v1/audio/speech",
@@ -39,6 +41,8 @@ def main() -> None:
                     if output is not None:
                         output.write(chunk)
                     total_bytes += len(chunk)
+    except FileExistsError:
+        raise SystemExit("OUTPUT_WAV already exists. Choose a new path.") from None
     except requests.RequestException:
         raise SystemExit("Speech request failed.") from None
 

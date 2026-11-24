@@ -24,11 +24,16 @@ FRAME_BYTES = SAMPLE_RATE // 10 * 2  # 100 ms of PCM16.
 
 
 def load_audio(path: str) -> bytes:
-    with wave.open(path, "rb") as audio:
-        shape = (audio.getframerate(), audio.getnchannels(), audio.getsampwidth())
-        if shape != (SAMPLE_RATE, 1, 2):
-            raise ValueError("Use an uncompressed 16 kHz mono PCM16 WAV file.")
-        return audio.readframes(audio.getnframes())
+    try:
+        with wave.open(path, "rb") as audio:
+            shape = (audio.getframerate(), audio.getnchannels(), audio.getsampwidth())
+            if shape != (SAMPLE_RATE, 1, 2):
+                raise SystemExit("Use an uncompressed 16 kHz mono PCM16 WAV file.")
+            return audio.readframes(audio.getnframes())
+    except OSError:
+        raise SystemExit("Could not read the local input WAV file.") from None
+    except (wave.Error, EOFError):
+        raise SystemExit("Use an uncompressed 16 kHz mono PCM16 WAV file.") from None
 
 
 async def transcribe(path: str, language: str, mode: str) -> None:

@@ -74,11 +74,14 @@ def main() -> None:
     if MODEL_ID == "..." or DEPLOYMENT_ID == "...":
         raise RuntimeError("Edit MODEL_ID and DEPLOYMENT_ID in call.py.")
 
+    output_path = os.getenv("OUTPUT_WAV")
+    if output_path and os.path.lexists(output_path):
+        raise SystemExit("OUTPUT_WAV already exists. Choose a new path.")
+
     ref_audio, ref_text = load_reference()
     ref_audio_b64 = base64.b64encode(ref_audio).decode("utf-8")
 
     text = "Wow! Isn't fine-tuning this model amazing?"
-    output_path = os.getenv("OUTPUT_WAV")
 
     response = httpx.post(
         f"{API_BASE}/v1/audio/speech",
@@ -99,8 +102,11 @@ def main() -> None:
         raise SystemExit(f"Speech request failed (HTTP {response.status_code}).")
 
     if output_path:
-        with Path(output_path).open("xb") as output:
-            output.write(response.content)
+        try:
+            with Path(output_path).open("xb") as output:
+                output.write(response.content)
+        except FileExistsError:
+            raise SystemExit("OUTPUT_WAV already exists. Choose a new path.") from None
     print(
         f"Received {len(response.content):,} bytes of audio."
         + (" WAV saved locally." if output_path else "")

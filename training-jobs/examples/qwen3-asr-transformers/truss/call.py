@@ -24,7 +24,10 @@ DEFAULT_AUDIO_URL = (
 
 def audio_file() -> Path | tuple[str, bytes]:
     if path_value := os.getenv("AUDIO_PATH"):
-        return Path(path_value)
+        path = Path(path_value)
+        if not path.is_file():
+            raise SystemExit("AUDIO_PATH must point to an existing audio file.")
+        return path
     url = os.getenv("AUDIO_URL", DEFAULT_AUDIO_URL)
     suffix = Path(urlsplit(url).path).suffix or ".wav"
     try:

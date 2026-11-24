@@ -321,7 +321,7 @@ export BASETEN_API_KEY=...
 OUTPUT_WAV=output.wav python truss/call.py
 ```
 
-`call.py` does not save the response by default. `OUTPUT_WAV=output.wav` explicitly saves it to a new local file. The public reference clip is fetched in memory.
+`call.py` does not save the response by default. `OUTPUT_WAV=output.wav` explicitly saves it to a new local file; existing files are not overwritten. The public reference clip is fetched in memory.
 
 OmniVoice is a zero-shot voice-clone model — fine-tuning adapts the weights toward your speaker, but the voice at inference is driven by a reference clip rather than a baked-in speaker name (unlike the Qwen3-TTS recipe). So `call.py` does **voice cloning**: it sends a short reference clip from the target speaker plus its transcript on the speech request. Set `REF_AUDIO_PATH` / `REF_TEXT` to a clip from your training corpus; when unset it falls back to pulling one LJ Speech clip (+ transcript) via the HF datasets-server, so it runs without a local copy of the training data.
 

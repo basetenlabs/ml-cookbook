@@ -244,10 +244,11 @@ Then run it with your Baseten API key in the environment:
 
 ```bash
 export BASETEN_API_KEY=...
+# Use Python 3.10 or newer for call.py.
 OUTPUT_WAV=output.wav python truss/call.py
 ```
 
-`call.py` streams the response without saving it by default. `OUTPUT_WAV=output.wav` explicitly saves the response to a new local file; a failed stream can leave a partial file. Notes on the request body:
+`call.py` streams the response without saving it by default. `OUTPUT_WAV=output.wav` explicitly saves the response to a new local file (existing files are not overwritten); a failed stream can leave a partial file. Notes on the request body:
 
 - `voice`: must match `SPEAKER_NAME` from training (default `ft_speaker`). This is the speaker label baked into the saved model's speaker registry.
 - `task_type`: `CustomVoice` — the same task vLLM was started with in `config.yaml`.

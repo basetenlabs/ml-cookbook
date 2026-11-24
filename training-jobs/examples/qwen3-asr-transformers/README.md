@@ -624,6 +624,7 @@ After the model finishes deploying, install the OpenAI client and transcribe
 the included public test URL with automatic language detection:
 
 ```bash
+# Use Python 3.10 or newer for call.py.
 pip install openai
 BASETEN_API_KEY=... MODEL_ID=... DEPLOYMENT_ID=... python call.py
 ```
