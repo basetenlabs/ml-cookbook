@@ -6,6 +6,8 @@ from truss.base import truss_config
 BASE_IMAGE = "pytorch/pytorch:2.7.0-cuda12.8-cudnn9-runtime"
 
 environment_variables: dict[str, str | definitions.SecretReference] = {}
+if os.getenv("WHISPER_SMOKE_TEST") == "1":
+    environment_variables["WHISPER_SMOKE_TEST"] = "1"
 if hub_model_id := os.getenv("HF_HUB_MODEL_ID"):
     environment_variables["HF_HUB_MODEL_ID"] = hub_model_id
 if secret_name := os.getenv("HF_TOKEN_SECRET_NAME"):

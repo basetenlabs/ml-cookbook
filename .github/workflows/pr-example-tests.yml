@@ -110,6 +110,9 @@ jobs:
           EOF
 
       - name: Run test (${{ matrix.config }})
+        env:
+          # Exercise Whisper training without launching the full 5,000-step recipe.
+          WHISPER_SMOKE_TEST: ${{ matrix.name == 'examples--whisper-transformers' && '1' || '' }}
         run: |
           uv run bin/test_example.py \
             ${{ matrix.config }} \

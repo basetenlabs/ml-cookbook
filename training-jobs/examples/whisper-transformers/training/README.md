@@ -27,6 +27,13 @@ truss train push config.py
 
 > **Note:** This example requires more than 4x H100 GPUs. You may need to [contact Baseten](https://www.baseten.co/contact) to get approval for this instance type before running the job.
 
+## CI smoke test
+
+The PR workflow submits `config.py` with `WHISPER_SMOKE_TEST=1` for this
+example. It uses the same model and dataset but runs only two optimizer steps,
+then evaluates and saves a checkpoint. The normal 5,000-step default is
+unchanged. To opt in manually, run `WHISPER_SMOKE_TEST=1 truss train push config.py`.
+
 ## Checkpoint storage and optional export
 
 By default, the job saves checkpoints to Baseten and does **not** upload them
