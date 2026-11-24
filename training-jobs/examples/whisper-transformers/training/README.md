@@ -56,6 +56,14 @@ setting `HF_HUB_MODEL_ID`.
 
 ## Serving smoke test
 
+The bundled serving example loads the existing Hub model
+`baseten-admin/whisper-larger-v3-turbo-minirun3`. It does not automatically
+serve the checkpoint from your training job. To serve your own Hub export
+with this example, set `model_metadata.repo_id` in `inference/config.yaml` and
+`CHECKPOINT_HF` in `inference/model/run_vllm.sh` to that repository, and grant
+the deployment read access if it is private. If you keep the checkpoint on
+Baseten instead, use [Serve a training checkpoint](https://docs.baseten.co/training/deployment).
+
 From the full cookbook checkout, open the example’s `inference/` directory and set `BASETEN_API_KEY`, `BASETEN_MODEL_ID`,
 `BASETEN_DEPLOYMENT_ID`, and `SERVED_MODEL_NAME` for your deployment, then run
 `python run_inference_example.py`. The bundled demo clip is used unless

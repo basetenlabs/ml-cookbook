@@ -34,7 +34,7 @@ def main(audio_url: str, language: str) -> None:
         raise SystemExit(f"Transcription failed (HTTP {response.status_code}).")
     result = response.json()
     print("language:", result["language"]["used"])
-    if os.getenv("PRINT_TRANSCRIPT") == "1":
+    if os.getenv("PRINT_TRANSCRIPT", "").strip().lower() in {"1", "true"}:
         for segment in result["segments"]:
             span = f"{segment['start']:7.2f}-{segment['end']:7.2f}"
             print(f"[{segment['speaker']} {span}] {segment['text']}")

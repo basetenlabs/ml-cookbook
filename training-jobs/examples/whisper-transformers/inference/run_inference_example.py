@@ -27,7 +27,7 @@ def main() -> None:
         ) from None
 
     print("Transcription completed.")
-    if os.getenv("PRINT_TRANSCRIPT") == "1":
+    if os.getenv("PRINT_TRANSCRIPT", "").strip().lower() in {"1", "true"}:
         print(transcription.text)
 
 

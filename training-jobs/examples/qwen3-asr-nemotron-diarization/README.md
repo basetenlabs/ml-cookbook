@@ -2,6 +2,8 @@
 
 The demo clients print status or counts by default. Examples below use `PRINT_TRANSCRIPT=1` to display speech content; only use this with approved audio and a terminal that can handle the resulting transcripts. For URL inputs, the source storage has its own retention policy. See [Speech data handling](../../speech-data-handling.md).
 
+The clients report HTTP status or a generic WebSocket error without printing raw server detail, which can contain input-derived values. The error fields below describe the wire protocol, not what the demo prints.
+
 Speaker-attributed transcription in 18 languages: who said what, with word timings. [NVIDIA Nemotron 3 Diarization](https://www.baseten.co/library/nemotron-3-diarization/) decides who is speaking on every 80 ms frame, and a Qwen3-ASR-1.7B that Baseten fine-tuned for speaker-sliced audio transcribes each speaker. Both presets run on one NVIDIA RTX PRO 6000 and deploy from the Model Library.
 
 | | Real-time | Batch |

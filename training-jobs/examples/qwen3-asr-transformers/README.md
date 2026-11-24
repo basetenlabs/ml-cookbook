@@ -568,7 +568,7 @@ client = OpenAI(
 )
 with open("audio.wav", "rb") as audio:
     result = client.audio.transcriptions.create(model="Qwen/Qwen3-ASR-1.7B", file=audio)
-if os.getenv("PRINT_TRANSCRIPT") == "1":
+if os.getenv("PRINT_TRANSCRIPT", "").strip().lower() in {"1", "true"}:
     print(result.text)
 ```
 

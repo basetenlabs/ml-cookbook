@@ -10,8 +10,8 @@ Usage:
 
 import os
 import urllib.request
+from http.client import HTTPException
 from pathlib import Path
-from urllib.error import URLError
 from urllib.parse import urlsplit
 
 from openai import APIError, OpenAI
@@ -29,11 +29,17 @@ def audio_file() -> Path | tuple[str, bytes]:
             raise SystemExit("AUDIO_PATH must point to an existing audio file.")
         return path
     url = os.getenv("AUDIO_URL", DEFAULT_AUDIO_URL)
-    suffix = Path(urlsplit(url).path).suffix or ".wav"
+    try:
+        parsed = urlsplit(url)
+        if parsed.scheme not in {"https", "http"} or not parsed.hostname:
+            raise ValueError("Expected an HTTP(S) URL.")
+        suffix = Path(parsed.path).suffix or ".wav"
+    except ValueError:
+        raise SystemExit("AUDIO_URL must be a valid HTTP(S) URL.") from None
     try:
         with urllib.request.urlopen(url, timeout=60) as response:
             return f"audio{suffix}", response.read()
-    except (URLError, TimeoutError):
+    except (OSError, HTTPException, ValueError):
         raise SystemExit("Audio download failed.") from None
 
 
@@ -64,7 +70,7 @@ def main() -> None:
         ) from None
 
     print("Transcription completed.")
-    if os.getenv("PRINT_TRANSCRIPT") == "1":
+    if os.getenv("PRINT_TRANSCRIPT", "").strip().lower() in {"1", "true"}:
         print(transcription.text)
 
 

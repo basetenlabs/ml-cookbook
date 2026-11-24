@@ -17,8 +17,8 @@ certify any deployment or extend the policy to a whole application.
   model outputs.
 - Keep payloads out of application logs, traces, error messages, and exports.
   Use public or synthetic samples for smoke tests. The example clients report
-  status or counts by default; `PRINT_TRANSCRIPT=1` sends speech content to
-  stdout and `OUTPUT_WAV=path.wav` saves synthesized speech locally. Client
+  status or counts by default; `PRINT_TRANSCRIPT=1` (or `true`) sends speech
+  content to stdout and `OUTPUT_WAV=path.wav` saves synthesized speech locally. Client
   output, URL-hosted inputs, and third-party integrations have their own
   retention and access controls.
 - Before using sensitive audio, verify the selected server image, deployment

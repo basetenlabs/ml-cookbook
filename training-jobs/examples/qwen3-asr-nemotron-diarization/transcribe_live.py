@@ -37,7 +37,7 @@ def load_audio(path: str) -> bytes:
 
 
 async def transcribe(path: str, language: str, mode: str) -> None:
-    show_transcript = os.getenv("PRINT_TRANSCRIPT") == "1"
+    show_transcript = os.getenv("PRINT_TRANSCRIPT", "").strip().lower() in {"1", "true"}
     pcm = load_audio(path)
     model_id = os.environ["BASETEN_MODEL_ID"]
     url = f"wss://model-{model_id}.api.baseten.co/environments/production/websocket"
