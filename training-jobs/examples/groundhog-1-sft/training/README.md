@@ -49,7 +49,14 @@ To train on longer rows, add `--max-len N --batch-tokens N` to the `torchrun` co
 1. Replace `abc123` in `deploy/config.yaml` (both places) with your training job ID.
 2. Run `baseten model push --dir deploy`.
 
-The endpoint takes the same `/v1/systemone` requests as the Groundhog-1 Model API.
+The endpoint takes the same `/v1/systemone` requests as the Groundhog-1 Model API, under the deployment's `/sync` path. Replace the model and deployment IDs with the ones `baseten model push` prints:
+
+```bash
+curl -s https://model-<model_id>.api.baseten.co/deployment/<deployment_id>/sync/v1/systemone \
+  -H "Authorization: Api-Key $BASETEN_API_KEY" -H "Content-Type: application/json" \
+  -d '{"state": "I was charged twice this month, please refund one of them.",
+       "questions": {"refund": {"type": "noul", "instructions": "Is the customer asking for a refund?"}}}'
+```
 
 ## Details
 
