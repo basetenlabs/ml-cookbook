@@ -20,6 +20,9 @@
     "glm-4.7-msswift": {
       "path": "training-jobs/examples/glm-4.7-msswift/training"
     },
+    "groundhog-1-sft": {
+      "path": "training-jobs/examples/groundhog-1-sft/training"
+    },
     "isaac-groot": {
       "path": "training-jobs/recipes/isaac-groot",
       "description": "Fine-tune NVIDIA Isaac-GR00T N1 on Baseten"
