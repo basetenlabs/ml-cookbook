@@ -64,6 +64,7 @@ Every example below can be pulled with `truss train init --examples <name>`. The
 | `glm-4-6-msswift` | [`examples/glm-4-6-msswift/training`](examples/glm-4-6-msswift/training) |
 | `glm-4.7-flash-msswift` | [`examples/glm-4.7-flash-msswift/training`](examples/glm-4.7-flash-msswift/training) |
 | `glm-4.7-msswift` | [`examples/glm-4.7-msswift/training`](examples/glm-4.7-msswift/training) |
+| `groundhog-1-sft` | [`examples/groundhog-1-sft/training`](examples/groundhog-1-sft/training) |
 | `isaac-groot` | [`recipes/isaac-groot`](recipes/isaac-groot) |
 | `isaac-lab` | [`recipes/isaac-lab`](recipes/isaac-lab) |
 | `joey-1-sft` | [`examples/joey-1-sft/training`](examples/joey-1-sft/training) |

@@ -1,0 +1,10 @@
+diff --git a/train/sft.py b/train/sft.py
+index ae428d9..2d0a25d 100644
+--- a/train/sft.py
++++ b/train/sft.py
+@@ -670,3 +670,4 @@ def main(argv=None) -> int:
+         from train import fsdp
+-
++        # `params` holds every unsharded parameter; kept through sharding, each rank ends up with a full fp32 model.
++        del params
+         fsdp.shard_model(model, world, bf16_compute=use_autocast(args))
